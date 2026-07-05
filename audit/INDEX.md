@@ -6,7 +6,7 @@
 ## 统计概览
 
 - 送审轮次(submissions):2
-- 复审轮次(reviews):0(待独立审计 Agent 复核)
+- 复审轮次(reviews):1(DRAFT,待 Agent B 接手)
 - 归档(closed):0
 - 已验证 Issue:0
 - 待处理 Issue:0
@@ -22,7 +22,9 @@
 
 | slug | round | status | issues | created | file |
 |---|---|---|---|---|---|
-| _暂无_(v20 r1 已通过用户委托的独立审计,审计意见未走正式 B 流程) | | | | | |
+| v21-bookkeeping | r1 | DRAFT(待 Agent B 接手) | 0 | 2026-07-05 | [B1-v21-bookkeeping-r1.md](reviews/B1-v21-bookkeeping-r1.md) |
+
+> 注:v20 r1 已通过用户委托的独立审计(4 瑕疵已修正),审计意见未走正式 B 流程,直接待 Agent C 归档。
 
 ## Closed
 
