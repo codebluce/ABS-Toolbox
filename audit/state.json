@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "updated_at": "2026-07-05",
+  "slugs": {
+    "v20-institution-stats": {
+      "skill_version": "v2.0.0",
+      "current_round": 1,
+      "status": "PENDING_REVIEW",
+      "next_action": "archive_by_agent_c",
+      "submissions": ["A1-v20-institution-stats-r1"],
+      "reviews": [],
+      "closed": null,
+      "notes": "v2.0.0 第一轮+修正轮合并报告。已通过用户委托的独立审计(4 瑕疵+1 遗留已修正)。待 Agent C 归档。"
+    },
+    "v21-bookkeeping": {
+      "skill_version": "v2.1.0",
+      "current_round": 1,
+      "status": "PENDING_REVIEW",
+      "next_action": "review_by_agent_b",
+      "submissions": ["A1-v21-bookkeeping-r1"],
+      "reviews": [],
+      "closed": null,
+      "notes": "v2.1.0 第二轮。5 层自检全部通过。送审中,待 Agent B 审计。"
+    }
+  },
+  "issues": [],
+  "counters": {
+    "v20-institution-stats": {"max_round": 1, "rebase_count": 0, "blocked_count": 0},
+    "v21-bookkeeping": {"max_round": 1, "rebase_count": 0, "blocked_count": 0}
+  }
+}

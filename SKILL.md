@@ -94,6 +94,13 @@ skills/ABS工具箱/
 ├── CHANGELOG.md                   (版本历史)
 ├── AUDIT_REPORT.md                (审计基线)
 ├── pitfall_log.md                 (踩坑日志)
+├── audit/                         (审计子系统,A→B→C 循环)
+│   ├── README.md                  (审计操作手册)
+│   ├── INDEX.md                   (审计索引)
+│   ├── state.json                 (状态机)
+│   ├── submissions/               (送审报告 Agent A)
+│   ├── reviews/                   (审计意见 Agent B)
+│   └── closed/                    (归档报告 Agent C)
 ├── scripts/
 │   ├── abs_common.py              (共享底座)
 │   ├── entity_alias.py            (机构名映射)
@@ -121,8 +128,70 @@ skills/ABS工具箱/
 - 无外部数据源依赖(纯本地 Excel 处理)
 - Windows 调用前加 `PYTHONUTF8=1` 避免 GBK 编码问题
 
+## 审计流程(A→B→C 循环)
+
+ABS工具箱采用三角色审计循环,参考 macro-allocation-strategy 精简适配。详见 `audit/README.md`。
+
+### 目录结构
+
+```
+audit/
+├── README.md                # 审计操作手册(人类参考)
+├── INDEX.md                 # 审计索引(手动维护)
+├── state.json               # 状态机(手动维护)
+├── submissions/             # 送审报告(Agent A 写)
+│   ├── _template.md
+│   └── A{N}-{slug}-r{R}.md
+├── reviews/                 # 审计意见(Agent B 写)
+│   ├── _template.md
+│   └── B{N}-{slug}-r{R}.md
+└── closed/                  # 归档报告(Agent C 写)
+    ├── _template.md
+    └── C{N}-{slug}-r{R}.md
+```
+
+### 流程
+
+1. **Agent A**(实现):写代码 + commit + 打 git tag `audit/v{X.Y}-{slug}-r{NN}` + 写送审报告 → push abs-toolbox 仓库
+2. **Agent B**(审计):独立 Agent,只读代码+送审报告,写审计意见(verdict: APPROVED / NEEDS_REVISION / REJECTED)
+3. **Agent C**(归档):verdict=APPROVED 时归档,写归档报告
+
+### 文件命名
+
+| 类型 | 格式 | 示例 |
+|---|---|---|
+| 送审报告 | `A{N}-{slug}-r{R}.md` | `A1-v20-institution-stats-r1.md` |
+| 审计意见 | `B{N}-{slug}-r{R}.md` | `B1-v20-institution-stats-r1.md` |
+| 归档报告 | `C{N}-{slug}-r{R}.md` | `C1-v20-institution-stats-r1.md` |
+| git tag | `audit/v{X.Y}-{slug}-r{NN}` | `audit/v2.0-v20-institution-stats-r01` |
+
+### slug 命名
+
+slug 带版本前缀:`v{XX}-{主题}`(如 `v20-institution-stats`、`v21-bookkeeping`、`v22-pricing`)。
+
+### 已归档送审
+
+| submission_id | slug | skill_version | round | status | commit | 日期 |
+|---|---|---|---|---|---|---|
+| A1-v20-institution-stats-r1 | v20-institution-stats | v2.0.0 | r1 | PENDING_REVIEW(已通过独立审计) | `524cdae` | 2026-07-05 |
+| A1-v21-bookkeeping-r1 | v21-bookkeeping | v2.1.0 | r1 | PENDING_REVIEW | `27f08a8` | 2026-07-05 |
+
+详见 `audit/INDEX.md`。
+
+### ABS工具箱特色:5 层自检
+
+送审报告必含 5 层自检证据(ABS工具箱整合的功能等价性验证):
+
+| 层 | 检查 | 通过标准 |
+|---|---|---|
+| 1 | 文件字节对比 | diff 为空(原样迁入) |
+| 2 | 端到端穿行 | 新旧 skill 同输入同输出 |
+| 3 | 逐 cell diff | 产出 xlsx 逐 cell 一致 |
+| 4 | 原 skill smoke | 原 skill 同输入 QC 一致 |
+| 5 | 回归测试 | 其他 skill 不受影响 |
+
 ## 审计与回滚
 
-- 每次重大改动生成 `Inbox/auditReport_GLM52_YYYYMMDD_ABS工具箱.md`,按 step 分节留痕
+- 送审报告归档在 `audit/submissions/`(不再散落 Inbox)
 - skill 长期审计基线见 `AUDIT_REPORT.md`
 - 回滚:`git rm -r skills/ABS工具箱/` + `git mv` 还原产出目录即可,原 3 skill 完整保留
