@@ -9,7 +9,7 @@
 - 复审轮次(reviews):2(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 待归档)
 - 归档(closed):1(v21-bookkeeping r1 已归档)
 - 已验证 Issue:0
-- 待处理 Issue:3(v22-pricing r1 三项 DOC_CONSISTENCY WARNING 均无害不阻断,待 Agent C 归档留档;首轮 2 项 WARNING 经复核均为核查环境假阳性已平反 resolved;1 项 INFO 提示无需处理;1 项 MEDIUM 技术债 #ABS-002 留第三轮封装层处理)
+- 待处理 Issue:2(v22-pricing r1 三项 DOC_CONSISTENCY WARNING 中 REV-03 已由 B 顺手修复 resolved,余 2 项 commit_hash 误填/changed_files 遗漏 均无害不阻断待 Agent C 归档留档;首轮 2 项 WARNING 经复核均为核查环境假阳性已平反 resolved;1 项 INFO 提示无需处理;1 项 MEDIUM 技术债 #ABS-002 留第三轮封装层处理)
 
 ## Submissions
 
@@ -43,11 +43,11 @@
 | REV-v2.1-v21-bookkeeping-r01-03 | v21-bookkeeping | r1 | INFO | open(仅提示,无需处理) | [B1](reviews/B1-v21-bookkeeping-r1.md) |
 | REV-v2.2-v22-pricing-r01-01 | v22-pricing | r1 | WARNING | open(A1 commit_hash 误填 03225ef,实际 tag→1e14550,不阻断,待 C 留档) | [B1](reviews/B1-v22-pricing-r1.md) |
 | REV-v2.2-v22-pricing-r01-02 | v22-pricing | r1 | WARNING | open(changed_files 遗漏 pitfall_log.md 删除+.gitignore,无代码依赖,待 C 补记完整清单) | [B1](reviews/B1-v22-pricing-r1.md) |
-| REV-v2.2-v22-pricing-r01-03 | v22-pricing | r1 | WARNING | open(SKILL.md version 仍 2.0.0 未升 2.2.0,建议尽快修正) | [B1](reviews/B1-v22-pricing-r1.md) |
+| REV-v2.2-v22-pricing-r01-03 | v22-pricing | r1 | WARNING | resolved(SKILL.md version 已由 B 顺手升至 2.2.0) | [B1](reviews/B1-v22-pricing-r1.md) |
 
 > 注:首轮 2 项 WARNING(REV-01/REV-02)经二次独立复核确认均为本地核查环境假阳性(.git 损坏 + 编码搜索漏匹配),已全部平反 resolved,无阻断归档的遗留 Issue。
 > 技术债 #ABS-002(internal_merge 与 run_increment_merge 并存)留第三轮封装层处理,详见 [C1 归档报告](closed/C1-v21-bookkeeping-r1.md) §3 audit_escape_risks。
-> 注:v22-pricing r1 三项 WARNING 均为 DOC_CONSISTENCY 文档一致性瑕疵(commit_hash 误填/changed_files 遗漏/SKILL.md version 未升级),功能等价性已独立复核完整无回归,均无害不阻断归档,待 Agent C 归档时留档并建议后续修正。
+> 注:v22-pricing r1 三项 WARNING 均为 DOC_CONSISTENCY 文档一致性瑕疵(commit_hash 误填/changed_files 遗漏/SKILL.md version 未升级),功能等价性已独立复核完整无回归,均无害不阻断归档。其中 REV-03(SKILL.md version)已由 B 顺手升至 2.2.0 resolved;余 REV-01/REV-02 待 Agent C 归档留档并建议后续修正。
 
 ## slug 流转状态
 

@@ -32,13 +32,16 @@
       "submissions": ["A1-v22-pricing-r1"],
       "reviews": ["B1-v22-pricing-r1"],
       "closed": null,
-      "notes": "v2.2.0 第三轮。发行定价 v1.5.0 迁入:3 gen + test_smoke 共 4 文件。Agent B 独立复核完成:4 文件 diff 仅路径改造(无逻辑改动)、abs_common.py 字节一致、QC FAIL 经源脚本对比确认为 0626 数据问题非回归,功能等价性完整无 CRITICAL。3 项 DOC_CONSISTENCY 瑕疵(commit_hash 误填 03225ef/changed_files 遗漏 pitfall_log 删除+.gitignore/SKILL.md version 未升 2.2.0)均无害不阻断,verdict=APPROVED_WITH_CONDITIONS,待 Agent C 归档留档。"
+      "notes": "v2.2.0 第三轮。发行定价 v1.5.0 迁入:3 gen + test_smoke 共 4 文件。Agent B 独立复核完成:4 文件 diff 仅路径改造(无逻辑改动)、abs_common.py 字节一致、QC FAIL 经源脚本对比确认为 0626 数据问题非回归,功能等价性完整无 CRITICAL。3 项 DOC_CONSISTENCY 瑕疵中 REV-03(SKILL.md version)已由 B 顺手升至 2.2.0 resolved,余 REV-01(commit_hash 误填 03225ef,实际 tag→1e14550)/REV-02(changed_files 遗漏 pitfall_log 删除+.gitignore)无害不阻断,待 Agent C 归档留档。verdict=APPROVED_WITH_CONDITIONS。"
     }
   },
   "issues": [
     {"id": "REV-v2.1-v21-bookkeeping-r01-01", "slug": "v21-bookkeeping", "severity": "INFO", "category": "DOC_CONSISTENCY", "blocks_approval": false, "status": "resolved", "desc": "首轮误判 internal_merge_bookkeeping 不存在系搜索假阳性;findstr 确认真实存在于 gen_institution_stats.py:268 并被 load_data(:370)调用,pitfall #ABS-001/002 描述属实,已平反"},
     {"id": "REV-v2.1-v21-bookkeeping-r01-02", "slug": "v21-bookkeeping", "severity": "WARNING", "category": "DOC_CONSISTENCY", "blocks_approval": false, "status": "resolved", "desc": "git_tag 缺失系首轮本地 .git 损坏假阳性;仓库恢复后 tag audit/v2.1-v21-bookkeeping-r01→27f08a8 确认存在并已双推,已解决"},
-    {"id": "REV-v2.1-v21-bookkeeping-r01-03", "slug": "v21-bookkeeping", "severity": "INFO", "category": "FUNCTION_EQUIVALENCE", "blocks_approval": false, "status": "open", "desc": "cell 计数口径 A=50125 单sheet / B=64811 全sheet,0 差异一致"}
+    {"id": "REV-v2.1-v21-bookkeeping-r01-03", "slug": "v21-bookkeeping", "severity": "INFO", "category": "FUNCTION_EQUIVALENCE", "blocks_approval": false, "status": "open", "desc": "cell 计数口径 A=50125 单sheet / B=64811 全sheet,0 差异一致"},
+    {"id": "REV-v2.2-v22-pricing-r01-01", "slug": "v22-pricing", "severity": "WARNING", "category": "DOC_CONSISTENCY", "blocks_approval": false, "status": "open", "desc": "A1 frontmatter commit_hash 误填 03225ef(真实中间 commit);tag audit/v2.2-v22-pricing-r01 实际指向 1e14550,state/INDEX 已用正确值。待 Agent C 归档留档"},
+    {"id": "REV-v2.2-v22-pricing-r01-02", "slug": "v22-pricing", "severity": "WARNING", "category": "DOC_CONSISTENCY", "blocks_approval": false, "status": "open", "desc": "A1 changed_files 声明 6 文件,git show 1e14550 --stat 实际 11 文件,遗漏 pitfall_log.md 删除(-38)+.gitignore(+4);pitfall_log 无代码依赖(grep 0 命中),技术债 #ABS-002 已在 v21 C1 §3 留档。待 Agent C 补记完整改动清单"},
+    {"id": "REV-v2.2-v22-pricing-r01-03", "slug": "v22-pricing", "severity": "WARNING", "category": "DOC_CONSISTENCY", "blocks_approval": false, "status": "resolved", "desc": "SKILL.md frontmatter version 首轮仍 2.0.0(description 已写第三轮 v2.2.0,与送审 skill_version 不符);已由 Agent B 顺手升至 2.2.0,resolved"}
   ],
   "counters": {
     "v20-institution-stats": {"max_round": 1, "rebase_count": 0, "blocked_count": 0},
