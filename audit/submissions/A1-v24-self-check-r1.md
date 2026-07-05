@@ -9,7 +9,7 @@ author: agent_a
 
 # --- 代码快照 ---
 git_tag: audit/v2.4-v24-self-check-r01
-commit_hash: TBD
+commit_hash: 31f716f
 previous_git_tag: null
 
 # --- 变更文件 ---
