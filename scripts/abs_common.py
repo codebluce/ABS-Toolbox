@@ -13,12 +13,20 @@ from copy import copy
 import pandas as pd
 
 # ── 成本区间配置（工具一使用）──────────────────────────────────────
-COST_BINS = [round(1.50 + i * 0.05, 4) for i in range(20)] + [2.55]
+# 整体 bin 下限 1.30%（保理类资产专用，保理成本低是正常现象）
+# 非保理类资产的成本下限由 COST_BIN_LOWER_NON_PREF 控制（1.50%），QC 时单独校验
+COST_BIN_LOWER = 1.30              # bin 起始下限
+COST_BIN_LOWER_NON_PREF = 1.50     # 非保理类资产的成本下限（QC 校验用）
+COST_BIN_UPPER = 2.50
+COST_BIN_STEP = 0.05
+COST_BINS = [round(COST_BIN_LOWER + i * COST_BIN_STEP, 4)
+             for i in range(int(round((COST_BIN_UPPER - COST_BIN_LOWER) / COST_BIN_STEP)) + 1)] + [2.55]
 COST_LABELS = [f"{COST_BINS[i]:.2f}%~{COST_BINS[i+1]:.2f}%"
                for i in range(len(COST_BINS) - 1)]
 
 # ── 利差区间配置（工具三使用）──────────────────────────────────────
-SPREAD_BINS   = [round(0.05 + i * 0.05, 4) for i in range(21)] + [1.15]
+# 下限 0.00%：覆盖接近零利差的非保理类资产（如金采 0.02%）；负利差仍落入 NaN
+SPREAD_BINS   = [round(0.00 + i * 0.05, 4) for i in range(23)] + [1.15]
 SPREAD_LABELS = [f"+{SPREAD_BINS[i]:.2f}%~+{SPREAD_BINS[i+1]:.2f}%"
                  for i in range(len(SPREAD_BINS) - 1)]
 
@@ -53,6 +61,17 @@ PRODUCT_ORDER_TEMPLATE = [
 
 # ── 优先分层过滤条件 ──────────────────────────────────────────
 PRIORITY_LAYERS = ['优先A', '优先级']
+
+# ── 机构黑名单（生成看板时全角色剔除）─────────────────────────
+# 子串包含匹配：机构名任一字段包含关键词即剔除整行
+EXCLUDED_INSTITUTIONS = ['盛际', '邦汇', '厦门汇正']
+
+# 黑名单作用的所有角色字段（任一命中即剔除整行）
+EXCLUDED_ROLE_COLS = ['计划管理人', '联席承销商', '托管行', '认购机构', '穿透机构']
+
+# ── 保理类资产豁免（仅豁免利差 bin QC）──────────────────────────
+# 资产类型字段包含关键词即认定为保理类
+PREFERENTIAL_ASSET_KEYWORDS = ['保理']
 
 # ── 配色 ───────────────────────────────────────────────────────
 ASSET_COLORS = {
@@ -211,8 +230,96 @@ def resolve_columns(df):
     df[RESOLVED_INST_COL] = x.where(x.notna(), u)
     df[RESOLVED_SHARE_COL] = y.fillna(v)
 
+    # 机构名自动归并：去公司后缀 + 投行上报后缀
+    before_count = df[RESOLVED_INST_COL].nunique()
+    df[RESOLVED_INST_COL] = df[RESOLVED_INST_COL].apply(normalize_investor_name)
+    after_count = df[RESOLVED_INST_COL].nunique()
+    if before_count != after_count:
+        print(f'[MERGE] 机构名归并：{before_count} → {after_count}（减少 {before_count - after_count} 个变体）')
+
     self_hold_mask = df['申购利率'].astype(str).str.strip().str.match(r'^自持$', na=False)
     return df[~self_hold_mask]
+
+
+# ── 机构名自动归并 ─────────────────────────────────────────────
+# 规则：
+#   1. 去末尾公司后缀：有限责任公司/股份有限公司/有限公司/股份公司
+#   2. 去末尾投行上报后缀：（投行上报）/(投行上报)（全角/半角括号混用）
+#   3. 简称归并（显式映射表）：建投→中信建投、中金→中金公司 等
+#   4. 括号统一：无括号部门后缀→有括号（XX证券投行→XX证券（投行））
+#   5. 不动其他括号后缀：（资管）/（自营）/（机构部）/（衍生品）/（投顾）等保留
+
+import re as _re
+
+_COMPANY_SUFFIXES = [
+    '有限责任公司', '股份有限公司', '有限公司', '股份公司',
+]
+_INVEST_BANK_SUFFIX_PATTERN = _re.compile(
+    r'[（(]\s*投行上报\s*[)）]\s*$'
+)
+
+# 简称→全称 显式映射表（精确可控）
+_INVESTOR_ALIAS_MAP = {
+    '建投': '中信建投',
+    '建投机构部': '中信建投（机构部）',
+    '建投自营': '中信建投（自营）',
+    '建投投行': '中信建投（投行）',
+    '中金': '中金公司',
+    '中金自营': '中金公司（自营）',
+    '中金资管': '中金公司（资管）',
+    '中金投顾': '中金公司（投顾）',
+    '华宝资管': '华宝证券资管',
+    '华宝证券（资管）': '华宝证券资管',
+    '申万宏源证券资管': '申万宏源资管',
+    '申万宏源证券（投顾）': '申万宏源（投顾）',
+    '申万宏源证券（自营）': '申万宏源（自营）',
+    '申万宏源证券投顾': '申万宏源（投顾）',
+    '申万宏源证券自营': '申万宏源（自营）',
+}
+
+# 无括号部门后缀 → 有括号（统一写法）
+# 匹配 "XX证券投行" / "XX海通投行" / "XX建投投行" 等
+# 不匹配 "XX资管"（资管是独立机构名，不是部门）
+# 不匹配已含括号的（如 "XX证券（投行）"）
+_DEPT_SUFFIX_PATTERN = _re.compile(
+    r'^(.+?)(投行|自营|投顾)$'
+)
+
+
+def normalize_investor_name(name):
+    """归并机构名变体
+
+    规则顺序：
+      1. 去投行上报后缀
+      2. 去公司后缀
+      3. 显式映射表（简称→全称）
+      4. 括号统一（XX证券投行→XX证券（投行））
+    """
+    if name is None or (isinstance(name, float) and pd.isna(name)):
+        return name
+    s = str(name).strip()
+    if not s:
+        return name
+
+    # 规则 2：去投行上报后缀（先去，因为可能在公司后缀之前）
+    s = _INVEST_BANK_SUFFIX_PATTERN.sub('', s).strip()
+
+    # 规则 1：去公司后缀
+    for suffix in _COMPANY_SUFFIXES:
+        if s.endswith(suffix):
+            s = s[:-len(suffix)].strip()
+            break
+
+    # 规则 3：显式映射表
+    if s in _INVESTOR_ALIAS_MAP:
+        s = _INVESTOR_ALIAS_MAP[s]
+
+    # 规则 4：括号统一（XX证券投行→XX证券（投行），不处理资管）
+    m = _DEPT_SUFFIX_PATTERN.match(s)
+    if m:
+        s = f'{m.group(1)}（{m.group(2)}）'
+
+    return s
 
 
 def validate_input(df, extra_required=None):
@@ -237,6 +344,136 @@ def validate_input(df, extra_required=None):
     if high_null:
         from warnings import warn
         warn(f"[INPUT WARN] 以下关键列空值比例>30%：{high_null}，数据可能不完整")
+
+
+def is_excluded_institution(name):
+    """机构名是否命中黑名单关键词（子串包含匹配）"""
+    if name is None or pd.isna(name):
+        return False
+    s = str(name)
+    return any(kw in s for kw in EXCLUDED_INSTITUTIONS)
+
+
+def is_preferential_asset(asset_type):
+    """资产类型是否为保理类（用于利差 bin QC 豁免）"""
+    if asset_type is None or pd.isna(asset_type):
+        return False
+    s = str(asset_type)
+    return any(kw in s for kw in PREFERENTIAL_ASSET_KEYWORDS)
+
+
+# ── 簿记日期纠错（2025→2026）──────────────────────────────────
+# 业务规则：所有存续项目和新增项目一定发生在 2026 年，不可能是 2025 年。
+# 原始台账人工录入时偶尔会把 2026 误写为 2025，本函数自动纠正。
+# 纠错策略：年份 2025 → 2026（同月同日），但仅当该项目名下没有 2026 年记录时改。
+# 若同一项目名下既有 2025 又有 2026 记录（可能跨年发新），不自动改，warn 提示人工确认。
+
+WRONG_YEAR = 2025
+CORRECT_YEAR = 2026
+
+
+def fix_bookkeeping_year(df, project_col='项目名称', date_col='簿记时间', label='日期纠错'):
+    """纠正簿记日期里 2025 年的错误年份（改为 2026 年同月同日）
+
+    Args:
+        df: DataFrame，含 project_col 和 date_col 两列
+        project_col: 项目名称列名
+        date_col: 簿记时间列名（datetime 类型）
+        label: 日志标签
+
+    Returns:
+        纠错后的 DataFrame（不修改原 df）
+
+    行为：
+        - 找出 date_col 年份=2025 的行
+        - 对每行：检查该项目名下是否还有 2026 年的记录
+          - 没有 2026 年记录（即整个项目都录错了年份）：自动改为 2026 年同月同日
+          - 有 2026 年记录（可能跨年发新）：不改，warn 提示人工确认
+        - 其他年份不动
+    """
+    if date_col not in df.columns or project_col not in df.columns:
+        return df
+
+    # 确保 date_col 是 datetime
+    if not pd.api.types.is_datetime64_any_dtype(df[date_col]):
+        return df
+
+    wrong_mask = df[date_col].dt.year == WRONG_YEAR
+    if not wrong_mask.any():
+        return df
+
+    df_fixed = df.copy()
+    n_fixed = 0
+    # 每个项目名下的所有年份集合
+    proj_years = df.groupby(project_col)[date_col].apply(
+        lambda s: set(s.dropna().dt.year.unique())
+    )
+
+    fixed_projects = set()
+    for idx in df[wrong_mask].index:
+        proj = df.at[idx, project_col]
+        if pd.isna(proj):
+            continue
+        years_of_proj = proj_years.get(proj, set())
+        # 若该项目只有 2025 年记录、没有 2026 年记录 → 自动纠错
+        if CORRECT_YEAR not in years_of_proj and WRONG_YEAR in years_of_proj:
+            old_dt = df.at[idx, date_col]
+            try:
+                new_dt = old_dt.replace(year=CORRECT_YEAR)
+            except ValueError:
+                # 处理 2/29 这种闰年日期
+                new_dt = old_dt.replace(year=CORRECT_YEAR, day=28)
+            df_fixed.at[idx, date_col] = new_dt
+            n_fixed += 1
+            if proj not in fixed_projects:
+                print(f'[FIX] {label}: 项目"{proj}" 簿记日期 {old_dt.strftime("%Y-%m-%d")} → {new_dt.strftime("%Y-%m-%d")}（年份 2025→2026，项目仅有 2025 年记录）')
+                fixed_projects.add(proj)
+        else:
+            # 该项目既有 2025 又有 2026，可能是跨年发新，不改
+            print(f'[WARN] {label}: 项目"{proj}" 簿记日期 {df.at[idx, date_col].strftime("%Y-%m-%d")} 落在 2025 年，但该项目同时有 2026 年记录（可能跨年发新），未自动纠错，请人工确认')
+
+    if n_fixed > 0:
+        print(f'[FIX] {label}: 共纠正 {n_fixed} 条 2025 年簿记日期 → 2026 年（涉及 {len(fixed_projects)} 个项目）')
+    return df_fixed
+
+
+def filter_excluded_institutions(df, role_cols=None, label='数据加载'):
+    """剔除黑名单机构相关记录
+
+    Args:
+        df: 原始 DataFrame
+        role_cols: 参与匹配的角色字段列表（默认 EXCLUDED_ROLE_COLS）
+                   只匹配 df 中实际存在的列
+        label: 日志标签（用于打印剔除摘要）
+
+    Returns:
+        过滤后的 DataFrame（剔除任一角色字段命中黑名单的整行）
+
+    行为说明：
+        - 子串包含匹配：'盛际' / '邦汇'
+        - 任一角色字段命中即剔除整行（最严格口径）
+        - 不修改原 df
+    """
+    if role_cols is None:
+        role_cols = EXCLUDED_ROLE_COLS
+    cols = [c for c in role_cols if c in df.columns]
+    if not cols:
+        return df
+
+    mask = pd.Series(False, index=df.index)
+    for c in cols:
+        mask = mask | df[c].apply(is_excluded_institution)
+
+    n_excluded = int(mask.sum())
+    if n_excluded > 0:
+        # 摘要：每个角色字段命中数
+        details = []
+        for c in cols:
+            n = int(df[c].apply(is_excluded_institution).sum())
+            if n > 0:
+                details.append(f'{c}={n}')
+        print(f'[FILTER] {label}: 剔除黑名单机构记录 {n_excluded} 行 ({", ".join(details)})')
+    return df[~mask].copy()
 
 
 def load_and_filter(xlsx_path, need_tenor=False, extra_required=None):
@@ -285,6 +522,9 @@ def load_and_filter(xlsx_path, need_tenor=False, extra_required=None):
         )
     df['簿记时间'] = pd.to_datetime(df['簿记时间'], errors='coerce')
 
+    # 簿记日期纠错：2025 年 → 2026 年（仅项目名唯一时自动改）
+    df = fix_bookkeeping_year(df, label='load_and_filter')
+
     df = resolve_columns(df)
     dfa = df[df['分层情况'].isin(PRIORITY_LAYERS)].copy()
 
@@ -297,6 +537,11 @@ def load_and_filter(xlsx_path, need_tenor=False, extra_required=None):
     if need_tenor:
         extra.append('国股CD')
     validate_input(dfa, extra_required=extra if extra else None)
+
+    # 黑名单剔除：全角色匹配（管理人/联席承销商/托管行/认购机构/穿透机构）
+    # 在 validate_input 之后执行，避免影响空值比例检查的诊断价值
+    df = filter_excluded_institutions(df, label='load_and_filter(全量)')
+    dfa = filter_excluded_institutions(dfa, label='load_and_filter(优先A)')
 
     return df, dfa, tmp_path, tenor_col
 

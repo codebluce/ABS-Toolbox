@@ -15,6 +15,8 @@ from abs_common import (
     MONTH_COLORS, MONTH_ACCENT,
     RESOLVED_COST_COL, RESOLVED_INST_COL, RESOLVED_SHARE_COL,
     NON_NUMERIC_COST_VALS, PRIORITY_LAYERS,
+    COST_BIN_LOWER_NON_PREF,
+    is_preferential_asset,
     load_and_filter, QCRunner,
 )
 
@@ -193,25 +195,74 @@ CSS = """
 """
 
 
-# ── 构建函数 ──────────────────────────────────────────────────
-def build_asset_block(asset_name, sub_df):
-    color = ASSET_COLORS.get(asset_name, DEFAULT_COLOR)
-    hc, tc = color['header'], color['tag']
-
+# ── 构建函数（数据层）──────────────────────────────────────────
+def build_asset_block_data(sub_df):
+    """从 sub_df 计算资产块所需数据（纯数据，无 HTML）"""
     merged = merge_by_interval(sub_df)
     active_labels, grouped = group_by_interval(merged, COST_LABELS)
-
-    rows_html = []
+    # 把每行数据序列化为可渲染的 dict
+    rows_data = []
     for interval in active_labels:
         rows = grouped[interval]
         for i, row in enumerate(rows):
-            cells = [build_interval_cell(rows, tc, i)]
-            cells.append(f'<td class="inst-cell">{row[RESOLVED_INST_COL]}</td>')
-            cells.append(f'<td class="share-cell">{row["累计认购"]:.3f}<span class="unit">亿</span></td>')
-            rows_html.append('<tr>' + ''.join(cells) + '</tr>')
+            rows_data.append({
+                'interval': interval,
+                'rows': rows,
+                'idx': i,
+                'inst': row[RESOLVED_INST_COL],
+                'cum_share': float(row["累计认购"]),
+            })
+    return {
+        'merged': merged,
+        'active_labels': active_labels,
+        'grouped': grouped,
+        'rows_data': rows_data,
+        'total_share': float(sub_df['实际份额'].sum()),
+        'unique_inst': int(merged['实际机构'].nunique()),
+    }
 
-    total_share = sub_df['实际份额'].sum()
-    unique_inst = merged['实际机构'].nunique()
+
+def build_month_section_data(mlabel, mdf, month_idx, asset_order):
+    """从 mdf 计算月份段所需数据（含每个 asset 的 block_data + chip 数据）"""
+    chips_data = []
+    asset_blocks_data = []
+    for asset in asset_order:
+        sub = mdf[mdf['资产类型'] == asset]
+        if len(sub) == 0:
+            continue
+        block_data = build_asset_block_data(sub)
+        chips_data.append({
+            'asset': asset,
+            'asset_total': float(sub['实际份额'].sum()),
+            'asset_inst': block_data['unique_inst'],
+        })
+        asset_blocks_data.append({'asset': asset, 'block_data': block_data})
+
+    return {
+        'mlabel': mlabel,
+        'month_idx': month_idx,
+        'month_total': float(mdf['实际份额'].sum()),
+        'month_count': int(len(mdf)),
+        'month_inst': int(mdf['实际机构'].nunique()),
+        'chips_data': chips_data,
+        'asset_blocks_data': asset_blocks_data,
+    }
+
+
+# ── 渲染函数（纯 HTML）─────────────────────────────────────────
+def render_asset_block(asset_name, block_data):
+    color = ASSET_COLORS.get(asset_name, DEFAULT_COLOR)
+    hc, tc = color['header'], color['tag']
+
+    rows_html = []
+    for r in block_data['rows_data']:
+        cells = [build_interval_cell(r['rows'], tc, r['idx'])]
+        cells.append(f'<td class="inst-cell">{r["inst"]}</td>')
+        cells.append(f'<td class="share-cell">{r["cum_share"]:.3f}<span class="unit">亿</span></td>')
+        rows_html.append('<tr>' + ''.join(cells) + '</tr>')
+
+    unique_inst = block_data['unique_inst']
+    total_share = block_data['total_share']
 
     return f'''
   <div class="asset-block">
@@ -230,7 +281,7 @@ def build_asset_block(asset_name, sub_df):
   </div>'''
 
 
-def build_summary_cards(dfa, asset_order):
+def render_summary_cards(dfa, asset_order):
     asset_summary = dfa.groupby('资产类型').agg(
         笔数=('实际机构', 'count'), 认购合计=('实际份额', 'sum')
     ).reindex(asset_order)
@@ -246,32 +297,26 @@ def build_summary_cards(dfa, asset_order):
     return cards
 
 
-def build_month_section(mlabel, mdf, month_idx, asset_order):
-    mc = MONTH_COLORS[month_idx % len(MONTH_COLORS)]
-    month_total = mdf['实际份额'].sum()
-    month_count = len(mdf)
-    month_inst = mdf['实际机构'].nunique()
+def render_month_section(section_data):
+    mc = MONTH_COLORS[section_data['month_idx'] % len(MONTH_COLORS)]
+    mlabel = section_data['mlabel']
+    month_total = section_data['month_total']
+    month_count = section_data['month_count']
+    month_inst = section_data['month_inst']
 
     chips = ''
-    for asset in asset_order:
-        sub = mdf[mdf['资产类型'] == asset]
-        if len(sub) == 0:
-            continue
-        color = ASSET_COLORS.get(asset, DEFAULT_COLOR)
-        merged = merge_by_interval(sub)
-        asset_total = sub['实际份额'].sum()
-        asset_inst = merged['实际机构'].nunique()
+    for chip in section_data['chips_data']:
+        color = ASSET_COLORS.get(chip['asset'], DEFAULT_COLOR)
         chips += f'''
         <div class="monthly-asset-chip" style="border-left:3px solid {color["tag"]}">
-          <span class="chip-name">{asset}</span>
-          <span class="chip-val">{asset_total:.2f}<span class="chip-unit">亿</span></span>
-          <span class="chip-sub">{asset_inst}家</span>
+          <span class="chip-name">{chip["asset"]}</span>
+          <span class="chip-val">{chip["asset_total"]:.2f}<span class="chip-unit">亿</span></span>
+          <span class="chip-sub">{chip["asset_inst"]}家</span>
         </div>'''
 
     asset_blocks = ''.join(
-        build_asset_block(asset, mdf[mdf['资产类型'] == asset])
-        for asset in asset_order
-        if len(mdf[mdf['资产类型'] == asset]) > 0
+        render_asset_block(item['asset'], item['block_data'])
+        for item in section_data['asset_blocks_data']
     )
 
     return f'''
@@ -292,6 +337,130 @@ def build_month_section(mlabel, mdf, month_idx, asset_order):
     <div class="month-body">{asset_blocks}
     </div>
   </div>'''
+
+
+# ── 兼容旧接口 ─────────────────────────────────────────────────
+def build_asset_block(asset_name, sub_df):
+    return render_asset_block(asset_name, build_asset_block_data(sub_df))
+
+
+def build_summary_cards(dfa, asset_order):
+    return render_summary_cards(dfa, asset_order)
+
+
+def build_month_section(mlabel, mdf, month_idx, asset_order):
+    return render_month_section(build_month_section_data(mlabel, mdf, month_idx, asset_order))
+
+
+# ── 数据计算层（供综合看板调用）──────────────────────────────
+def compute_data(xlsx_path):
+    """读取台账 + 计算所有数据 + QC precheck，返回数据 dict"""
+    print(f'Loading: {xlsx_path}')
+    df, dfa = read_data(xlsx_path)
+    print(f'优先A记录: {len(dfa)} 条 | 资产类型: {dfa["资产类型"].nunique()} 种')
+
+    asset_order = dfa.groupby('资产类型').size().sort_values(ascending=False).index.tolist()
+    months = sorted(dfa['月份'].unique(), key=lambda x: x.to_timestamp(), reverse=True)
+    month_labels = [str(m) for m in months]
+
+    total_records = len(dfa)
+    total_share_all = dfa['实际份额'].sum()
+    total_inst = dfa['实际机构'].nunique()
+    date_min = pd.to_datetime(dfa['簿记时间']).dt.strftime('%Y-%m-%d').min()
+    date_max = pd.to_datetime(dfa['簿记时间']).dt.strftime('%Y-%m-%d').max()
+
+    # 预计算每个月份段的 section_data
+    month_sections_data = []
+    for idx, mlabel in enumerate(month_labels):
+        mdf = dfa[dfa['月份'].astype(str) == mlabel]
+        section_data = build_month_section_data(mlabel, mdf, idx, asset_order)
+        month_sections_data.append(section_data)
+
+    meta = {
+        'total_records': total_records,
+        'total_share_all': float(total_share_all),
+        'total_inst': int(total_inst),
+        'date_min': date_min,
+        'date_max': date_max,
+        'month_labels': month_labels,
+        'asset_order': asset_order,
+    }
+
+    # QC precheck
+    qc_passed = run_qc(df, dfa, out_path=None, month_labels=month_labels,
+                       asset_order=asset_order, precheck_only=True)
+    if not qc_passed:
+        raise RuntimeError('[QC] ABS成本分布报告预检未通过')
+
+    return {
+        'df': df,
+        'dfa': dfa,
+        'meta': meta,
+        'month_sections_data': month_sections_data,
+        'xlsx_basename': os.path.basename(xlsx_path),
+        'xlsx_path': xlsx_path,
+    }
+
+
+def render_body(data):
+    """渲染 body 片段（不含 <!DOCTYPE>/<html>/<head>）"""
+    dfa = data['dfa']
+    meta = data['meta']
+    xlsx_basename = data['xlsx_basename']
+
+    month_sections = ''.join(
+        render_month_section(sd) for sd in data['month_sections_data']
+    )
+    cards = render_summary_cards(dfa, meta['asset_order'])
+
+    return f'''
+<div class="page-banner">
+  <div class="banner-top">
+    <div>
+      <div class="banner-tag">ABS Investor Analysis · Priority A</div>
+      <div class="banner-title">优先A 机构认购成本分布分析</div>
+      <div class="banner-subtitle">按月份 + 资产类型分类 · 成本区间步长 0.05%</div>
+    </div>
+    <div class="banner-badge">
+      数据期间 <strong>{meta["date_min"]} ~ {meta["date_max"]}</strong><br>
+      优先A <strong>{meta["total_records"]}</strong> 笔 · 总额 <strong>{meta["total_share_all"]:.2f} 亿</strong> · <strong>{meta["total_inst"]}</strong> 家机构
+    </div>
+  </div>
+</div>
+
+<div class="overview">
+  <div class="overview-label">各资产类型合计</div>
+  <div class="summary-cards">{cards}</div>
+</div>
+
+<div class="note-bar">
+  <span>筛选条件：分层情况 = "优先A"</span>
+  <span>月份按簿记时间确定</span>
+  <span>成本区间步长 0.05%，左闭右开</span>
+  <span>同一机构同利差的多笔认购已合并</span>
+</div>
+
+<div class="content">{month_sections}</div>
+
+<div class="footer">
+  数据来源：{xlsx_basename} · 生成时间：{pd.Timestamp('today').strftime('%Y-%m-%d')} · 分析报告员 Peizhi Wu
+</div>'''
+
+
+def render_html(data):
+    """渲染完整 HTML 文档（含 <!DOCTYPE>/<html>/<head>）"""
+    body = render_body(data)
+    return f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ABS 优先A 机构认购成本分布分析</title>
+<style>{CSS}</style>
+</head>
+<body>{body}
+</body>
+</html>'''
 
 
 # ── 自我检查 ──────────────────────────────────────────────────
@@ -335,12 +504,29 @@ def run_qc(df, dfa, out_path, month_labels, asset_order, precheck_only=False):
     else:
         warn(f'{neg_shares}条记录认购份额≤0，请检查')
 
+    # 成本 bin 范围校验（保理类下限 1.30%，非保理类下限 1.50%）
+    # bin 已扩展下限到 1.30%，所以保理类 1.30-1.50% 不会 NaN；这里检查 < 1.30% 的真实异常
     nan_count = dfa['成本区间'].isna().sum()
+    pref_mask = dfa['资产类型'].apply(is_preferential_asset)
     if nan_count == 0:
         ok('无成本区间外记录（NaN=0）')
     else:
-        nan_costs = dfa[dfa['成本区间'].isna()]['实际成本pct'].unique()
-        fail(f'{nan_count}条记录落在成本区间外（超出1.50%-2.50%），涉及成本值：{[round(c,4) for c in nan_costs]}')
+        nan_df = dfa[dfa['成本区间'].isna()]
+        nan_pref = int((nan_df['资产类型'].apply(is_preferential_asset)).sum())
+        nan_non_pref = nan_count - nan_pref
+        if nan_non_pref > 0:
+            nan_costs_non_pref = nan_df[~nan_df['资产类型'].apply(is_preferential_asset)]['实际成本pct'].unique()
+            fail(f'{nan_non_pref}条非保理类记录落在成本区间外（超出1.50%-2.50%），涉及成本值：{[round(c,4) for c in nan_costs_non_pref]}')
+        if nan_pref > 0:
+            nan_costs_pref = nan_df[nan_df['资产类型'].apply(is_preferential_asset)]['实际成本pct'].unique()
+            fail(f'{nan_pref}条保理类记录落在成本区间外（超出1.30%-2.50%），涉及成本值：{[round(c,4) for c in nan_costs_pref]}')
+
+    # 非保理类资产成本下限校验：bin 已扩展到 1.30%，但非保理类 < 1.50% 视为异常
+    non_pref_low = dfa[~pref_mask & (dfa['实际成本pct'] < COST_BIN_LOWER_NON_PREF)]
+    if len(non_pref_low) == 0:
+        ok(f'非保理类资产成本均 ≥ {COST_BIN_LOWER_NON_PREF:.2f}%')
+    else:
+        fail(f'{len(non_pref_low)}条非保理类记录成本 < {COST_BIN_LOWER_NON_PREF:.2f}%（异常），涉及：{non_pref_low[["项目名称","资产类型","实际成本pct"]].to_dict("records")}')
 
     raw_months = sorted(pd.to_datetime(df_raw[df_raw['分层情况'].isin(PRIORITY_LAYERS)]['簿记时间'])
                         .dt.to_period('M').unique(), key=lambda x: x.to_timestamp())
@@ -456,84 +642,19 @@ if __name__ == '__main__':
         out_path = os.path.join(kanban_dir, f'{date_tag}_机构投标利率看板.html')
 
     try:
-        print(f'Loading: {xlsx_path}')
-        df, dfa = read_data(xlsx_path)
-        print(f'优先A记录: {len(dfa)} 条 | 资产类型: {dfa["资产类型"].nunique()} 种')
+        data = compute_data(xlsx_path)
     except ValueError as e:
         print(f'[INPUT ERROR] {e}')
         sys.exit(1)
     except Exception as e:
-        print(f'[ERROR] 数据加载失败：{e}')
+        print(f'[ERROR] {e}')
         sys.exit(1)
 
-    asset_order = dfa.groupby('资产类型').size().sort_values(ascending=False).index.tolist()
-    months = sorted(dfa['月份'].unique(), key=lambda x: x.to_timestamp(), reverse=True)
-    month_labels = [str(m) for m in months]
-
-    total_records = len(dfa)
-    total_share_all = dfa['实际份额'].sum()
-    total_inst = dfa['实际机构'].nunique()
-    date_min = pd.to_datetime(dfa['簿记时间']).dt.strftime('%Y-%m-%d').min()
-    date_max = pd.to_datetime(dfa['簿记时间']).dt.strftime('%Y-%m-%d').max()
-
-    month_sections = ''.join(
-        build_month_section(mlabel, dfa[dfa['月份'].astype(str) == mlabel], idx, asset_order)
-        for idx, mlabel in enumerate(month_labels)
-    )
-    cards = build_summary_cards(dfa, asset_order)
-
-    html = f'''<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>ABS 优先A 机构认购成本分布分析</title>
-<style>{CSS}</style>
-</head>
-<body>
-<div class="page-banner">
-  <div class="banner-top">
-    <div>
-      <div class="banner-tag">ABS Investor Analysis · Priority A</div>
-      <div class="banner-title">优先A 机构认购成本分布分析</div>
-      <div class="banner-subtitle">按月份 + 资产类型分类 · 成本区间步长 0.05%</div>
-    </div>
-    <div class="banner-badge">
-      数据期间 <strong>{date_min} ~ {date_max}</strong><br>
-      优先A <strong>{total_records}</strong> 笔 · 总额 <strong>{total_share_all:.2f} 亿</strong> · <strong>{total_inst}</strong> 家机构
-    </div>
-  </div>
-</div>
-
-<div class="overview">
-  <div class="overview-label">各资产类型合计</div>
-  <div class="summary-cards">{cards}</div>
-</div>
-
-<div class="note-bar">
-  <span>筛选条件：分层情况 = "优先A"</span>
-  <span>月份按簿记时间确定</span>
-  <span>成本区间步长 0.05%，左闭右开</span>
-  <span>同一机构同利差的多笔认购已合并</span>
-</div>
-
-<div class="content">{month_sections}</div>
-
-<div class="footer">
-  数据来源：{os.path.basename(xlsx_path)} · 生成时间：{pd.Timestamp('today').strftime('%Y-%m-%d')} · 分析报告员 pBuddy
-</div>
-</body>
-</html>'''
-
-    qc_passed = run_qc(df, dfa, out_path, month_labels, asset_order, precheck_only=True)
-
-    if qc_passed:
-        with open(out_path, 'w', encoding='utf-8') as f:
-            f.write(html)
-        print(f'Done: {out_path}')
-        print(f'月份: {month_labels}')
-        print(f'资产类型: {asset_order}')
-        run_qc(df, dfa, out_path, month_labels, asset_order, precheck_only=False)
-    else:
-        print(f'\n[ERROR] QC未通过，跳过输出文件写入（{out_path}）')
-        print('[ERROR] 请修正数据或逻辑后重试')
+    html = render_html(data)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+    print(f'Done: {out_path}')
+    print(f'月份: {data["meta"]["month_labels"]}')
+    print(f'资产类型: {data["meta"]["asset_order"]}')
+    run_qc(data['df'], data['dfa'], out_path, data['meta']['month_labels'],
+           data['meta']['asset_order'], precheck_only=False)

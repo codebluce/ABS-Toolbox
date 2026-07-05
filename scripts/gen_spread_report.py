@@ -23,6 +23,7 @@ from abs_common import (
     PRODUCT_ORDER_TEMPLATE, OVER_1Y_ASSETS,
     classify_tenor, product_color,
     load_and_filter, QCRunner,
+    is_preferential_asset,
 )
 
 
@@ -230,36 +231,99 @@ def build_summary_cards(product_order):
     return html
 
 
-def build_product_block(product_name, asset_type, tenor_label,
-                          sub_df, asset_header_color, tag_color):
+def build_product_block_data(sub_df):
+    """从 sub_df 计算产品块所需数据（纯数据，无 HTML）"""
     if sub_df.empty:
-        return ''
-
+        return None
     merged = merge_by_interval(sub_df)
     active_labels, grouped = group_by_interval(merged, SPREAD_LABELS)
     if not active_labels:
-        return ''
-
-    total = sub_df['实际份额'].sum()
-    count = len(sub_df)
-    avg_sp = sub_df['基准利差'].mean()
-
-    rows_html = ''
+        return None
+    # 序列化每行数据
+    rows_data = []
     for label in active_labels:
         entries = grouped[label]
         rowspan = len(entries)
-
         for i, row in enumerate(entries):
-            interval_td = '' if i > 0 else f'''<td class="interval-cell" rowspan="{rowspan}">
-  <div class="interval-label">{label}</div>
-  <span class="spread-badge" style="background:{tag_color}">+{row["具体利差"]:.2f}%</span>
+            rows_data.append({
+                'label': label,
+                'rowspan': rowspan,
+                'idx': i,
+                'inst': row[RESOLVED_INST_COL],
+                'cum_share': float(row["累计认购"]),
+                'specific_spread': float(row["具体利差"]),
+            })
+    return {
+        'rows_data': rows_data,
+        'total': float(sub_df['实际份额'].sum()),
+        'count': int(len(sub_df)),
+        'avg_sp': float(sub_df['基准利差'].mean()),
+    }
+
+
+def build_month_section_data(month_label, month_df, idx, product_order):
+    """从 month_df 计算月份段所需数据（含每个产品 block_data + chip 数据）"""
+    if month_df.empty:
+        return None
+
+    chips_data = []
+    blocks_data = []
+    for pt, asset, tenor, _, _, _ in product_order:
+        sub = month_df[month_df['产品类型'] == pt]
+        if sub.empty:
+            continue
+        color = product_color(asset, tenor)
+        block_data = build_product_block_data(sub)
+        if block_data is None:
+            continue
+        chips_data.append({
+            'pt': pt,
+            'asset': asset,
+            'tenor': tenor,
+            'asset_total': float(sub["实际份额"].sum()),
+            'tag_color': color['tag'],
+        })
+        blocks_data.append({
+            'pt': pt,
+            'asset': asset,
+            'tenor': tenor,
+            'header_color': color['header'],
+            'tag_color': color['tag'],
+            'block_data': block_data,
+        })
+
+    return {
+        'month_label': month_label,
+        'idx': idx,
+        'total': float(month_df['实际份额'].sum()),
+        'count': int(len(month_df)),
+        'avg_sp': float(month_df['基准利差'].mean()),
+        'inst_cnt': int(month_df['实际机构'].nunique()),
+        'chips_data': chips_data,
+        'blocks_data': blocks_data,
+    }
+
+
+def render_product_block(product_name, asset_type, tenor_label,
+                          block_data, asset_header_color, tag_color):
+    """渲染产品块 HTML（纯渲染，无数据计算）"""
+    rows_data = block_data['rows_data']
+    total = block_data['total']
+    count = block_data['count']
+    avg_sp = block_data['avg_sp']
+
+    rows_html = ''
+    for r in rows_data:
+        interval_td = '' if r['idx'] > 0 else f'''<td class="interval-cell" rowspan="{r["rowspan"]}">
+  <div class="interval-label">{r["label"]}</div>
+  <span class="spread-badge" style="background:{tag_color}">+{r["specific_spread"]:.2f}%</span>
 </td>'''
 
-            rows_html += f'''<tr>
+        rows_html += f'''<tr>
   {interval_td}
-  <td class="inst-cell">{row[RESOLVED_INST_COL]}</td>
-  <td class="share-cell">{row["累计认购"]:.2f} 亿</td>
-  <td class="spread-cell">+{row["具体利差"]:.2f}%</td>
+  <td class="inst-cell">{r["inst"]}</td>
+  <td class="share-cell">{r["cum_share"]:.2f} 亿</td>
+  <td class="spread-cell">+{r["specific_spread"]:.2f}%</td>
 </tr>'''
 
     tenor_tag = '1年期' if tenor_label == '1年期' else '超1年期'
@@ -279,36 +343,27 @@ def build_product_block(product_name, asset_type, tenor_label,
 </div>'''
 
 
-def build_month_section(month_label, month_df, idx, product_order):
-    if month_df.empty:
-        return ''
-
-    bg_color = MONTH_COLORS[idx % len(MONTH_COLORS)]
-    total    = month_df['实际份额'].sum()
-    count    = len(month_df)
-    avg_sp   = month_df['基准利差'].mean()
-    inst_cnt = month_df['实际机构'].nunique()
+def render_month_section(section_data):
+    """渲染月份段 HTML"""
+    bg_color = MONTH_COLORS[section_data['idx'] % len(MONTH_COLORS)]
+    month_label = section_data['month_label']
+    total = section_data['total']
+    count = section_data['count']
+    avg_sp = section_data['avg_sp']
+    inst_cnt = section_data['inst_cnt']
 
     chip_html = ''
-    for pt, asset, tenor, _, _, _ in product_order:
-        sub = month_df[month_df['产品类型'] == pt]
-        if sub.empty:
-            continue
-        color = product_color(asset, tenor)
-        chip_html += f'''<div class="monthly-product-chip" style="border-left:3px solid {color["tag"]}">
-  <span class="chip-name">{pt}</span>
-  <span class="chip-val">{sub["实际份额"].sum():.2f}<span class="chip-sub"> 亿</span></span>
+    for chip in section_data['chips_data']:
+        chip_html += f'''<div class="monthly-product-chip" style="border-left:3px solid {chip["tag_color"]}">
+  <span class="chip-name">{chip["pt"]}</span>
+  <span class="chip-val">{chip["asset_total"]:.2f}<span class="chip-sub"> 亿</span></span>
 </div>'''
 
-    blocks_html = ''
-    for pt, asset, tenor, _, _, _ in product_order:
-        sub = month_df[month_df['产品类型'] == pt]
-        if sub.empty:
-            continue
-        color = product_color(asset, tenor)
-        blocks_html += build_product_block(
-            pt, asset, tenor, sub, color['header'], color['tag']
-        )
+    blocks_html = ''.join(
+        render_product_block(b['pt'], b['asset'], b['tenor'],
+                             b['block_data'], b['header_color'], b['tag_color'])
+        for b in section_data['blocks_data']
+    )
 
     return f'''<div class="month-section">
   <div class="month-header" style="background:{bg_color}">
@@ -326,6 +381,155 @@ def build_month_section(month_label, month_df, idx, product_order):
   </div>
   <div class="month-body">{blocks_html}</div>
 </div>'''
+
+
+# ── 兼容旧接口 ─────────────────────────────────────────────────
+def build_product_block(product_name, asset_type, tenor_label,
+                          sub_df, asset_header_color, tag_color):
+    block_data = build_product_block_data(sub_df)
+    if block_data is None:
+        return ''
+    return render_product_block(product_name, asset_type, tenor_label,
+                                 block_data, asset_header_color, tag_color)
+
+
+def build_month_section(month_label, month_df, idx, product_order):
+    section_data = build_month_section_data(month_label, month_df, idx, product_order)
+    if section_data is None:
+        return ''
+    return render_month_section(section_data)
+
+
+# ── 数据计算层（供综合看板调用）──────────────────────────────
+def compute_data(xlsx_path):
+    """读取台账 + 计算所有数据 + QC precheck，返回数据 dict"""
+    df, dfa = read_data(xlsx_path)
+
+    print('\n产品类型分布：')
+    prod_summary = (
+        dfa.groupby(['产品类型', '资产类型', '期限分类'])
+        .agg(总额=('认购份额', 'sum'), 笔数=('认购份额', 'count'),
+             均利差=('基准利差', 'mean'))
+        .sort_values('总额', ascending=False)
+    )
+    print(prod_summary.round(2).to_string())
+
+    print(f'\n优先A记录: {len(dfa)} 条 | 产品类型: {dfa["产品类型"].nunique()} 种')
+    print(f'基准利差范围: +{dfa["基准利差"].min():.2f}% ~ +{dfa["基准利差"].max():.2f}%')
+
+    product_order = build_product_order(dfa)
+    print('\n产品类型最终顺序（模板顺序）：')
+    for i, (pt, asset, tenor, total, count, avg_sp) in enumerate(product_order, 1):
+        print(f'  {i}. {pt}  {total:.2f}亿')
+
+    months = sorted(dfa['月份'].unique(), key=lambda x: x.to_timestamp(), reverse=True)
+    month_labels = [str(m) for m in months]
+    total_share = float(dfa['实际份额'].sum())
+    total_inst = int(dfa['实际机构'].nunique())
+    avg_spread = float(dfa['基准利差'].mean())
+    date_min = pd.to_datetime(dfa['簿记时间']).dt.strftime('%Y-%m-%d').min()
+    date_max = pd.to_datetime(dfa['簿记时间']).dt.strftime('%Y-%m-%d').max()
+
+    # 预计算每个月份段
+    month_sections_data = []
+    for idx, mlabel in enumerate(month_labels):
+        mdf = dfa[dfa['月份'].astype(str) == mlabel]
+        sd = build_month_section_data(mlabel, mdf, idx, product_order)
+        if sd is not None:
+            month_sections_data.append(sd)
+
+    meta = {
+        'total_share': total_share,
+        'total_inst': total_inst,
+        'avg_spread': avg_spread,
+        'date_min': date_min,
+        'date_max': date_max,
+        'month_labels': month_labels,
+        'product_order': product_order,
+        'total_records': int(len(dfa)),
+    }
+
+    # QC precheck
+    qc_passed = run_qc(df, dfa, out_path=None, month_labels=month_labels,
+                       product_order=product_order, precheck_only=True)
+    if not qc_passed:
+        raise RuntimeError('[QC] ABS基准利差分析报告预检未通过')
+
+    return {
+        'df': df,
+        'dfa': dfa,
+        'meta': meta,
+        'month_sections_data': month_sections_data,
+        'xlsx_basename': os.path.basename(xlsx_path),
+        'xlsx_path': xlsx_path,
+    }
+
+
+def render_body(data):
+    """渲染 body 片段（不含 <!DOCTYPE>/<html>/<head>）"""
+    dfa = data['dfa']
+    meta = data['meta']
+    xlsx_basename = data['xlsx_basename']
+
+    month_sections = ''.join(render_month_section(sd) for sd in data['month_sections_data'])
+    cards = build_summary_cards(meta['product_order'])
+
+    return f'''
+<div class="page-banner">
+  <div class="banner-top">
+    <div>
+      <div class="banner-tag">ABS Spread Analysis · Priority A</div>
+      <div class="banner-title">优先A 基准利差分析</div>
+      <div class="banner-subtitle">
+        基准利差 = 认购成本 − 同日国股CD ·
+        维度：月份 + 产品类型（资产类型+期限）+ 机构利差 ·
+        区间步长 0.05%
+      </div>
+    </div>
+    <div class="banner-badge">
+      数据期间 <strong>{meta["date_min"]} ~ {meta["date_max"]}</strong><br>
+      优先A <strong>{meta["total_records"]}</strong> 笔 · 总额 <strong>{meta["total_share"]:.2f} 亿</strong> · <strong>{meta["total_inst"]}</strong> 家机构<br>
+      全局均利差 <strong>+{meta["avg_spread"]:.2f}%</strong>
+    </div>
+  </div>
+</div>
+
+<div class="overview">
+  <div class="overview-label">各产品类型合计（按业务顺序）</div>
+  <div class="summary-cards">{cards}</div>
+</div>
+
+<div class="note-bar">
+  <span>筛选条件：分层情况 = "优先A"</span>
+  <span>基准利差 = 认购成本 − 同日国股CD（单位：%）</span>
+  <span>产品类型 = 资产类型 + 期限分类（单一期限，无混合）</span>
+  <span>利差区间步长 0.05%，左闭右开</span>
+  <span>同一机构同利差的多笔认购已合并</span>
+</div>
+
+<div class="content">{month_sections}</div>
+
+<div class="footer">
+  数据来源：{xlsx_basename} ·
+  生成时间：{pd.Timestamp('today').strftime('%Y-%m-%d')} ·
+  分析报告员 Peizhi Wu
+</div>'''
+
+
+def render_html(data):
+    """渲染完整 HTML 文档（含 <!DOCTYPE>/<html>/<head>）"""
+    body = render_body(data)
+    return f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ABS 优先A 基准利差分析（产品类型维度）</title>
+<style>{CSS}</style>
+</head>
+<body>{body}
+</body>
+</html>'''
 
 
 def build_product_order(dfa):
@@ -384,11 +588,17 @@ def run_qc(df, dfa, out_path, month_labels, product_order, precheck_only=False):
     ok(f'国股CD范围：{min_cd:.2f}% ~ {max_cd:.2f}%')
 
     nan_interval = dfa['利差区间'].isna().sum()
-    if nan_interval == 0:
-        ok('无利差区间外记录（NaN=0）')
+    # 保理类资产豁免利差 bin QC（保理类投标利差可能低于国股CD，出现负利差属正常现象）
+    preferential_mask = dfa['资产类型'].apply(is_preferential_asset)
+    nan_pref = int((dfa['利差区间'].isna() & preferential_mask).sum())
+    nan_non_pref = nan_interval - nan_pref
+    if nan_non_pref == 0:
+        ok('无非保理类记录落在利差区间外（NaN=0）')
     else:
-        out_vals = dfa[dfa['利差区间'].isna()]['基准利差'].unique()
-        fail(f'{nan_interval}条记录落在利差区间外（超出0.05%-1.15%），涉及利差值：{[round(v,4) for v in out_vals]}')
+        out_vals = dfa[dfa['利差区间'].isna() & ~preferential_mask]['基准利差'].unique()
+        fail(f'{nan_non_pref}条非保理类记录落在利差区间外（超出0.05%-1.15%），涉及利差值：{[round(v,4) for v in out_vals]}')
+    if nan_pref > 0:
+        ok(f'保理类资产 {nan_pref} 条记录落在利差区间外（已豁免 bin QC，保理类负利差属正常现象）')
 
     unknown_tenor = (dfa['期限分类'] == '未知').sum()
     if unknown_tenor == 0:
@@ -511,104 +721,17 @@ if __name__ == '__main__':
         out_path = os.path.join(kanban_dir, f'{date_tag}_机构投标基准利差看板.html')
 
     try:
-        print(f'Loading: {xlsx_path}')
-        df, dfa = read_data(xlsx_path)
+        data = compute_data(xlsx_path)
     except ValueError as e:
         print(f'[INPUT ERROR] {e}')
         sys.exit(1)
     except Exception as e:
-        print(f'[ERROR] 数据加载失败：{e}')
+        print(f'[ERROR] {e}')
         sys.exit(1)
 
-    print('\n产品类型分布：')
-    prod_summary = (
-        dfa.groupby(['产品类型', '资产类型', '期限分类'])
-        .agg(总额=('认购份额', 'sum'), 笔数=('认购份额', 'count'),
-             均利差=('基准利差', 'mean'))
-        .sort_values('总额', ascending=False)
-    )
-    print(prod_summary.round(2).to_string())
-
-    print(f'\n优先A记录: {len(dfa)} 条 | 产品类型: {dfa["产品类型"].nunique()} 种')
-    print(f'基准利差范围: +{dfa["基准利差"].min():.2f}% ~ +{dfa["基准利差"].max():.2f}%')
-
-    product_order = build_product_order(dfa)
-    print('\n产品类型最终顺序（模板顺序）：')
-    for i, (pt, asset, tenor, total, count, avg_sp) in enumerate(product_order, 1):
-        print(f'  {i}. {pt}  {total:.2f}亿')
-
-    months       = sorted(dfa['月份'].unique(), key=lambda x: x.to_timestamp(), reverse=True)
-    month_labels = [str(m) for m in months]
-    total_share = dfa['实际份额'].sum()
-    total_inst  = dfa['实际机构'].nunique()
-    avg_spread  = dfa['基准利差'].mean()
-    date_min    = pd.to_datetime(dfa['簿记时间']).dt.strftime('%Y-%m-%d').min()
-    date_max    = pd.to_datetime(dfa['簿记时间']).dt.strftime('%Y-%m-%d').max()
-
-    month_sections = ''.join(
-        build_month_section(mlabel, dfa[dfa['月份'].astype(str) == mlabel], idx, product_order)
-        for idx, mlabel in enumerate(month_labels)
-    )
-    cards = build_summary_cards(product_order)
-
-    html = f'''<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>ABS 优先A 基准利差分析（产品类型维度）</title>
-<style>{CSS}</style>
-</head>
-<body>
-<div class="page-banner">
-  <div class="banner-top">
-    <div>
-      <div class="banner-tag">ABS Spread Analysis · Priority A</div>
-      <div class="banner-title">优先A 基准利差分析</div>
-      <div class="banner-subtitle">
-        基准利差 = 认购成本 − 同日国股CD ·
-        维度：月份 + 产品类型（资产类型+期限）+ 机构利差 ·
-        区间步长 0.05%
-      </div>
-    </div>
-    <div class="banner-badge">
-      数据期间 <strong>{date_min} ~ {date_max}</strong><br>
-      优先A <strong>{len(dfa)}</strong> 笔 · 总额 <strong>{total_share:.2f} 亿</strong> · <strong>{total_inst}</strong> 家机构<br>
-      全局均利差 <strong>+{avg_spread:.2f}%</strong>
-    </div>
-  </div>
-</div>
-
-<div class="overview">
-  <div class="overview-label">各产品类型合计（按业务顺序）</div>
-  <div class="summary-cards">{cards}</div>
-</div>
-
-<div class="note-bar">
-  <span>筛选条件：分层情况 = "优先A"</span>
-  <span>基准利差 = 认购成本 − 同日国股CD（单位：%）</span>
-  <span>产品类型 = 资产类型 + 期限分类（单一期限，无混合）</span>
-  <span>利差区间步长 0.05%，左闭右开</span>
-  <span>同一机构同利差的多笔认购已合并</span>
-</div>
-
-<div class="content">{month_sections}</div>
-
-<div class="footer">
-  数据来源：{os.path.basename(xlsx_path)} ·
-  生成时间：{pd.Timestamp('today').strftime('%Y-%m-%d')} ·
-  分析报告员 pBuddy
-</div>
-</body>
-</html>'''
-
-    qc_passed = run_qc(df, dfa, out_path, month_labels, product_order, precheck_only=True)
-
-    if qc_passed:
-        with open(out_path, 'w', encoding='utf-8') as f:
-            f.write(html)
-        print(f'\nDone: {out_path}')
-        run_qc(df, dfa, out_path, month_labels, product_order, precheck_only=False)
-    else:
-        print(f'\n[ERROR] QC未通过，跳过输出文件写入（{out_path}）')
-        print('[ERROR] 请修正数据或逻辑后重试')
+    html = render_html(data)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+    print(f'\nDone: {out_path}')
+    run_qc(data['df'], data['dfa'], out_path, data['meta']['month_labels'],
+           data['meta']['product_order'], precheck_only=False)

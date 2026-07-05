@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<!-- 基于 Lucid Guide v1.0 范式生成 · ABS工具箱产品演示介绍 -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABS工具箱 产品演示介绍 — Lucid Guide</title>
+<style>
+:root {
+  --bg: #ffffff;
+  --bg2: #f5f5f7;
+  --bg3: #fafafa;
+  --t1: #1d1d1f;
+  --t2: #86868b;
+  --t3: #6e6e73;
+  --border: #d2d2d7;
+  --border2: #e8e8ed;
+  --ok: #2d9e4d;
+  --bad: #c0392b;
+  --info: #2c7fb8;
+  --active: #e8eff4;
+  --r: 12px;
+  --f: -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { font-family:var(--f); color:var(--t1); background:var(--bg); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased; }
+.progress { position:fixed; top:0; left:0; width:100%; height:3px; background:transparent; z-index:1000; }
+.progress > div { height:100%; width:0%; background:#333; transition:width 0.1s linear; }
+.nav-toggle { position:fixed; top:16px; left:16px; z-index:900; width:36px; height:36px; border-radius:8px; background:var(--bg); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.06); transition:all 0.2s; }
+.nav-toggle:hover { background:var(--bg2); }
+.nav-toggle svg { width:18px; height:18px; stroke:var(--t1); stroke-width:2; fill:none; }
+.sidebar { position:fixed; top:0; left:0; width:260px; height:100vh; background:var(--bg); border-right:1px solid var(--border2); padding:64px 16px 24px; overflow-y:auto; transform:translateX(-100%); transition:transform 0.3s ease; z-index:800; }
+.sidebar.open { transform:translateX(0); }
+.sidebar h3 { font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--t2); margin-bottom:12px; padding-left:8px; }
+.sidebar a { display:block; padding:6px 8px; border-radius:6px; color:var(--t3); text-decoration:none; font-size:13px; line-height:1.35; transition:all 0.15s; margin-bottom:1px; }
+.sidebar a:hover { background:var(--bg2); color:var(--t1); }
+.sidebar a.active { background:var(--t1); color:#fff; font-weight:500; }
+main { max-width:760px; margin:0 auto; padding:48px 24px 120px; transition:margin-left 0.3s; }
+@media(min-width:1100px){ main { margin-left:260px; padding-left:48px; padding-right:48px; max-width:900px; } .sidebar { transform:translateX(0); box-shadow:none; } .nav-toggle { display:none; } }
+h1 { font-size:44px; font-weight:700; line-height:1.08; letter-spacing:-0.025em; margin-bottom:16px; }
+h2 { font-size:28px; font-weight:700; line-height:1.15; letter-spacing:-0.015em; margin-top:56px; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--border2); }
+h3 { font-size:20px; font-weight:600; line-height:1.25; margin-top:32px; margin-bottom:10px; }
+h4 { font-size:16px; font-weight:600; line-height:1.3; margin-top:20px; margin-bottom:8px; }
+p { margin-bottom:10px; color:var(--t1); }
+.lead { font-size:17px; color:var(--t2); line-height:1.55; margin-bottom:24px; }
+.caption { font-size:12px; color:var(--t2); font-weight:500; letter-spacing:0.02em; text-transform:uppercase; }
+.tag { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px;font-weight:600; letter-spacing:0.02em; background:var(--bg2); color:var(--t2); vertical-align:middle; margin-right:6px; }
+.tag-dark { background:var(--bg2); color:var(--t1); }
+.tag-green { background:#e8f9ec; color:#1a7c34; }
+.tag-red { background:#fce8e6; color:#c5221f; }
+.card { background:var(--bg2); border-radius:var(--r); padding:20px; margin:14px 0; }
+.card-white { background:var(--bg3); }
+.accordion-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:var(--bg2); border-radius:var(--r); cursor:pointer; font-weight:600; font-size:15px; transition:background 0.15s; user-select:none; }
+.accordion-head:hover { background:var(--active); }
+.accordion-head::after { content:"+"; font-size:20px; font-weight:400; color:var(--t2); transition:transform 0.2s; }
+.accordion.open .accordion-head::after { transform:rotate(45deg); }
+.accordion-body { max-height:0; overflow:hidden; transition:max-height 0.3s ease, padding 0.3s ease; padding:0 18px; }
+.accordion.open .accordion-body { max-height:3000px; padding:14px 18px 18px; }
+.compare { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0; }
+.compare-item { border-radius:var(--r); padding:16px; }
+.compare-item.bad { background:#fdf5f5; }
+.compare-item.good { background:#f5faf5; }
+.compare-label { font-size:11px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; margin-bottom:8px; }
+.compare-item.bad .compare-label { color:var(--bad); }
+.compare-item.good .compare-label { color:var(--ok); }
+.code-block { position:relative; background:#1d1d1f; color:#f5f5f7; border-radius:var(--r); padding:16px; font-family:"SF Mono","Fira Code","Consolas","PingFang SC","Microsoft YaHei",monospace; font-size:13px; line-height:1.55; overflow-x:auto; margin:12px 0; }
+.code-block pre { margin:0; white-space:pre-wrap; word-break:break-word; }
+.code-lang { position:absolute; top:8px; right:12px; font-size:10px; color:var(--t2); text-transform:uppercase; font-family:var(--f); font-weight:500; }
+.copy-btn { position:absolute; top:8px; right:60px; opacity:0; transition:opacity 0.2s; background:rgba(255,255,255,0.1); border:none; color:var(--t2); padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer; font-family:var(--f); font-weight:500; }
+.code-block:hover .copy-btn { opacity:1; }
+.copy-btn:hover { background:rgba(255,255,255,0.2); color:#fff; }
+code { font-family:"SF Mono","Fira Code","Consolas","PingFang SC","Microsoft YaHei",monospace; font-size:13px; background:var(--bg2); padding:2px 6px; border-radius:4px; color:var(--t1); }
+.checklist { margin:12px 0; }
+.check-item { display:flex; align-items:flex-start; gap:10px; padding:10px 14px; border-radius:8px; cursor:pointer; transition:background 0.15s; }
+.check-item:hover { background:var(--active); }
+.check-item.checked { background:var(--active); }
+.check-box { width:18px; height:18px; border-radius:50%; border:2px solid var(--border); flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+.check-item.checked .check-box { background:var(--ok); border-color:var(--ok); }
+.check-item.checked .check-box::after { content:""; width:6px; height:10px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg) translate(-1px,-1px); }
+.check-item.checked .check-text { text-decoration:line-through; color:var(--t2); }
+.check-text { font-size:14px; line-height:1.4; }
+.check-progress { font-size:12px; font-weight:600; color:var(--t1); margin-bottom:8px; }
+.tree { font-family:"SF Mono","Fira Code","Consolas","PingFang SC","Microsoft YaHei",monospace; font-size:13px; line-height:1.8; background:var(--bg2); padding:16px 20px; border-radius:var(--r); margin:10px 0; }
+.tree .folder { color:var(--t1); font-weight:600; }
+.tree .file { color:var(--t1); }
+.tree .comment { color:var(--t2); font-style:italic; }
+table { width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; }
+th { text-align:left; padding:10px 12px; font-weight:600; color:var(--t2); font-size:11px; text-transform:uppercase; letter-spacing:0.04em; border-bottom:2px solid var(--t1); }
+td { padding:10px 12px; border-bottom:1px solid var(--border2); vertical-align:top; }
+tr:hover td { background:var(--bg3); }
+.lifecycle { display:flex; flex-direction:column; gap:0; margin:20px 0; }
+.lc-step { display:flex; gap:16px; padding:14px 18px; border-radius:var(--r); cursor:pointer; transition:all 0.2s; margin-bottom:6px; position:relative; background:var(--bg); }
+.lc-step:hover { background:var(--active); z-index:2; }
+.lc-step.active { background:var(--active); z-index:3; }
+.lc-num { width:28px; height:28px; border-radius:50%; background:var(--t2); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+.lc-step.active .lc-num { background:var(--t1); }
+.lc-title { font-weight:600; font-size:15px; margin-bottom:2px; }
+.lc-desc { font-size:13px; color:var(--t2); line-height:1.4; }
+.lc-detail { max-height:0; overflow:hidden; transition:max-height 0.3s ease, margin-top 0.3s ease; font-size:13px; color:var(--t3); line-height:1.5; }
+.lc-step.active .lc-detail { max-height:400px; margin-top:8px; }
+.cover { padding:80px 0 40px; border-bottom:1px solid var(--border2); margin-bottom:40px; }
+.cover h1 { font-size:52px; }
+.cover .meta { display:flex; gap:16px; margin-top:20px; flex-wrap:wrap; }
+.divider { height:1px; background:var(--border2); margin:32px 0; }
+ul,ol { padding-left:22px; margin:8px 0; }
+li { margin-bottom:5px; }
+section { scroll-margin-top:24px; }
+.hi-box { border-left:3px solid var(--t2); padding-left:14px; margin:14px 0; }
+.hi-box.warn { border-color:#d4a5a5; }
+.hi-box.bad { border-color:var(--bad); }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:640px){ .two-col, .compare { grid-template-columns:1fr; } }
+.stat-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:14px 0; }
+.stat-strip .stat { padding:16px; background:var(--bg2); border-radius:var(--r); text-align:center; }
+.stat-strip .stat .n { font-size:22px; font-weight:700; color:var(--t1); display:block; }
+.stat-strip .stat .l { font-size:11px; color:var(--t2); margin-top:2px; letter-spacing:0.02em; }
+@media(max-width:640px){ .stat-strip { grid-template-columns:repeat(2,1fr); } }
+.tl { padding-left:18px; margin:14px 0; position:relative; }
+.tl::before { content:""; position:absolute; left:4px; top:6px; bottom:6px; width:1px; background:var(--border); }
+.tl-item { position:relative; padding-bottom:14px; }
+.tl-item::before { content:""; position:absolute; left:-18px; top:6px; width:9px; height:9px; border-radius:50%; background:var(--t1); border:2px solid var(--bg); }
+.tl-year { font-size:12px; font-weight:700; color:var(--t1); letter-spacing:0.02em; }
+.tl-desc { font-size:14px; color:var(--t3); margin-top:2px; }
+.shot { margin:16px 0; border:1px solid var(--border2); border-radius:var(--r); overflow:hidden; background:var(--bg3); }
+.shot .frame { position:relative; min-height:180px; background:linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 37%,var(--bg2) 63%); background-size:400% 100%; animation:shimmer 1.4s ease infinite; }
+.shot .frame.loaded { animation:none; background:var(--bg3); min-height:0; }
+@keyframes shimmer { 0% { background-position:100% 0; } 100% { background-position:0 0; } }
+.shot img { display:block; width:100%; height:auto; }
+.shot .ph { display:none; min-height:180px; align-items:center; justify-content:center; flex-direction:column; gap:6px; color:var(--t2); font-size:13px; background:var(--bg2); text-align:center; padding:24px; }
+.shot .ph.show { display:flex; }
+.shot .ph .ph-sub { font-size:12px; color:var(--t3); }
+.shot .cap { font-size:12px; color:var(--t2); padding:8px 14px; border-top:1px solid var(--border2); letter-spacing:0.01em; }
+@media print { .sidebar, .nav-toggle, .progress { display:none; } main { margin-left:0; max-width:100%; } }
+</style>
+</head>
+<body>
+<div class="progress"><div id="pbar"></div></div>
+<button class="nav-toggle" onclick="toggleNav()" aria-label="Toggle navigation">
+  <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+</button>
+<nav class="sidebar" id="sidebar">
+  <h3>导航</h3>
+  <a href="#cover" class="active">封面</a>
+  <a href="#overview">产品概览</a>
+  <a href="#mod1">模块一 · 簿记录入</a>
+  <a href="#mod2">模块二 · 机构统计</a>
+  <a href="#mod3">模块三 · 发行定价</a>
+  <a href="#flow">全流程编排</a>
+  <a href="#audit">审计子系统</a>
+  <a href="#cheatsheet">速查表</a>
+  <a href="#end">写在最后</a>
+</nav>
+
+<main>
+
+<!-- ===== 封面 ===== -->
+<section id="cover" class="cover">
+  <div class="caption" style="margin-bottom:12px;">PRODUCT DEMO · ABS TOOLKIT v2.5.0</div>
+  <h1>ABS工具箱</h1>
+  <p class="lead">一套从台账录入、机构统计到发行定价分析的端到端 ABS 业务工具箱。把散落在三套脚本里的簿记、统计、定价能力，整合成一条可串行调用的自动化工作流。</p>
+  <div class="meta">
+    <span class="tag tag-dark">端到端工作流</span>
+    <span class="tag">三大核心模块</span>
+    <span class="tag">A→B→C 审计闭环</span>
+    <span class="tag">纯本地 Excel 处理</span>
+  </div>
+</section>
+
+<!-- ===== 产品概览 ===== -->
+<section id="overview">
+<h2>产品概览</h2>
+<p class="lead">一个入口，三大模块，一条流水线。台账进，看板出。</p>
+
+<p>ABS工具箱把原本分散的三套独立 skill（发行定价、机构统计、簿记录入）整合进单一代码源，共享同一套底座与机构名映射，避免重复维护。业务同事只需提供一份台账 Excel，即可依次得到补充簿记后的台账、机构统计看板、以及三张发行定价分析看板。</p>
+
+<div class="stat-strip">
+<div class="stat"><span class="n">3</span><div class="l">核心业务模块</div></div>
+<div class="stat"><span class="n">5</span><div class="l">发行定价/统计脚本</div></div>
+<div class="stat"><span class="n">3步</span><div class="l">全流程串行</div></div>
+<div class="stat"><span class="n">v2.5.0</span><div class="l">当前版本</div></div>
+</div>
+
+<h3>三大模块一览</h3>
+<table>
+<thead><tr><th>模块</th><th>核心脚本</th><th>输入</th><th>产出</th></tr></thead>
+<tbody>
+<tr><td>簿记录入</td><td><code>increment_merge.py</code></td><td>定稿台账 + 簿记明细</td><td>补充簿记后的台账 xlsx</td></tr>
+<tr><td>机构统计</td><td><code>gen_institution_stats.py</code></td><td>台账 xlsx</td><td>机构统计看板 HTML</td></tr>
+<tr><td>发行定价</td><td>3 个 gen 脚本</td><td>台账 xlsx</td><td>3 张定价分析看板 HTML</td></tr>
+</tbody>
+</table>
+
+<div class="hi-box">
+<p style="margin:0;font-size:14px;"><strong>设计原则：</strong>原 3 套 skill 保留不动作回滚备份，新工具箱只整合不删除。台账目录全英文化分层（源文件 / 加工中 / 定稿 / 归档 / 簿记明细），产出统一归档到看板目录。</p>
+</div>
+
+<h3>整体数据流</h3>
+<div class="tree">
+<div class="folder">ABS工具箱数据流</div>
+<div class="file">  簿记明细 + 定稿台账</div>
+<div class="file">    │</div>
+<div class="file">    ├── [模块一] 簿记录入  <span class="comment">// 增量合并 / 补充簿记</span></div>
+<div class="file">    │     └── 补充簿记后的台账.xlsx</div>
+<div class="file">    │</div>
+<div class="file">    ├── [模块二] 机构统计  <span class="comment">// 管理人 / 销售 / 托管行</span></div>
+<div class="file">    │     └── 机构统计看板.html</div>
+<div class="file">    │</div>
+<div class="file">    └── [模块三] 发行定价  <span class="comment">// 成本 / 比对 / 利差</span></div>
+<div class="file">          └── 3 张定价看板.html</div>
+</div>
+</section>
+
+<!-- ===== 模块一 · 簿记录入 ===== -->
+<section id="mod1">
+<h2>模块一 · 簿记录入</h2>
+<p class="lead">把当日簿记明细，稳妥地并入历史台账 —— 不错行、不重复、不覆盖。</p>
+
+<p>簿记录入模块解决的是「增量并表」这一最容易出错的环节。业务同事每天拿到的是零散的当日簿记明细，而台账是一份持续累加的定稿文件。手工复制粘贴极易出现错位、重复项、覆盖旧记录。<code>increment_merge.py</code> 用项目主键匹配 + 结构化对齐，自动完成这项合并。</p>
+
+<h3>两种工作模式</h3>
+<div class="two-col">
+<div class="card">
+<span class="tag tag-dark">补充簿记模式</span>
+<h4 style="margin-top:10px;">已有台账 + 补录簿记信息</h4>
+<p style="font-size:14px;color:var(--t3);margin:0;">台账里项目已存在，只是簿记字段（利率、规模、簿记日等）尚未回填。按项目主键定位到对应行，只补写缺失字段，不新增行。</p>
+</div>
+<div class="card">
+<span class="tag tag-dark">增量合并模式</span>
+<h4 style="margin-top:10px;">已有台账 + 新增项目</h4>
+<p style="font-size:14px;color:var(--t3);margin:0;">当日簿记里出现台账中没有的新项目，追加为新行并保持列结构一致，同时对已存在项目执行补充簿记逻辑。</p>
+</div>
+</div>
+
+<h3>手工并表 vs 工具并表</h3>
+<div class="compare">
+<div class="compare-item bad">
+<div class="compare-label">手工复制粘贴</div>
+<ul style="margin:0;font-size:13px;color:var(--t3);">
+<li>凭肉眼对齐行，易错位</li>
+<li>同一项目可能被重复追加</li>
+<li>补录时误覆盖已有历史值</li>
+<li>合并单元格结构被打乱</li>
+</ul>
+</div>
+<div class="compare-item good">
+<div class="compare-label">increment_merge</div>
+<ul style="margin:0;font-size:13px;color:var(--t3);">
+<li>项目主键精确匹配定位行</li>
+<li>去重逻辑防重复追加</li>
+<li>只补空字段，历史值保护</li>
+<li>保留台账原有列/结构</li>
+</ul>
+</div>
+</div>
+
+<h3>调用示例</h3>
+<div class="code-block">
+<span class="code-lang">bash</span>
+<button class="copy-btn" onclick="copyCode(this)">复制</button>
+<pre>set PYTHONUTF8=1
+python scripts/increment_merge.py ^
+  --ledger  deliverables/ledger/03_final/2026年ABS发行台账-定稿.xlsx ^
+  --booking deliverables/ledger/05_booking/当日簿记明细-0705.xlsx ^
+  --mode    increment</pre>
+</div>
+
+<div class="hi-box">
+<p style="margin:0;font-size:14px;"><strong>v2.5.0 更新：</strong>匹配规则调优，<code>rebook</code>（重簿记回填）成为默认行为，减少历史项目二次录入时的人工干预。</p>
+</div>
+</section>
+
+<!-- ===== 模块二 · 机构统计 ===== -->
+<section id="mod2">
+<h2>模块二 · 机构统计</h2>
+<p class="lead">一份台账，三个视角。按管理人、托管行、销售机构，自动汇总规模与项目数。</p>
+
+<p><code>gen_institution_stats.py</code> 从台账出发，围绕三类合作机构维度做聚合统计，产出一张交互式看板 HTML。看板支持按维度切换，展示各机构的项目数、发行规模、占比排名，帮助业务快速回答「今年哪家管理人做得最多」「销售集中度如何」这类问题。</p>
+
+<div class="hi-box">
+<p style="margin:0;font-size:14px;"><strong>机构名归一：</strong>内置机构名映射表，自动合并同一机构的不同简称/全称（如申万宏源相关主体合并统计），避免因命名不一致导致的统计分裂。</p>
+</div>
+
+<h3>视角一 · 管理人统计</h3>
+<p>按计划管理人聚合，展示各管理人承做的 ABS 项目数与发行规模，识别头部管理人。</p>
+<div class="shot">
+<div class="frame">
+<img src="ABS综合看板_机构统计_管理人_v3.png" alt="机构统计-管理人视角看板" loading="lazy" onload="shotLoaded(this)" onerror="shotError(this)">
+<div class="ph"><span>图片暂未就绪</span><span class="ph-sub">请将最新截图放入 Inbox 并保持同名</span></div>
+</div>
+<div class="cap">机构统计看板 · 管理人视角 —— 按项目数/规模排名，含占比条</div>
+</div>
+
+<h3>视角二 · 托管行统计</h3>
+<p>按托管银行聚合，反映各托管行在 ABS 业务中的份额分布。</p>
+<div class="shot">
+<div class="frame">
+<img src="ABS综合看板_机构统计_托管行.png" alt="机构统计-托管行视角看板" loading="lazy" onload="shotLoaded(this)" onerror="shotError(this)">
+<div class="ph"><span>图片暂未就绪</span><span class="ph-sub">请将最新截图放入 Inbox 并保持同名</span></div>
+</div>
+<div class="cap">机构统计看板 · 托管行视角</div>
+</div>
+
+<h3>视角三 · 销售机构统计</h3>
+<p>按销售机构聚合，衡量销售渠道的集中度与贡献度。</p>
+<div class="shot">
+<div class="frame">
+<img src="ABS综合看板_机构统计_销售机构.png" alt="机构统计-销售机构视角看板" loading="lazy" onload="shotLoaded(this)" onerror="shotError(this)">
+<div class="ph"><span>图片暂未就绪</span><span class="ph-sub">请将最新截图放入 Inbox 并保持同名</span></div>
+</div>
+<div class="cap">机构统计看板 · 销售机构视角</div>
+</div>
+
+<h3>调用示例</h3>
+<div class="code-block">
+<span class="code-lang">bash</span>
+<button class="copy-btn" onclick="copyCode(this)">复制</button>
+<pre>set PYTHONUTF8=1
+python scripts/gen_institution_stats.py ^
+  --ledger deliverables/ledger/03_final/2026年ABS发行台账-定稿.xlsx ^
+  --out    deliverables/dashboards/机构统计看板.html</pre>
+</div>
+</section>
+
+<!-- ===== 模块三 · 发行定价 ===== -->
+<section id="mod3">
+<h2>模块三 · 发行定价</h2>
+<p class="lead">三个定价工具，回答三个问题：成本贵不贵、机构比不比得过、利差合不合理。</p>
+
+<p>发行定价是工具箱里工具最密集的模块，由三个 gen 脚本组成，分别从不同角度剖析 ABS 的发行成本，共产出三张分析看板。</p>
+
+<h3>工具一 · 成本分布 <span class="tag">gen_abs_cost_report.py</span></h3>
+<p>统计发行成本的分布形态，识别异常高/低成本项目（outliers），辅助判断某笔发行的定价是否偏离市场区间。</p>
+<div class="shot">
+<div class="frame">
+<img src="ABS综合看板_定价测试_实验模块v2.png" alt="发行定价-成本分布看板" loading="lazy" onload="shotLoaded(this)" onerror="shotError(this)">
+<div class="ph"><span>发行定价截图待更新</span><span class="ph-sub">版式已调整，请以正式看板重新截图后放入 Inbox（保持同名）</span></div>
+</div>
+<div class="cap">发行定价看板 · 成本分布与异常识别</div>
+</div>
+
+<h3>工具二 · 机构比对 <span class="tag">gen_compare_tool.py</span></h3>
+<p>把不同管理人/承销机构的发行成本放在同一坐标系比较，直观呈现「同类项目下谁家成本更低」，是路演与竞标场景的利器。</p>
+<div class="shot">
+<div class="frame">
+<img src="ABS综合看板_发行定价_机构比对_v2.png" alt="发行定价-机构比对看板" loading="lazy" onload="shotLoaded(this)" onerror="shotError(this)">
+<div class="ph"><span>发行定价截图待更新</span><span class="ph-sub">版式已调整，请以正式看板重新截图后放入 Inbox（保持同名）</span></div>
+</div>
+<div class="cap">发行定价看板 · 机构比对</div>
+</div>
+
+<h3>工具三 · 利差分析 <span class="tag">gen_spread_report.py</span></h3>
+<p>计算发行利率相对基准的利差，跟踪利差随时间/评级/期限的变化，评估定价的合理性。</p>
+
+<h3>调用示例</h3>
+<div class="code-block">
+<span class="code-lang">bash</span>
+<button class="copy-btn" onclick="copyCode(this)">复制</button>
+<pre>set PYTHONUTF8=1
+python scripts/gen_abs_cost_report.py --ledger 台账.xlsx --out 成本看板.html
+python scripts/gen_compare_tool.py    --ledger 台账.xlsx --out 比对看板.html
+python scripts/gen_spread_report.py   --ledger 台账.xlsx --out 利差看板.html</pre>
+</div>
+
+<div class="hi-box">
+<p style="margin:0;font-size:14px;"><strong>案例：</strong>成本分布工具曾定位到一批异常成本记录（见 <code>cost_outliers_correct.csv</code>），复核后确认为数据录入口径问题，避免了将其纳入市场基准的误判。</p>
+</div>
+</section>
+
+<!-- ===== 全流程编排 ===== -->
+<section id="flow">
+<h2>全流程编排</h2>
+<p class="lead">三步串行：录入 → 统计 → 定价。一条命令链，从原始簿记到全套看板。</p>
+
+<p>三大模块并非孤立运行，它们构成一条自然的流水线。点击每一步可展开细节。</p>
+
+<div class="lifecycle">
+<div class="lc-step" onclick="toggleLc(this)">
+<div class="lc-num">1</div>
+<div>
+<div class="lc-title">录入 · 簿记合并</div>
+<div class="lc-desc">当日簿记明细并入定稿台账</div>
+<div class="lc-detail">运行 increment_merge.py，得到「补充簿记后的台账.xlsx」。这是后续所有统计与定价的唯一数据源，确保口径一致。</div>
+</div>
+</div>
+<div class="lc-step" onclick="toggleLc(this)">
+<div class="lc-num">2</div>
+<div>
+<div class="lc-title">统计 · 机构汇总</div>
+<div class="lc-desc">基于合并后台账生成机构统计看板</div>
+<div class="lc-detail">运行 gen_institution_stats.py，产出管理人/托管行/销售机构三视角看板 HTML，归档至 dashboards/。</div>
+</div>
+</div>
+<div class="lc-step" onclick="toggleLc(this)">
+<div class="lc-num">3</div>
+<div>
+<div class="lc-title">定价 · 成本分析</div>
+<div class="lc-desc">生成成本/比对/利差三张定价看板</div>
+<div class="lc-detail">依次运行三个 gen 脚本，产出发行定价分析看板。至此，一份台账已转化为完整的一套业务看板。</div>
+</div>
+</div>
+</div>
+
+<div class="hi-box">
+<p style="margin:0;font-size:14px;"><strong>配套设施：</strong>归档工具 <code>abs_archive.py</code> 统一管理 dashboards / ledger / index；五层自检脚本 <code>self_check.py</code> 提供 auto / full / degraded 三档降级校验，跑流程前先体检。</p>
+</div>
+</section>
+
+<!-- ===== 审计子系统 ===== -->
+<section id="audit">
+<h2>审计子系统</h2>
+<p class="lead">A 送审 → B 审计 → C 归档。每一次工具或规则变更，都走一遍三角色闭环。</p>
+
+<p>工具箱内建一套轻量审计流程，用于管控脚本与匹配规则的变更质量。它以文件为载体，在 <code>audit/</code> 目录下按 submissions / reviews / closed 三个阶段流转。</p>
+
+<div class="two-col">
+<div class="card"><span class="tag tag-dark">A · 送审</span><p style="font-size:13px;color:var(--t3);margin-top:8px;margin-bottom:0;">变更方整理改动说明与自检结果，提交到 submissions，等待审计。</p></div>
+<div class="card"><span class="tag tag-dark">B · 审计</span><p style="font-size:13px;color:var(--t3);margin-top:8px;margin-bottom:0;">审计方复核变更，出具 verdict（通过 / 有条件通过 / 打回），写入 reviews。</p></div>
+<div class="card"><span class="tag tag-dark">C · 归档</span><p style="font-size:13px;color:var(--t3);margin-top:8px;margin-bottom:0;">留档遗留条件，把闭环记录移入 closed，更新索引。</p></div>
+</div>
+
+<h3>为什么需要它</h3>
+<div class="compare">
+<div class="compare-item bad">
+<div class="compare-label">无审计</div>
+<ul style="margin:0;font-size:13px;color:var(--t3);">
+<li>匹配规则改动无人复核</li>
+<li>变更历史散落，难追溯</li>
+<li>遗留问题无处留档</li>
+</ul>
+</div>
+<div class="compare-item good">
+<div class="compare-label">A→B→C 闭环</div>
+<ul style="margin:0;font-size:13px;color:var(--t3);">
+<li>每次变更强制复核</li>
+<li>submissions/reviews/closed 全程留痕</li>
+<li>verdict + 遗留条件结构化归档</li>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- ===== 速查表 ===== -->
+<section id="cheatsheet">
+<h2>速查表</h2>
+<p class="lead">我要做 X，该用哪个脚本？</p>
+
+<table>
+<thead><tr><th>我想…</th><th>用这个</th><th>产出</th></tr></thead>
+<tbody>
+<tr><td>把当日簿记并入台账</td><td><code>increment_merge.py</code></td><td>补充簿记后的台账</td></tr>
+<tr><td>看管理人/托管行/销售排名</td><td><code>gen_institution_stats.py</code></td><td>机构统计看板</td></tr>
+<tr><td>看发行成本分布/异常</td><td><code>gen_abs_cost_report.py</code></td><td>成本看板</td></tr>
+<tr><td>比不同机构的成本高低</td><td><code>gen_compare_tool.py</code></td><td>比对看板</td></tr>
+<tr><td>看利差合理性</td><td><code>gen_spread_report.py</code></td><td>利差看板</td></tr>
+<tr><td>跑流程前先体检</td><td><code>self_check.py</code></td><td>校验报告</td></tr>
+<tr><td>归档看板与台账</td><td><code>abs_archive.py</code></td><td>归档索引</td></tr>
+</tbody>
+</table>
+
+<h3>环境要求</h3>
+<div class="accordion" >
+<div class="accordion-head" onclick="toggleAccordion(this)">运行前置条件</div>
+<div class="accordion-body">
+<ul style="margin:0;">
+<li>Python 3.12+</li>
+<li>依赖：<code>pandas</code> + <code>openpyxl</code></li>
+<li>Windows 环境务必先 <code>set PYTHONUTF8=1</code>，避免中文路径/表头乱码</li>
+<li>台账目录按分层组织：源文件 / 加工中 / 定稿 / 归档 / 簿记明细</li>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- ===== 写在最后 ===== -->
+<section id="end">
+<h2>写在最后</h2>
+<p class="lead">台账进，看板出。中间那些容易错的手工活，交给工具箱。</p>
+<p>ABS工具箱把簿记、统计、定价三件事收进一条流水线，用机构名归一保证口径一致，用 A→B→C 审计守住变更质量。它不改变业务逻辑，只是把重复、易错、难追溯的环节自动化、留痕化。</p>
+<div class="divider"></div>
+<p style="color:var(--t2);font-size:13px;">基于 Lucid Guide v1.0 范式生成 · ABS工具箱 v2.5.0 产品演示 · 本文档为初稿，欢迎逐条打磨。</p>
+</section>
+
+</main>
+
+<script>
+function shotLoaded(img){ const f=img.closest('.frame'); if(f) f.classList.add('loaded'); const ph=f&&f.querySelector('.ph'); if(ph) ph.classList.remove('show'); if(img.naturalWidth>0&&img.naturalHeight<=1){ shotError(img); } }
+function shotError(img){ const f=img.closest('.frame'); if(f) f.classList.add('loaded'); img.style.display='none'; const ph=f&&f.querySelector('.ph'); if(ph) ph.classList.add('show'); }
+function toggleNav(){ document.getElementById('sidebar').classList.toggle('open'); }
+function toggleAccordion(h){ h.parentElement.classList.toggle('open'); }
+function toggleLc(s){ s.classList.toggle('active'); }
+function copyCode(btn){ const code=btn.parentElement.querySelector('pre').innerText; navigator.clipboard.writeText(code).then(()=>{const o=btn.innerText;btn.innerText='已复制';setTimeout(()=>btn.innerText=o,1500);}); }
+function toggleCheck(item){ item.classList.toggle('checked'); updateCheckProgress(); saveChecks(); }
+function updateCheckProgress(){ const items=document.querySelectorAll('#checklist-pre .check-item'); const checked=document.querySelectorAll('#checklist-pre .check-item.checked'); const el=document.getElementById('check-progress'); if(el&&items.length) el.innerText='完成度：'+Math.round(checked.length/items.length*100)+'%'; }
+function saveChecks(){ const s=[]; document.querySelectorAll('#checklist-pre .check-item').forEach(i=>s.push(i.classList.contains('checked')?'1':'0')); localStorage.setItem(document.title+'-checks',s.join(',')); }
+function loadChecks(){ const s=localStorage.getItem(document.title+'-checks'); if(!s) return; const arr=s.split(','); document.querySelectorAll('#checklist-pre .check-item').forEach((it,i)=>{if(arr[i]==='1') it.classList.add('checked');}); updateCheckProgress(); }
+function updateProgress(){ const t=window.scrollY; const h=document.documentElement.scrollHeight-window.innerHeight; document.getElementById('pbar').style.width=(h>0?t/h*100:0)+'%'; }
+const sections=document.querySelectorAll('section[id]'); const navLinks=document.querySelectorAll('.sidebar a');
+function highlightNav(){ let c=''; sections.forEach(s=>{ if(window.scrollY>=s.offsetTop-100) c=s.id; }); navLinks.forEach(l=>{ l.classList.remove('active'); if(l.getAttribute('href')==='#'+c) l.classList.add('active'); }); }
+window.addEventListener('scroll',()=>{updateProgress();highlightNav();});
+document.addEventListener('click',(e)=>{ const sb=document.getElementById('sidebar'); const tg=document.querySelector('.nav-toggle'); if(sb.classList.contains('open')&&!sb.contains(e.target)&&!tg.contains(e.target)) sb.classList.remove('open'); });
+loadChecks(); updateProgress(); highlightNav();
+</script>
+</body>
+</html>
