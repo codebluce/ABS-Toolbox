@@ -346,7 +346,7 @@ slug={SLUG} 已归档
 | slug | round | 当前状态 | 下一步角色 | 下一步指令 |
 |---|---|---|---|---|
 | v20-institution-stats | r1 | PENDING_REVIEW(已通过独立审计) | C(归档) | `调度角色=C, slug=v20-institution-stats` |
-| v21-bookkeeping | r1 | PENDING_REVIEW(5层自检通过) | B(审计) | `调度角色=B, slug=v21-bookkeeping` |
+| v21-bookkeeping | r1 | REVIEWED(APPROVED 无条件) | C(归档) | `调度角色=C, slug=v21-bookkeeping` |
 
 ---
 
