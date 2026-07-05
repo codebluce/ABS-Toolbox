@@ -5,12 +5,13 @@
     "v20-institution-stats": {
       "skill_version": "v2.0.0",
       "current_round": 1,
-      "status": "PENDING_REVIEW",
-      "next_action": "archive_by_agent_c",
+      "status": "COMPLETED",
+      "verdict": "APPROVED",
+      "next_action": null,
       "submissions": ["A1-v20-institution-stats-r1"],
       "reviews": [],
-      "closed": null,
-      "notes": "v2.0.0 第一轮+修正轮合并报告。已通过用户委托的独立审计(4 瑕疵+1 遗留已修正)。待 Agent C 归档。"
+      "closed": "C1-v20-institution-stats-r1",
+      "notes": "v2.0.0 第一轮+修正轮合并报告。已归档(C1-v20-institution-stats-r1)。本轮未走正式 B 流程,采用用户委托的独立审计(等效 APPROVED),4 处瑕疵+1 项遗留均已在修正轮处理并验证。B 流程缺失已标记为 audit_escape_risks(MEDIUM),后续若发现回归需重新走 B 流程复审。技术债 #ABS-001(internal_merge 保留)已在 v21 C1 §3 升级为 #ABS-002,留第三轮封装层处理。"
     },
     "v21-bookkeeping": {
       "skill_version": "v2.1.0",
