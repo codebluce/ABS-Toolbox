@@ -26,12 +26,35 @@ from copy import copy
 # ============================================================
 
 def normalize(name):
+    """v2.5.0: 增加去除 - / / ／ 等标点,解决"中信建投-衍生品"vs"中信建投衍生品"类问题;
+              修复 \u3000 字面字符串 bug(原代码未生效)"""
     if not name: return ""
-    n = str(name).strip().replace("（", "(").replace("）", ")").replace(" ", "").replace("\u3000", "")
+    n = str(name).strip().replace("（", "(").replace("）", ")").replace(" ", "").replace("\u3000", "").replace("　", "")
+    # v2.5.0 新增:去除连字符 - 斜杠 / 全角斜杠 ／
+    n = n.replace("-", "").replace("/", "").replace("／", "")
     for suffix in ["(投行上报)", "(固定收益部)", "(投行)", "(资管)", "自营", "经营", "产品", "部门"]:
         n = n.replace(suffix, "")
     return n
 
+
+# v2.5.0: 核心实体名提取,用于 Pass 3 兜底匹配
+INST_SUFFIXES = ["私募基金", "基金", "资管", "理财", "自营", "投行", "投顾", "证券", "衍生品", "信托", "保险"]
+
+def core_name(name):
+    """提取核心实体名:去后缀(私募基金/基金/资管/理财/自营/投行/投顾/证券/衍生品/信托/保险)"""
+    n = normalize(name)
+    for suffix in INST_SUFFIXES:
+        if n.endswith(suffix) and len(n) > len(suffix):
+            n = n[:-len(suffix)]
+            break
+    return n
+
+
+# v2.5.0: 显式 hard_map(优先级最高,解决已知难匹配机构)
+MATCH_HARD_MAP = {
+    "利曦基金": "利曦私募基金",
+    "利曦私募基金": "利曦基金",
+}
 
 def unmerge_and_fill_raw(ws):
     """预处理新原始台账：取消合并+向下填充，保护P/U/V"""
@@ -1084,6 +1107,35 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
                             matched_ur_idx = ur_idx
                             break
 
+                # v2.5.0 Pass 3: hard_map 显式映射(优先级最高,解决已知难匹配机构)
+                if matched_ur_idx is None:
+                    inst_raw = items[0]['name']
+                    inst_norm = normalize(inst_raw)
+                    for un_key, un_target in MATCH_HARD_MAP.items():
+                        if inst_norm == normalize(un_key):
+                            for ur_idx, ur in enumerate(urows):
+                                if ur[3]:
+                                    continue
+                                if normalize(ur[1]) == normalize(un_target):
+                                    matched_ur_idx = ur_idx
+                                    print(f"      [Pass3 hard_map] {inst_raw} -> {un_target} (Row{ur[0]})")
+                                    break
+                            if matched_ur_idx is not None:
+                                break
+
+                # v2.5.0 Pass 4: 核心名匹配(去后缀私募基金/基金/资管等),len >= 3 防止误匹配
+                if matched_ur_idx is None:
+                    inst_core = core_name(inst_key)
+                    if len(inst_core) >= 3:
+                        for ur_idx, ur in enumerate(urows):
+                            if ur[3]:
+                                continue
+                            un_core = core_name(ur[1])
+                            if un_core == inst_core:
+                                matched_ur_idx = ur_idx
+                                print(f"      [Pass4 core_name] {inst_key} -> {ur[1]} (core={inst_core}, Row{ur[0]})")
+                                break
+
                 if matched_ur_idx is not None:
                     ur = urows[matched_ur_idx]
                     # First bid writes WXY into U row
@@ -1276,17 +1328,20 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="增量台账合并 v2.1")
+    parser = argparse.ArgumentParser(description="增量台账合并 v2.5.0")
     parser.add_argument("--processed", required=True, help="已加工台账（含WXY）")
     parser.add_argument("--new-raw", required=False, help="本周新原始台账（无WXY），增量合并模式必填")
     parser.add_argument("--details", nargs="*", default=[], help="簿记明细文件")
     parser.add_argument("--output", required=True, help="输出文件路径")
-    parser.add_argument("--supplement", action="store_true", help="补充簿记模式：仅对有明细的项目录入WXY，不做增量合并")
-    parser.add_argument("--rebook", action="store_true", help="重录模式：清空目标项目WXY+删除分层末尾未匹配新行，然后重新录入（用于修复方案C前的旧WXY数据）")
+    parser.add_argument("--supplement", action="store_true", help="补充簿记模式：仅对有明细的项目追加录入WXY，不做增量合并(注意:多次跑会累积脏行,推荐用 --rebook)")
+    parser.add_argument("--rebook", action="store_true", help="重录模式(默认):清空目标项目WXY+删除分层末尾未匹配新行,然后重新录入(幂等,推荐)")
     args = parser.parse_args()
 
+    # v2.5.0: 默认 rebook 模式(不传 --supplement/--rebook/--new-raw 时)
     if not args.supplement and not args.rebook and not args.new_raw:
-        parser.error("--new-raw is required when not using --supplement or --rebook mode")
+        print("[v2.5.0 INFO] 未指定模式,默认使用 --rebook 模式(推荐,幂等)")
+        print("[v2.5.0 INFO] 如需增量合并,请显式传 --new-raw;如需纯追加,请显式传 --supplement")
+        args.rebook = True
     if (args.supplement or args.rebook) and args.new_raw:
         parser.error("--new-raw is not allowed in --supplement or --rebook mode")
     if args.supplement and args.rebook:
