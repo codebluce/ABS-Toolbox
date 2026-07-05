@@ -61,17 +61,17 @@
     "v24-self-check": {
       "skill_version": "v2.4.0",
       "current_round": 1,
-      "status": "REVIEWED",
+      "status": "COMPLETED",
       "verdict": "APPROVED_WITH_CONDITIONS",
-      "next_action": "待 Agent C 归档",
+      "next_action": null,
       "submissions": [
         "A1-v24-self-check-r1"
       ],
       "reviews": [
         "B1-v24-self-check-r1"
       ],
-      "closed": null,
-      "notes": "v2.4.0 第五轮。新增自检工具 skill(非 skill 迁入),核心产物 scripts/self_check.py(git 实测 919 行),提供 5 层自检框架 + 降级接口 --mode auto|full|degraded。Agent B 独立复核完成:v21-bookkeeping 5 层自检全部重跑通过,核心层 3 逐 cell diff 回归闸门 total_cells_compared=13753 diff_count=0 完全复现 A1 断言;降级模式 --mode degraded 已验(只跑层 2+5,PASS=2 SKIP=3)。QC FAIL 系 0626 数据已知问题不阻断真正闸门。commit_hash 以 tag->31f716f 为准(与 A1 一致,未重复 v22/v23 误填)。4 项瑕疵均 blocks_approval=false:REV-01(self_check.py 声明642行实际919行)/REV-02(changed_files 多声明 .gitkeep 未提交)/REV-03(误报 pitfall_log.md modified 实际 v2.3 后未改)/REV-04(auto 自动降级分支延期实测+污染文件排除),待 C1 留档关闭。verdict=APPROVED_WITH_CONDITIONS。"
+      "closed": "C1-v24-self-check-r1",
+      "notes": "v2.4.0 第五轮。已归档(C1-v24-self-check-r1)。新增 5 层自检工具脚本 scripts/self_check.py(git 实测 919 行,非 skill 迁入)。Agent B 独立复核完成:核心层 3 逐 cell diff 回归闸门 total_cells_compared=13753 diff_count=0 完全复现 A1 断言;降级模式 --mode degraded 已验。4 项 Issue(REV-01 行数失真/REV-02 .gitkeep 多声明/REV-03 pitfall_log.md 误报/REV-04 auto 自动降级分支延期)均 blocks_approval=false,由 C1 留档关闭。延期验证项:auto 自动降级分支留原 skill 退役时(约 6 个月后)做真实缺失场景实测。本轮亮点:commit_hash 一致(未重复 v22/v23 误填)、SKILL.md version 已升 v2.4.0(未重复 REV-03 类问题)。"
     }
   },
   "issues": [
@@ -171,8 +171,8 @@
       "severity": "WARNING",
       "category": "DOC_CONSISTENCY",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "A1 声明 self_check.py 642 行,git 实测 919 行(cat_file -s 与 wc -l 一致)。仅文档失真,脚本功能正常,5 层自检可运行。待 C1 留档以 919 行为准"
+      "status": "resolved",
+      "desc": "A1 声明 self_check.py 642 行,git 实测 919 行。仅文档失真,脚本功能正常。C1 留档以 919 行为准"
     },
     {
       "id": "REV-v2.4-v24-self-check-r01-02",
@@ -180,8 +180,8 @@
       "severity": "WARNING",
       "category": "DOC_CONSISTENCY",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "A1 changed_files 多声明 audit/self_check/.gitkeep,git show 31f716f --stat 实际未提交该文件(目录已有产出文件无需 .gitkeep)。无害元数据偏差,待 C1 留档"
+      "status": "resolved",
+      "desc": "A1 changed_files 多声明 audit/self_check/.gitkeep,实际未提交。C1 留档补记完整清单以 git show --stat 为准"
     },
     {
       "id": "REV-v2.4-v24-self-check-r01-03",
@@ -189,8 +189,8 @@
       "severity": "WARNING",
       "category": "DOC_CONSISTENCY",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "A1 误报 scripts/pitfall_log.md modified,git log 确认 pitfall_log.md 自 v2.3 后未改动(本轮 diff 不含)。v22/v23/v24 连续三轮元数据失真,强烈建议 A 形成 changed_files 自查流程。待 C1 留档"
+      "status": "resolved",
+      "desc": "A1 误报 scripts/pitfall_log.md modified,实际 v2.3 后未改动。C1 留档移除该项"
     },
     {
       "id": "REV-v2.4-v24-self-check-r01-04",
@@ -198,8 +198,8 @@
       "severity": "INFO",
       "category": "MAINTAINABILITY",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "auto 自动降级分支(检测原 skill 缺失自动切 degraded)本轮未实测(原 skill 存在故走 full);建议后续构造原 skill 缺失场景补测 auto 分支。另 deliverables/dashboards/01_latest/ 污染文件非本轮引入,commit 时已排除。待 C1 留档+延期"
+      "status": "resolved",
+      "desc": "auto 自动降级分支延期至原 skill 退役时实测;污染 deliverables/dashboards/01_latest/ 归档时排除。C1 留档"
     }
   ],
   "counters": {
