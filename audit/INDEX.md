@@ -17,7 +17,7 @@
 |---|---|---|---|---|---|---|---|
 | v20-institution-stats | r1 | PENDING_REVIEW(已通过独立审计,4 瑕疵已修正) | ✅ 4/4 | 2026-07-05 | `audit/v2.0-v20-institution-stats-r01` | `524cdae` | [A1-v20-institution-stats-r1.md](submissions/A1-v20-institution-stats-r1.md) |
 | v21-bookkeeping | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.1-v21-bookkeeping-r01`(✅已双推) | `27f08a8` | [A1-v21-bookkeeping-r1.md](submissions/A1-v21-bookkeeping-r1.md) |
-| v22-pricing | r1 | PENDING_REVIEW | ✅ 4/4 | 2026-07-05 | `audit/v2.2-v22-pricing-r01`(待打) | `03225ef` | [A1-v22-pricing-r1.md](submissions/A1-v22-pricing-r1.md) |
+| v22-pricing | r1 | PENDING_REVIEW | ✅ 4/4 | 2026-07-05 | `audit/v2.2-v22-pricing-r01`(✅已双推) | `1e14550` | [A1-v22-pricing-r1.md](submissions/A1-v22-pricing-r1.md) |
 
 ## Reviews
 
