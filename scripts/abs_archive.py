@@ -41,6 +41,11 @@ def archive_ledger():
     2. 旧 03_final/* 的归档由人工或独立 archive-final 子命令处理
     设计理由: 自动归档旧定稿风险高(可能误归当前在用定稿),
               保守只做晋升,归档动作交人工决策。
+    v2.1.0 注(2026-07-05): 簿记录入产出在 02_processing/,文件名形如
+        '2026年ABS发行台账-MMDD-补充簿记vN.xlsx'。晋升前请人工确认:
+        - 补充簿记是否已通过 QC(数据质量)
+        - 是否已是定稿状态(还是仍需增量合并)
+        未定稿的补充簿记不应晋升到 03_final/。
     """
     print("=== 台账归档(仅晋升 02_processing → 03_final) ===")
     processing = LEDGER / "02_processing"

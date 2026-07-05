@@ -64,8 +64,22 @@
 - **严重度**:★★★(技术债)
 - **现象**:第一轮迁入机构统计时,`internal_merge_bookkeeping` 未删除(簿记录入 v2.1 第二轮才迁,第一轮机构统计仍需内部合并能力)
 - **临时方案**:保留 `internal_merge_bookkeeping` 在 `gen_institution_stats.py` 内
-- **彻底修复**:第二轮迁入簿记录入后,删除 `internal_merge_bookkeeping`,改调 `increment_merge.run_increment_merge`
+- **状态**:v2.1.0 第二轮后仍保留(见 #ABS-002)
 - **追踪**:CHANGELOG v2.0.0 待办第 4 项
+
+### #ABS-002 — internal_merge 与 run_increment_merge 并存(v2.1.0 第二轮)
+
+- **日期**:2026-07-05
+- **严重度**:★★★(技术债)
+- **现象**:第二轮迁入 `run_increment_merge` 后,`gen_institution_stats.py` 的 `internal_merge_bookkeeping` 仍保留(用户决策:保留不动)。两个函数功能重叠(internal_merge 是 increment_merge 的简化克隆)
+- **接口不兼容点**:
+  1. 返回值:`internal_merge` 返回 tmp_path;`run_increment_merge` 写 output_path
+  2. 输入约束:`internal_merge` 处理 22→25 列升级;`run_increment_merge` 要求 processed 已是 25 列
+  3. 模式:`internal_merge` 仅补充;`run_increment_merge` 支持增量合并 + 补充(--supplement)
+  4. 写入方式:`internal_merge` openpyxl 原位写;`run_increment_merge` Plan C 插行
+- **临时方案**:并存,机构统计用 `internal_merge`,簿记录入用 `run_increment_merge`
+- **彻底修复**:第三轮设计封装层,需先解决 22 列→25 列升级 + 接口转换。封装层签名:`internal_merge_bookkeeping(xlsx_path, detail_paths)` 内部调 `run_increment_merge(xlsx_path, None, detail_paths, tmp_path, supplement=True)`,但需先用 abs_common 把 22 列原始表升级到 25 列(补 WXY 空表头)
+- **追踪**:CHANGELOG v2.1.0 待办第三轮第 3 项
 
 ---
 

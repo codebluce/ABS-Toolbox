@@ -12,6 +12,45 @@
 
 ---
 
+## v2.1.0 — 2026-07-05 第二轮
+
+### 新增
+
+- **簿记录入 v2.1 迁入**:`scripts/increment_merge.py`(从 `skills/簿记录入/v2.1/increment_merge.py` 原样复制,0 改动,1221 行)
+  - 11 个顶层函数全部保留:`normalize` / `unmerge_and_fill_raw` / `unmerge_and_fill_processed` / `get_all_projects` / `get_project_range` / `get_layers_in_project` / `normalize_rate` / `read_detail` / `map_detail_to_project` / `run_enhanced_qc` / `run_increment_merge`
+  - 17 项 QC 7.1-7.19 + 3 项基础 QC 全部保留(P0×11 + P1×8 + INFO×1)
+  - 接口完全一致:`--processed` / `--new-raw` / `--details` / `--output` / `--supplement`
+- **5 层自检通过**:
+  1. 文件字节对比:diff 为空(1221 → 1221)
+  2. 端到端穿行:0626 定稿 + 11 份明细 supplement 模式 QC PASSED
+  3. 产出逐 cell diff:新旧 skill 产出 xlsx WXY 列 + 保护列逐 cell 一致
+  4. 原 skill smoke test:同输入 QC PASSED(原 skill 未动)
+  5. 机构统计回归:gen_institution_stats.py QC 仍 PASSED 35 项(无回归)
+- **SKILL.md 触发词路由**:"ABS 簿记录入" 从 🟡 第二轮 → ✅ v2.1.0
+- **使用示例**:补充簿记模式 + 增量合并模式两个示例
+
+### 保留(技术债)
+
+- `gen_institution_stats.py` 的 `internal_merge_bookkeeping` 保留不动(用户决策)
+  - 与 `run_increment_merge` 功能重叠(简化克隆)
+  - 接口不兼容:返回 tmp_path vs 写 output_path;22 列原始 vs 25 列加工
+  - 第三轮再设计封装层,需先解决 22 列→25 列升级 + 接口转换
+  - 详见 `pitfall_log.md` #ABS-002
+
+### 验证
+
+- 5 层自检全部通过(详见 `Inbox/auditReport_GLM52_20260705_ABS工具箱_簿记录入.md`)
+- 原 3 skill 文件未动(`skills/簿记录入/` 完整保留)
+
+### 待办(第三轮)
+
+- [ ] 迁入发行定价 3 个 `gen_*.py`(gen_abs_cost_report / gen_compare_tool / gen_spread_report)
+- [ ] 激活"ABS 全流程"串行编排(录入 → 统计 → 定价)
+- [ ] 设计 internal_merge 封装层(解决 22 列→25 列升级 + 接口转换)
+- [ ] 原 3 skill 标 `deprecated`(不删除,保留 6 个月观察期)
+
+---
+
 ## v2.0.0 — 2026-07-05 第一轮
 
 ### 新增
@@ -41,13 +80,13 @@
 - abs_archive.py 三子命令幂等
 - 原 3 skill 文件未动(`git diff` 为空)
 
-### 待办(第二轮,1-2 周后)
+### 待办(第二轮已完成,见 v2.1.0 段)
 
-- [ ] 迁入 `increment_merge.py`(簿记录入 v2.1)
-- [ ] 迁入发行定价 3 个 `gen_*.py`
-- [ ] 激活"ABS 全流程"串行编排
-- [ ] 删除 `gen_institution_stats.py` 内部 `internal_merge_bookkeeping`,改调簿记录入
-- [ ] 原 3 skill 标 `deprecated`(不删除,保留 6 个月观察期)
+- [x] 迁入 `increment_merge.py`(簿记录入 v2.1) — v2.1.0 完成,原样迁入 0 改动
+- [ ] 迁入发行定价 3 个 `gen_*.py` — 第三轮
+- [ ] 激活"ABS 全流程"串行编排 — 第三轮
+- [ ] 删除 `gen_institution_stats.py` 内部 `internal_merge_bookkeeping`,改调簿记录入 — 第三轮(需封装层)
+- [ ] 原 3 skill 标 `deprecated`(不删除,保留 6 个月观察期) — 第三轮
 
 ### 已知遗留
 

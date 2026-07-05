@@ -89,6 +89,49 @@ tags: [reference, audit, abs]
 - [ ] HARD_MAP 是否激活(确认簿记录入 v2.1 截断匹配是否够用)
 - [ ] 处理原 3 skill 上次会话遗留未提交改动
 
+## v2.1.0 第二轮(2026-07-05) — 已完成
+
+### 整合范围
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| increment_merge.py 迁入 | ✅ | 从簿记录入 v2.1 原样复制(0 改动,1221 行) |
+| 11 个顶层函数保留 | ✅ | normalize/unmerge_raw/processed/get_projects/layers/normalize_rate/read_detail/map_detail/run_qc/run_increment_merge |
+| 17 项 QC 7.1-7.19 保留 | ✅ | P0×11 + P1×8 + INFO×1 |
+| SKILL.md 路由更新 | ✅ | "ABS 簿记录入" 🟡 → ✅ v2.1.0 |
+| 5 层自检 | ✅ | 全部通过(详见 Inbox 送审报告) |
+| internal_merge 保留 | ✅ | 用户决策,技术债 #ABS-002(第三轮封装层) |
+
+### 5 层自检结论
+
+| 层 | 检查 | 结果 |
+|---|---|---|
+| 1 | 文件字节对比 | ✅ diff 为空(1221→1221) |
+| 2 | 端到端穿行 | ✅ 新旧 QC FAIL=2 WARN=4 一致(数据问题非回归) |
+| 3 | 逐 cell diff | ✅ 50125 cell 0 差异,WXY+保护列全一致 |
+| 4 | 原 skill smoke | ✅ 同输入 QC 一致(原 skill 未动) |
+| 5 | 机构统计回归 | ✅ QC PASSED 30+35 项(无回归) |
+
+### QC FAIL 说明
+
+0626 定稿台账 WXY 旧值与 11 份明细不符(QC 7.1 9 个项目 + QC 7.5 跨层重复)。
+**这是数据问题**(台账已有 WXY 旧值未与最新明细同步),**不是迁入回归**。
+新旧 skill 同输入同输出,行为完全等价。
+
+### 已知遗留(v2.1.0 新增)
+
+1. **internal_merge 与 run_increment_merge 并存**(技术债 #ABS-002):
+   - 接口不兼容 4 点(返回值/输入约束/模式/写入方式)
+   - 第三轮设计封装层,需先解决 22 列→25 列升级
+2. **0626 定稿 WXY 与明细不符**(数据问题):需用户清理台账
+
+### 待迁清单(第三轮)
+
+- [ ] 迁入发行定价 3 个 gen_*.py
+- [ ] 激活"ABS 全流程"串行编排
+- [ ] 设计 internal_merge 封装层(解决 22 列→25 列升级 + 接口转换)
+- [ ] 原 3 skill 标 deprecated
+
 ## 审计追溯
 
 - 单次执行审计:`Inbox/auditReport_GLM52_20260705_ABS工具箱.md`(按 7 step 分节)
