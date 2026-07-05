@@ -23,6 +23,12 @@ import gen_abs_cost_report
 import gen_spread_report
 import gen_compare_tool
 
+# 投资人分析模块(lab 实验转正:fig7_wlz_panel 调 fig4_new + fig5 同步台账)
+LAB_DIR = SCRIPT_DIR / 'lab'
+if str(LAB_DIR) not in sys.path:
+    sys.path.insert(0, str(LAB_DIR))
+import fig7_wlz_panel
+
 
 # ── 综合看板的 Tab 框架 CSS（独立于 4 份原始 CSS）──────────────
 TAB_CSS = """
@@ -128,10 +134,13 @@ def build_integrated_html(panels, all_css):
 
     panels: List[(module, sub, body_html)]
     all_css: 4 份原始 CSS + TAB_CSS 拼接的字符串
+
+    3 个 top tab: 发行定价 / 机构统计 / 投资人分析
+    投资人分析 > 理财子分析 (fig4 矩阵 + fig5 画像 并排)
     """
     # 第一层 Tab 标签
     top_buttons = []
-    for module, label in [('pricing', '发行定价'), ('institution', '机构统计')]:
+    for module, label in [('pricing', '发行定价'), ('institution', '机构统计'), ('investor', '投资人分析')]:
         top_buttons.append(
             f'<button class="tab-button" data-module="{module}" '
             f'onclick="selectModule(\'{module}\')">{label}</button>'
@@ -141,7 +150,7 @@ def build_integrated_html(panels, all_css):
     # 第二层 Tab 标签 + panel 容器
     sub_tabs_panes = []
     panel_divs = []
-    for module, label in [('pricing', '发行定价'), ('institution', '机构统计')]:
+    for module, label in [('pricing', '发行定价'), ('institution', '机构统计'), ('investor', '投资人分析')]:
         # 该模块下的子 Tab 按钮
         sub_buttons = []
         module_panels = [p for p in panels if p[0] == module]
@@ -153,6 +162,9 @@ def build_integrated_html(panels, all_css):
                 import re
                 title_match = re.search(r'<span class="section-title">(.*?)</span>', body)
                 sub_label = title_match.group(1).replace('表一：', '').replace('表二：', '').replace('表三：', '') if title_match else sub
+            elif module == 'investor':
+                sub_label_map = {'wlz': '理财子分析'}
+                sub_label = sub_label_map.get(sub, sub)
             else:
                 # 发行定价的子 Tab 名固定
                 sub_label_map = {'compare': '定价测试', 'invest': '投资明细', 'cost': '成本分布', 'spread': '利差分析'}
@@ -227,7 +239,7 @@ def main():
     print('=' * 60)
 
     # 1. 各 compute_data（内部跑 QC precheck）
-    print('\n[1/3] 计算数据...')
+    print('\n[1/4] 计算数据...')
     try:
         cmp_data = gen_compare_tool.compute_data(xlsx_path)
         cost_data = gen_abs_cost_report.compute_data(xlsx_path)
@@ -239,7 +251,7 @@ def main():
         sys.exit(1)
 
     # 2. 各 render_body（institution 3 次调用，传 section_key）
-    print('\n[2/3] 渲染 body...')
+    print('\n[2/4] 渲染 body...')
     panels = [
         ('pricing',     'compare',    gen_compare_tool.render_body_pricing(cmp_data)),
         ('pricing',     'invest',     gen_compare_tool.render_body_invest(cmp_data)),
@@ -250,8 +262,13 @@ def main():
         ('institution', 'custodian',  gen_institution_stats.render_body(inst_data, section_key='custodian')),
     ]
 
-    # 3. CSS 拼接 + 套 Tab 框架 + 写文件
-    print('\n[3/3] 拼接 HTML...')
+    # 投资人分析模块:理财子分析 panel(fig4 矩阵 + fig5 画像 并排,同步最新台账)
+    print('\n[3/4] 生成投资人分析 > 理财子分析 panel...')
+    wlz_body = fig7_wlz_panel.render_wlz_panel(regenerate=True)
+    panels.append(('investor', 'wlz', wlz_body))
+
+    # 4. CSS 拼接 + 套 Tab 框架 + 写文件
+    print('\n[4/4] 拼接 HTML...')
     all_css = '\n'.join([
         gen_institution_stats.CSS,
         gen_abs_cost_report.CSS,
@@ -275,8 +292,8 @@ def main():
     panel_count = content.count('<div class="panel"')
     has_select_module = 'function selectModule' in content
     has_select_sub = 'function selectSub' in content
-    if panel_count == 7 and has_select_module and has_select_sub:
-        print(f'[QC] 综合看板结构检查通过：7 个 panel + Tab 切换 JS 齐全')
+    if panel_count == 8 and has_select_module and has_select_sub:
+        print(f'[QC] 综合看板结构检查通过：8 个 panel(7 主 + 1 投资人分析) + Tab 切换 JS 齐全')
     else:
         print(f'[QC WARN] 结构异常：panel={panel_count}, selectModule={has_select_module}, selectSub={has_select_sub}')
 

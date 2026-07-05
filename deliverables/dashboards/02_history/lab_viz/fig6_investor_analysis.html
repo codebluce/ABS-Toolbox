@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>投资人分析看板 - ABS工具箱</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        background: #f5f5f7;
+        color: #1d1d1f;
+        padding: 24px;
+    }
+    .dashboard {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        overflow: hidden;
+    }
+    .dashboard-header {
+        background: linear-gradient(135deg, #1a3a5c 0%, #0d1b2e 100%);
+        color: white;
+        padding: 20px 28px;
+    }
+    .dashboard-title {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    .dashboard-subtitle {
+        font-size: 13px;
+        opacity: 0.75;
+        margin-top: 6px;
+    }
+    .panel {
+        padding: 24px 28px;
+    }
+    .panel-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1d1d1f;
+        margin-bottom: 16px;
+        padding-left: 10px;
+        border-left: 3px solid #0d1b2e;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    thead th {
+        background: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        padding: 12px 8px;
+        text-align: center;
+        border-bottom: 2px solid #dee2e6;
+        white-space: nowrap;
+    }
+    thead th:first-child { text-align: left; padding-left: 16px; }
+    tbody td {
+        padding: 10px 8px;
+        text-align: center;
+        border-bottom: 1px solid #e9ecef;
+        color: #1d1d1f;
+    }
+    tbody td.inst-name {
+        text-align: left;
+        padding-left: 16px;
+        font-weight: 500;
+        color: #0d1b2e;
+    }
+    tbody td.num {
+        font-variant-numeric: tabular-nums;
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    }
+    tbody td.num.neg {
+        color: #c0392b;
+        font-weight: 600;
+    }
+    tbody tr:hover { background: #f8f9fa; }
+    tbody tr.totals-row {
+        background: #e8eef5;
+        font-weight: 600;
+    }
+    tbody tr.totals-row td { border-top: 2px solid #0d1b2e; }
+    .legend {
+        margin-top: 16px;
+        padding: 12px 16px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #6c757d;
+        line-height: 1.6;
+    }
+    .legend strong { color: #495057; }
+</style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="dashboard-header">
+        <div class="dashboard-title">投资人分析</div>
+        <div class="dashboard-subtitle">截至 2026-06-30 | 非标授信额度与 7-12月摊还到期额度</div>
+    </div>
+    <div class="panel">
+        <div class="panel-title">非标授信与摊还到期额度一览</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>基石投资人</th>
+                    <th>非标授信总额<br/>(亿元)</th>
+                    <th>新增认购规模<br/>(亿元)</th>
+                    <th>非标剩余额度<br/>(实时,亿元)</th>
+                    <th>7月摊还<br/>(亿元)</th>
+                    <th>8月摊还<br/>(亿元)</th>
+                    <th>9月摊还<br/>(亿元)</th>
+                    <th>10月摊还<br/>(亿元)</th>
+                    <th>11月摊还<br/>(亿元)</th>
+                    <th>12月摊还<br/>(亿元)</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+        <tr>
+            <td class="inst-name">光大理财</td>
+            <td class="num">15.0</td>
+            <td class="num">-</td>
+            <td class="num">15.0</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+        </tr>
+        <tr>
+            <td class="inst-name">沪农商行</td>
+            <td class="num">40.0</td>
+            <td class="num">-</td>
+            <td class="num">32.8</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+        </tr>
+        <tr>
+            <td class="inst-name">南银理财</td>
+            <td class="num">100.0</td>
+            <td class="num">10.0</td>
+            <td class="num">10.0</td>
+            <td class="num">10.0</td>
+            <td class="num">5.0</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+        </tr>
+        <tr>
+            <td class="inst-name">上银理财</td>
+            <td class="num">15.0</td>
+            <td class="num">-</td>
+            <td class="num">5.0</td>
+            <td class="num">10.0</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+        </tr>
+        <tr>
+            <td class="inst-name">苏银理财</td>
+            <td class="num">120.0</td>
+            <td class="num">-</td>
+            <td class="num">0.0</td>
+            <td class="num">-</td>
+            <td class="num">0.2</td>
+            <td class="num">0.2</td>
+            <td class="num">2.4</td>
+            <td class="num">-</td>
+            <td class="num">7.0</td>
+        </tr>
+        <tr>
+            <td class="inst-name">兴银理财</td>
+            <td class="num">60.0</td>
+            <td class="num">-</td>
+            <td class="num">0.0</td>
+            <td class="num">-</td>
+            <td class="num">13.5</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+        </tr>
+        <tr>
+            <td class="inst-name">中银理财</td>
+            <td class="num">100.0</td>
+            <td class="num">-</td>
+            <td class="num">40.0</td>
+            <td class="num">8.5</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">5.0</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+        </tr>
+        <tr>
+            <td class="inst-name">中邮理财</td>
+            <td class="num">150.0</td>
+            <td class="num">-</td>
+            <td class="num">50.0</td>
+            <td class="num">10.0</td>
+            <td class="num">32.0</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+        </tr>
+        <tr>
+            <td class="inst-name">摩根大通</td>
+            <td class="num">100.0</td>
+            <td class="num">-</td>
+            <td class="num">0.0</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+        </tr>
+        <tr>
+            <td class="inst-name">汇丰银行</td>
+            <td class="num">100.0</td>
+            <td class="num">-</td>
+            <td class="num">0.0</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">16.6</td>
+            <td class="num">8.3</td>
+            <td class="num">8.3</td>
+        </tr>
+        <tr>
+            <td class="inst-name">花旗银行</td>
+            <td class="num">35.0</td>
+            <td class="num">-</td>
+            <td class="num">0.0</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+        </tr>
+        <tr>
+            <td class="inst-name">中信建投</td>
+            <td class="num">30.0</td>
+            <td class="num">-</td>
+            <td class="num">10.0</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">0.1</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+        </tr>
+        <tr>
+            <td class="inst-name">中金自营</td>
+            <td class="num">30.0</td>
+            <td class="num">-</td>
+            <td class="num">20.0</td>
+            <td class="num">-</td>
+            <td class="num">0.2</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">0.8</td>
+        </tr>
+        <tr>
+            <td class="inst-name">中信自营</td>
+            <td class="num">10.0</td>
+            <td class="num">-</td>
+            <td class="num">0.0</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+            <td class="num">-</td>
+        </tr>
+                
+        <tr class="totals-row">
+            <td class="inst-name">合计</td>
+            <td class="num">905.0</td>
+            <td class="num">10.0</td>
+            <td class="num">182.8</td>
+            <td class="num">38.5</td>
+            <td class="num">50.9</td>
+            <td class="num">0.3</td>
+            <td class="num">24.0</td>
+            <td class="num">8.3</td>
+            <td class="num">16.1</td>
+        </tr>
+            </tbody>
+        </table>
+        <div class="legend">
+            <strong>字段说明:</strong><br/>
+            • <strong>非标授信总额</strong>:来自 20260630额度盘点.xlsx「非标授信」sheet C 列<br/>
+            • <strong>新增认购规模</strong>:最新发行台账中,F列含"非标"或"保登"关键词,且 L列(簿记时间)≥ 2026-07-01 的同机构 V列(认购份额)合计<br/>
+            • <strong>非标剩余额度(实时)</strong>= 非标授信总额对应表格原始剩余值 - 新增认购规模(红色表示已超额度)<br/>
+            • <strong>7-12月摊还</strong>:该机构在「历史发行」sheet 中,U列同机构(近似匹配)且 X列(循环期结束日)在 2026 年对应月份的认购份额合计<br/>
+            • <strong>近似匹配规则</strong>:机构名归一化(去空格/括号统一/去"理财/资管"等后缀)后相等,或一方包含另一方(len≥3)<br/>
+            • <strong>"-"</strong>:该机构当月无到期项目或无新增认购
+        </div>
+    </div>
+</div>
+</body>
+</html>
