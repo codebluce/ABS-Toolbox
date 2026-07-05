@@ -265,94 +265,94 @@ def read_detail_files(detail_paths):
     return detail_df
 
 
+def upgrade_22_to_25(xlsx_path):
+    """v2.3.0 新增: 22列原始台账 → 25列临时文件(补 WXY 空表头)
+
+    作用: run_increment_merge 要求 processed_path 已是 25 列(含 WXY 表头),
+          本函数把 22 列原始台账补 3 列空表头(W/X/Y),数据行留空让 increment_merge 填。
+    返回: 25 列临时文件路径(不修改原文件)。
+    """
+    from openpyxl import load_workbook
+    import shutil
+    import os as _os
+
+    # 复制到临时文件(不修改原文件)
+    tmp_dir = _os.path.join(_os.path.expanduser('~'), 'Documents', 'LikeCodeNex', 'tmp')
+    _os.makedirs(tmp_dir, exist_ok=True)
+    base = _os.path.splitext(_os.path.basename(xlsx_path))[0]
+    tmp_path = _os.path.join(tmp_dir, f'{base}_25col.xlsx')
+    shutil.copy2(xlsx_path, tmp_path)
+
+    wb = load_workbook(tmp_path)
+    ws = wb.active
+    if ws.max_column >= 25:
+        print(f'[INFO] 台账已有 {ws.max_column} 列,跳过 22→25 升级')
+        return tmp_path
+
+    # 补 W/X/Y 表头(Row1 + Row2,与 25 列加工台账格式一致)
+    # W=23(申购利率) X=24(穿透机构) Y=25(申购规模)
+    headers_row1 = {23: '申购利率', 24: '穿透机构', 25: '申购规模'}
+    headers_row2 = {23: 'W', 24: 'X', 25: 'Y'}
+    for col, val in headers_row1.items():
+        if ws.cell(row=1, column=col).value is None:
+            ws.cell(row=1, column=col).value = val
+    for col, val in headers_row2.items():
+        if ws.cell(row=2, column=col).value is None:
+            ws.cell(row=2, column=col).value = val
+
+    wb.save(tmp_path)
+    print(f'[INFO] 22→25 列升级完成: {tmp_path}')
+    return tmp_path
+
+
 def internal_merge_bookkeeping(xlsx_path, detail_paths):
+    """v2.3.0 改造: 翻译官模式,调 run_increment_merge(supplement=True)
+
+    改造前(已删除): 88 行内部簿记合并逻辑(与 run_increment_merge 90% 重复,无 QC)
+    改造后: 翻译官,做 3 件事:
+      1. 22 列台账 → upgrade_22_to_25 → 25 列临时文件(补 WXY 空表头)
+      2. 调 increment_merge.run_increment_merge(supplement=True) 填 WXY
+      3. 返回 25 列临时文件路径(保持原接口)
+
+    好处:
+      - 消除代码重复(88 行 → 15 行翻译逻辑)
+      - 自动继承 increment_merge 的 17 项 QC 7.1-7.19
+      - 单一来源,行为统一
+
+    返回: 25 列临时文件路径(含已填 WXY)或原始路径(如果无需合并)
     """
-    内部簿记合并：22列原始台账 + 明细文件 → 预处理后的25列临时文件路径
-    流程：
-      1. openpyxl预处理（取消合并+向下填充+保护P/U/V）
-      2. 读取明细文件
-      3. 项目匹配（按项目名+分层情况）
-      4. 同机构+同利率合并Y列，从后往前匹配U行
-      5. 写入W/X/Y到临时文件
-    返回：临时文件路径（含WXY列）或原始路径（如果无需合并）
-    """
-    # 若台账本身已有25列以上，无需合并
+    # 若台账本身已有25列以上,无需合并
     wb_check = openpyxl.load_workbook(xlsx_path, data_only=False)
     ws_check = wb_check.active
     if ws_check.max_column >= 25:
-        print('[INFO] 台账已有25列，跳过内部簿记合并')
+        print('[INFO] 台账已有25列,跳过内部簿记合并')
         return xlsx_path
 
-    print('[INFO] 执行内部簿记合并...')
-    # Step 1: 预处理
-    tmp_path = preprocess_unmerge_fill(xlsx_path)
+    print('[INFO] 执行内部簿记合并(翻译官模式,调 run_increment_merge)...')
 
-    # Step 2: 读取明细
-    detail_df = read_detail_files(detail_paths)
-    if detail_df is None or detail_df.empty:
-        print('[WARN] 未读取到有效明细数据，跳过合并')
-        return tmp_path
+    # Step 1: 22 列 → 25 列(补 WXY 空表头)
+    processed_25 = upgrade_22_to_25(xlsx_path)
 
-    print(f'[INFO] 读取到 {len(detail_df)} 条明细记录')
+    # Step 2: 调 run_increment_merge(supplement=True)
+    # increment_merge 在同目录,顶部已 sys.path.insert
+    from increment_merge import run_increment_merge
 
-    # Step 3: 加载预处理后的台账，准备写入W/X/Y
-    wb = openpyxl.load_workbook(tmp_path, data_only=False)
-    ws = wb.active
+    import os as _os
+    tmp_dir = _os.path.join(_os.path.expanduser('~'), 'Documents', 'LikeCodeNex', 'tmp')
+    _os.makedirs(tmp_dir, exist_ok=True)
+    base = _os.path.splitext(_os.path.basename(xlsx_path))[0]
+    output_path = _os.path.join(tmp_dir, f'{base}_internal_merged.xlsx')
 
-    # 列号：W=23, X=24, Y=25
-    COL_W, COL_X, COL_Y = 23, 24, 25
+    run_increment_merge(
+        processed_path=processed_25,
+        new_raw_path=None,           # supplement 模式不传
+        detail_paths=detail_paths,
+        output_path=output_path,
+        supplement=True
+    )
 
-    # 读取台账项目名和分层情况（假设从第3行开始是数据）
-    # 由于openpyxl操作的是未经pandas解析的原始sheet，我们需要定位行号
-    # 台账前2行是标题，第3行开始数据
-    for r in range(3, ws.max_row + 1):
-        proj_cell = ws.cell(row=r, column=5).value  # E列=项目名称
-        layer_cell = ws.cell(row=r, column=16).value  # P列=分层情况
-        if proj_cell is None:
-            continue
-        proj_name = str(proj_cell).strip()
-        layer = str(layer_cell).strip() if layer_cell else ''
-
-        # 匹配明细：项目名一致 且 分层情况一致（均为'优先A'/'优先级'）
-        if layer not in ['优先A', '优先级']:
-            continue
-
-        matched = detail_df[detail_df['推断项目名'] == proj_name].copy()
-        if matched.empty:
-            continue
-
-        # Step 4: 同机构+同利率合并
-        merged = matched.groupby(['机构', '利率'], as_index=False)['规模'].sum()
-        merged = merged.sort_values('利率')
-
-        # Step 5: 从后往前找U列含"-"或可覆盖的行
-        # 先确定该项目的U列数据范围（从当前行开始连续的非空项目名行）
-        # 简化处理：直接在当前行和后续若干空W行写入
-        for idx, row_m in merged.iterrows():
-            rate = row_m['利率']
-            inst = str(row_m['机构']).strip() if pd.notna(row_m['机构']) else ''
-            scale = row_m['规模']
-            # 找到第一个W列为空的行写入
-            write_row = None
-            for scan_r in range(r, min(r + 20, ws.max_row + 1)):
-                w_val = ws.cell(row=scan_r, column=COL_W).value
-                proj_scan = ws.cell(row=scan_r, column=5).value
-                if proj_scan is not None and str(proj_scan).strip() != proj_name:
-                    break  # 跨项目了
-                if w_val is None or str(w_val).strip() == '' or str(w_val).strip() == '-':
-                    write_row = scan_r
-                    break
-            if write_row is None:
-                # 在当前项目最后一行追加
-                write_row = r
-
-            ws.cell(row=write_row, column=COL_W).value = rate
-            ws.cell(row=write_row, column=COL_X).value = inst
-            ws.cell(row=write_row, column=COL_Y).value = scale
-
-    wb.save(tmp_path)
-    print(f'[INFO] 内部簿记合并完成: {tmp_path}')
-    return tmp_path
+    print(f'[INFO] 内部簿记合并完成(翻译官模式): {output_path}')
+    return output_path
 
 
 # ═══════════════════════════════════════════════════════════════

@@ -78,8 +78,8 @@
   3. 模式:`internal_merge` 仅补充;`run_increment_merge` 支持增量合并 + 补充(--supplement)
   4. 写入方式:`internal_merge` openpyxl 原位写;`run_increment_merge` Plan C 插行
 - **临时方案**:并存,机构统计用 `internal_merge`,簿记录入用 `run_increment_merge`
-- **彻底修复**:第三轮设计封装层,需先解决 22 列→25 列升级 + 接口转换。封装层签名:`internal_merge_bookkeeping(xlsx_path, detail_paths)` 内部调 `run_increment_merge(xlsx_path, None, detail_paths, tmp_path, supplement=True)`,但需先用 abs_common 把 22 列原始表升级到 25 列(补 WXY 空表头)
-- **追踪**:CHANGELOG v2.1.0 待办第三轮第 3 项
+- **彻底修复**:**✅ v2.3.0 第四轮已闭环**。翻译官模式:internal_merge_bookkeeping 改为 thin wrapper,内部调 `run_increment_merge(supplement=True)`,前置 `upgrade_22_to_25()` 解决 22→25 列升级。88 行旧逻辑删除,自动继承 17 项 QC 7.1-7.19
+- **追踪**:CHANGELOG v2.3.0 段
 
 ---
 

@@ -7,3 +7,6 @@ Thumbs.db
 # Excel 锁文件
 ~$*.xlsx
 ~$*.xls
+
+# 环境变量泄漏文件
+et JOYCODER*

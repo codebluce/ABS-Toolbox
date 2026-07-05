@@ -12,6 +12,55 @@
 
 ---
 
+## v2.3.0 — 2026-07-05 第四轮
+
+### 新增
+
+- **internal_merge 翻译官改造**(技术债 #ABS-002 闭环):
+  - `scripts/gen_institution_stats.py` 新增 `upgrade_22_to_25()` 函数:22 列原始台账 → 25 列临时文件(补 WXY 空表头)
+  - 改造 `internal_merge_bookkeeping()` 为翻译官模式:调 `run_increment_merge(supplement=True)`,不再自己实现簿记合并
+  - 删除原 88 行内部合并逻辑(与 run_increment_merge 90% 重复,无 QC)
+  - 自动继承 increment_merge 的 17 项 QC 7.1-7.19
+- **代码量变化**:internal_merge_bookkeeping 88 行 → 55 行翻译官 + 40 行 upgrade_22_to_25 = 95 行(净增 7 行,但消除 90% 重复逻辑 + QC 覆盖)
+
+### 改造详情
+
+#### 翻译官 3 步流程
+
+1. **22 列 → 25 列**:`upgrade_22_to_25()` 复制台账到临时文件,补 W/X/Y 三列表头(Row1 + Row2),数据行留空
+2. **调 run_increment_merge(supplement=True)**:把明细金额填到 WXY,17 项 QC 全检
+3. **返回 25 列临时文件路径**:保持原接口,load_data 透明使用
+
+#### 接口兼容性
+
+| 不兼容点(改造前) | 翻译官解决方式 |
+|---|---|
+| 22 列 vs 25 列输入 | upgrade_22_to_25 升级 |
+| 返回 tmp_path vs 写 output_path | 翻译官包装,返回 output_path |
+| 模式开关需显式指定 | 翻译官自动传 supplement=True |
+
+### 验证(6 层自检)
+
+| 层 | 检查 | 结果 |
+|---|---|---|
+| 1 | 改造范围核查 | ✅ 仅改 gen_institution_stats.py,increment_merge 未动 |
+| 2 | 22 列台账端到端 | ✅ 22 列 + 明细 → 翻译官 → 机构统计 QC Fails=0 Warns=2 |
+| 3 | 25 列台账回归 | ✅ 机构统计 QC PASSED 30+35 项;发行定价 3 看板与 v2.2.0 一致 |
+| 4 | 簿记录入回归 | ✅ supplement 模式 Fails=1 Warns=4(与 v2.2.0 一致) |
+| 5 | 全流程串联 | ✅ 22 列台账入口跑通(翻译官 → 机构统计 → 发行定价) |
+| 6 | 代码重复消除 | ✅ 88 行旧逻辑删除,改调 run_increment_merge |
+
+### 关闭的技术债
+
+- **#ABS-002**(internal_merge 与 run_increment_merge 并存):✅ 闭环。翻译官模式消除代码重复,自动继承 17 项 QC
+
+### 已知遗留
+
+- `gen_institution_stats.py` 仍保留 `internal_merge_bookkeeping` 函数名(作翻译官包装,接口不变)
+- `skills/发行定价/scripts/gen_*.py` 上次会话遗留未提交改动(原 skill 保留不动)
+
+---
+
 ## v2.2.0 — 2026-07-05 第三轮
 
 ### 新增

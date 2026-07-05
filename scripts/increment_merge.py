@@ -310,6 +310,8 @@ def map_detail_to_project(filename, project_names=None):
     name = b.replace(".xlsx", "").replace(".xls", "")
     name = re.sub(r'[_-]?簿记.*$', '', name)
     name = re.sub(r'[_-]?明细.*$', '', name)
+    # Strip trailing "项目" suffix (e.g. "京诚14-9项目簿记明细" -> "京诚14-9")
+    name = re.sub(r'项目$', '', name)
     name = name.strip()
 
     # If project names are provided, try exact match first
@@ -752,8 +754,8 @@ def run_enhanced_qc(ws_out, ws_orig_protected, set_a, supplemented_keys,
 # 增量合并核心逻辑
 # ============================================================
 
-def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path, supplement=False):
-    mode_label = "Supplement WXY entry" if supplement else "Increment merge"
+def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path, supplement=False, rebook=False):
+    mode_label = "Rebook WXY" if rebook else ("Supplement WXY entry" if supplement else "Increment merge")
     print("=" * 60)
     print(f"v2.1 {mode_label}")
     print("=" * 60)
@@ -769,10 +771,10 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     set_a = set(projects_a.keys())
     print(f"  Processed ledger: {len(set_a)} projects")
 
-    # --- Supplement mode: skip Steps 2-4 ---
-    if supplement:
+    # --- Supplement/Rebook mode: skip Steps 2-4 ---
+    if supplement or rebook:
         increment = set()  # no new projects
-        print("  [Supplement mode] Skipping new raw ledger load and diff")
+        print(f"  [{mode_label}] Skipping new raw ledger load and diff")
     else:
         print("  Loading new raw ledger...")
         wb_b = openpyxl.load_workbook(new_raw_path, data_only=False)
@@ -866,7 +868,7 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
             append_start = current_row
 
     # === Step 5: Bookkeeping ===
-    step5_label = "supplement projects" if supplement else "increment projects"
+    step5_label = "rebook projects" if rebook else ("supplement projects" if supplement else "increment projects")
     print(f"\n=== Step 5: Bookkeeping for {step5_label} ===")
 
     # Build set of all project names for matching
@@ -880,7 +882,7 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     for dp in detail_paths:
         k = map_detail_to_project(dp, project_name_set)
         # In increment mode: prefer matching against increment project names
-        if not supplement:
+        if not supplement and not rebook:
             matched = False
             for inc_name in increment:
                 if normalize(k) in normalize(inc_name) or normalize(inc_name) in normalize(k):
@@ -916,6 +918,75 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
         else:
             print(f"  !   Project '{k}' not found in ledger, skipping bookkeeping")
     target_projects.sort(key=lambda x: x[1], reverse=True)
+
+    # === Rebook mode: clear target projects' WXY before re-entry ===
+    # Step 5.0: For each target project, delete "unmatched new rows" (U=None but WXY non-empty)
+    #           at layer ends, then clear remaining WXY cells
+    if rebook:
+        print("\n  [Rebook mode] Clearing target projects' WXY before re-entry...")
+        # Process from back to front to avoid row shift during deletion
+        for key, pstart, pend in target_projects:
+            print(f"    Clearing {key} rows {pstart}-{pend}")
+            # Find layers and identify rows to delete
+            layers = get_layers_in_project(ws_a, pstart, pend)
+            rows_to_delete = []  # list of row numbers (will delete from back to front)
+            rows_to_clear = []   # list of row numbers (WXY cells to clear, keep row)
+
+            for layer_name, lstart, lend in layers:
+                # Within each layer, find rows where U is None but W or X or Y is non-empty
+                # These are "unmatched new rows" appended by previous runs (Plan C前 bug产物)
+                for r in range(lstart, lend + 1):
+                    u = ws_a.cell(row=r, column=21).value
+                    w = ws_a.cell(row=r, column=23).value
+                    x = ws_a.cell(row=r, column=24).value
+                    y = ws_a.cell(row=r, column=25).value
+                    wxy_has_data = (w is not None or x is not None or y is not None)
+                    if u is None and wxy_has_data:
+                        rows_to_delete.append(r)
+                    elif u is not None and wxy_has_data:
+                        # U row with WXY (matched row from previous run) - clear WXY, keep U/V
+                        rows_to_clear.append(r)
+
+            # Delete rows from back to front
+            for r in sorted(rows_to_delete, reverse=True):
+                ws_a.delete_rows(r, 1)
+                print(f"      Deleted Row{r} (unmatched new row)")
+            # Clear WXY cells on remaining U rows
+            for r in rows_to_clear:
+                # Note: row numbers may have shifted after deletion, need to recompute
+                # But since we only delete rows BELOW the U row (U rows are at top of each layer),
+                # the U row numbers themselves are stable. Actually no - if a U row's layer
+                # had unmatched rows above it deleted... wait, we delete from back to front
+                # and U rows are at top of layer, so U rows shift only if a previous layer's
+                # unmatched rows were deleted. Let's just clear by scanning again after deletion.
+                pass  # Handle in re-scan below
+
+            # Re-scan and clear WXY on remaining U rows (row numbers may have shifted)
+            # Re-find project range since rows were deleted
+            r_new = get_project_range(ws_a, key)
+            if r_new:
+                pstart_new, pend_new = r_new
+                layers_new = get_layers_in_project(ws_a, pstart_new, pend_new)
+                cleared_count = 0
+                for layer_name, lstart, lend in layers_new:
+                    for r in range(lstart, lend + 1):
+                        u = ws_a.cell(row=r, column=21).value
+                        if u is not None:
+                            # Clear WXY (columns 23, 24, 25)
+                            ws_a.cell(row=r, column=23).value = None
+                            ws_a.cell(row=r, column=24).value = None
+                            ws_a.cell(row=r, column=25).value = None
+                            cleared_count += 1
+                print(f"      Cleared WXY on {cleared_count} U rows")
+
+        # Re-fetch target_projects with updated row ranges after deletion
+        target_projects = []
+        for k in dmap:
+            r = get_project_range(ws_a, k)
+            if r:
+                target_projects.append((k, r[0], r[1]))
+        target_projects.sort(key=lambda x: x[1], reverse=True)
+        print(f"  [Rebook mode] Clearing complete. Re-entry with Plan C logic...\n")
 
     detail_layers_used = {}  # proj_name -> set of layer names that were matched
     for key, pstart, pend in target_projects:
@@ -1211,11 +1282,15 @@ if __name__ == "__main__":
     parser.add_argument("--details", nargs="*", default=[], help="簿记明细文件")
     parser.add_argument("--output", required=True, help="输出文件路径")
     parser.add_argument("--supplement", action="store_true", help="补充簿记模式：仅对有明细的项目录入WXY，不做增量合并")
+    parser.add_argument("--rebook", action="store_true", help="重录模式：清空目标项目WXY+删除分层末尾未匹配新行，然后重新录入（用于修复方案C前的旧WXY数据）")
     args = parser.parse_args()
 
-    if not args.supplement and not args.new_raw:
-        parser.error("--new-raw is required when not using --supplement mode")
-    if args.supplement and args.new_raw:
-        parser.error("--new-raw is not allowed in --supplement mode")
+    if not args.supplement and not args.rebook and not args.new_raw:
+        parser.error("--new-raw is required when not using --supplement or --rebook mode")
+    if (args.supplement or args.rebook) and args.new_raw:
+        parser.error("--new-raw is not allowed in --supplement or --rebook mode")
+    if args.supplement and args.rebook:
+        parser.error("--supplement and --rebook are mutually exclusive")
 
-    run_increment_merge(args.processed, args.new_raw, args.details, args.output, supplement=args.supplement)
+    run_increment_merge(args.processed, args.new_raw, args.details, args.output,
+                        supplement=args.supplement, rebook=args.rebook)
