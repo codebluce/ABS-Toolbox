@@ -6,11 +6,11 @@
 ## 统计概览
 
 - 送审轮次(submissions):6
-- 复审轮次(reviews):4(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档;v24-self-check r1 APPROVED_WITH_CONDITIONS 已归档)
+- 复审轮次(reviews):5(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档;v24-self-check r1 APPROVED_WITH_CONDITIONS 已归档;v25-match-rule-tune r1 APPROVED_WITH_CONDITIONS 待 C 归档)
 - 归档(closed):5(v20-institution-stats r1 + v21-bookkeeping r1 + v22-pricing r1 + v23-internal-merge-unify r1 + v24-self-check r1 均已归档)
 - 已验证 Issue:0
-- 待处理 Issue:0(v24-self-check r1 三项 WARNING + 一项 INFO 由 C1 留档关闭;技术债 #ABS-002 已在 v23 闭环;延期验证项:auto 自动降级分支留原 skill 退役时实测)
-- **进行中**:v25-match-rule-tune r1 PENDING_REVIEW(2026-07-05,等 Agent B 复审)
+- 待处理 Issue:0(v24-self-check r1 三项 WARNING + 一项 INFO 由 C1 留档关闭;v25-match-rule-tune r1 一项 WARNING + 一项 INFO 待 C 留档;技术债 #ABS-002 已在 v23 闭环;延期验证项:auto 自动降级分支留原 skill 退役时实测)
+- **进行中**:v25-match-rule-tune r1 REVIEWED / APPROVED_WITH_CONDITIONS(2026-07-05,待 Agent C 归档)
 
 ## Submissions
 
@@ -21,7 +21,7 @@
 | v22-pricing | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.2-v22-pricing-r01`(✅已双推) | `1e14550` | [A1-v22-pricing-r1.md](submissions/A1-v22-pricing-r1.md) |
 | v23-internal-merge-unify | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.3-v23-internal-merge-unify-r01`(✅已双推) | `1ef0612` | [A1-v23-internal-merge-unify-r1.md](submissions/A1-v23-internal-merge-unify-r1.md) |
 | v24-self-check | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.4-v24-self-check-r01`(✅已双推) | `31f716f` | [A1-v24-self-check-r1.md](submissions/A1-v24-self-check-r1.md) |
-| v25-match-rule-tune | r1 | PENDING_REVIEW(等 Agent B) | ✅ 4/4 | 2026-07-05 | `audit/v2.5-v25-match-rule-tune-r01`(✅已双推) | `ae1907e` | [A1-v25-match-rule-tune-r1.md](submissions/A1-v25-match-rule-tune-r1.md) |
+| v25-match-rule-tune | r1 | REVIEWED(APPROVED_WITH_CONDITIONS,待 Agent C) | ✅ 4/4 | 2026-07-05 | `audit/v2.5-v25-match-rule-tune-r01`(✅已双推) | `ae1907e` | [A1-v25-match-rule-tune-r1.md](submissions/A1-v25-match-rule-tune-r1.md) |
 
 ## Reviews
 
@@ -31,6 +31,7 @@
 | v22-pricing | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 3(全部 DOC_CONSISTENCY WARNING,均无害不阻断,待 C 留档) | 2026-07-05 | [B1-v22-pricing-r1.md](reviews/B1-v22-pricing-r1.md) |
 | v23-internal-merge-unify | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 4(3 WARNING + 1 INFO,全部 DOC_CONSISTENCY/FUNCTION_EQUIVALENCE,均无害不阻断,待 C 留档) | 2026-07-05 | [B1-v23-internal-merge-unify-r1.md](reviews/B1-v23-internal-merge-unify-r1.md) |
 | v24-self-check | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 4(3 WARNING + 1 INFO,全部 DOC_CONSISTENCY/MAINTAINABILITY,均无害不阻断,待 C 留档) | 2026-07-05 | [B1-v24-self-check-r1.md](reviews/B1-v24-self-check-r1.md) |
+| v25-match-rule-tune | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 2(1 WARNING DOC_CONSISTENCY + 1 INFO FUNCTION_EQUIVALENCE,均无害不阻断,待 C 留档) | 2026-07-05 | [B1-v25-match-rule-tune-r1.md](reviews/B1-v25-match-rule-tune-r1.md) |
 
 > 注:v20 r1 已通过用户委托的独立审计(4 瑕疵已修正),审计意见未走正式 B 流程,直接待 Agent C 归档。
 
@@ -62,6 +63,8 @@
 | REV-v2.4-v24-self-check-r01-02 | v24-self-check | r1 | WARNING | resolved(C1 留档:补记完整 changed_files 清单,移除 .gitkeep 误声明) | [B1](reviews/B1-v24-self-check-r1.md) |
 | REV-v2.4-v24-self-check-r01-03 | v24-self-check | r1 | WARNING | resolved(C1 留档:移除 pitfall_log.md 误报 modified 项,实际 v2.3 后未改) | [B1](reviews/B1-v24-self-check-r1.md) |
 | REV-v2.4-v24-self-check-r01-04 | v24-self-check | r1 | INFO | resolved(C1 留档:auto 自动降级分支延期至原 skill 退役时实测;污染 deliverables/dashboards/01_latest/ 归档时排除) | [B1](reviews/B1-v24-self-check-r1.md) |
+| REV-v2.5-v25-match-rule-tune-r01-01 | v25-match-rule-tune | r1 | WARNING | open(待 C 留档:A1 changed_files 声明 3 文件,git show ae1907e 实际 4 文件含送审报告自身;commit 洁净无污染) | [B1](reviews/B1-v25-match-rule-tune-r1.md) |
+| REV-v2.5-v25-match-rule-tune-r01-02 | v25-match-rule-tune | r1 | INFO | open(待 C 留档:Pass4 len>=3 阈值+MATCH_HARD_MAP 属经验值,建议业务观察1-2周扩展) | [B1](reviews/B1-v25-match-rule-tune-r1.md) |
 
 > 注:首轮 2 项 WARNING(REV-01/REV-02)经二次独立复核确认均为本地核查环境假阳性(.git 损坏 + 编码搜索漏匹配),已全部平反 resolved,无阻断归档的遗留 Issue。
 > 技术债 #ABS-002(internal_merge 与 run_increment_merge 并存)留第三轮封装层处理,详见 [C1 归档报告](closed/C1-v21-bookkeeping-r1.md) §3 audit_escape_risks。
@@ -77,6 +80,7 @@
 | v22-pricing | r1 已归档(COMPLETED) | — | v2.2.0 第三轮发行定价迁入,APPROVED_WITH_CONDITIONS;3 项 DOC_CONSISTENCY 瑕疵 REV-03 已修复,REV-01/02 由 C1 留档关闭 |
 | v23-internal-merge-unify | r1 已归档(COMPLETED,APPROVED_WITH_CONDITIONS) | — | v2.3.0 第四轮 internal_merge 翻译官改造,闭环 #ABS-002(解除 v20/v21/v22 三个 C1 的 deferred_critical);6 层自检通过;4 项瑕疵 REV-03 已修复,REV-01/02/04 由 C1 留档关闭 |
 | v24-self-check | r1 已归档(COMPLETED) | — | v2.4.0 新增 5 层自检工具脚本;核心层 3 逐 cell diff 回归闸门通过(13753 cell 0 差异);降级模式 --mode degraded 已验;3 项 WARNING + 1 INFO 由 C1 留档关闭;延期验证项:auto 自动降级分支留原 skill 退役时实测 |
+| v25-match-rule-tune | r1 已复审(REVIEWED,APPROVED_WITH_CONDITIONS) | 待 Agent C 归档 | v2.5.0 匹配规则调优:normalize 去连字符+全角空格 bug 修复+core_name+MATCH_HARD_MAP+Pass 1-4 优先级链+rebook 默认模式;5 处改动 git show ae1907e 逐行独立核查全真实、优先级链守卫顺序正确、rebook 向后兼容;6 层自检层1/6 读代码确认+层2-5采信 A 输出;§5 污染文件声明与实际一致(commit 仅 4 文件,较 v22/v23/v24 洁净性显著改善);2 项瑕疵(1 WARNING changed_files 口径+1 INFO 阈值观察)均不阻断待 C 留档 |
 
 ## 命名规则
 

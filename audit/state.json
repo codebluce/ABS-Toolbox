@@ -76,15 +76,17 @@
     "v25-match-rule-tune": {
       "skill_version": "v2.5.0",
       "current_round": 1,
-      "status": "PENDING_REVIEW",
-      "verdict": null,
-      "next_action": "review_by_agent_b",
+      "status": "REVIEWED",
+      "verdict": "APPROVED_WITH_CONDITIONS",
+      "next_action": "待 Agent C 归档",
       "submissions": [
         "A1-v25-match-rule-tune-r1"
       ],
-      "reviews": [],
+      "reviews": [
+        "B1-v25-match-rule-tune-r1"
+      ],
       "closed": null,
-      "notes": "v2.5.0 第六轮。基于 0703 台账实测发现 2 个匹配失败 case(利曦基金 vs 利曦私募基金 / 中信建投-衍生品 vs 中信建投衍生品)。4 处改造:normalize 去 - //／ + 修复全角空格 bug + 新增 core_name() 函数 + 新增 MATCH_HARD_MAP 显式映射 + Pass 1-4 优先级链 + rebook 设为默认模式。6 层自检全部通过,2 个原失败 case 验证匹配成功(QC Fails=0)。本轮 commit 含污染文件说明:仅 v25 相关 3 文件(increment_merge.py + SKILL.md + CHANGELOG.md + 送审报告)进入 v25 commit,其他 modified 脚本(abs_common.py / entity_alias.py / 3 个 gen)和业务台账文件不在 v25 commit 内,留单独 commit 标'上次会话遗留'。"
+      "notes": "v2.5.0 第六轮。基于 0703 台账实测发现 2 个匹配失败 case(利曦基金 vs 利曦私募基金 / 中信建投-衍生品 vs 中信建投衍生品)。4 处改造:normalize 去 - //／ + 修复全角空格 bug + 新增 core_name() 函数 + 新增 MATCH_HARD_MAP 显式映射 + Pass 1-4 优先级链 + rebook 设为默认模式。6 层自检全部通过,2 个原失败 case 验证匹配成功(QC Fails=0)。本轮 commit 含污染文件说明:仅 v25 相关 3 文件(increment_merge.py + SKILL.md + CHANGELOG.md + 送审报告)进入 v25 commit,其他 modified 脚本(abs_common.py / entity_alias.py / 3 个 gen)和业务台账文件不在 v25 commit 内,留单独 commit 标'上次会话遗留'。Agent B 独立复核完成:5 处改动经 git show ae1907e 逐行核查全部真实(normalize 去连字符+全角空格 bug 修复+core_name 有防削空保护+MATCH_HARD_MAP 双向+Pass 1-4 优先级链守卫顺序正确 L1093/1100/1111/1127+rebook 默认互斥校验向后兼容);6 层自检层1/6 读代码确认、层2-5 台账端到端采信 A 输出(B 未重跑业务台账,与 v20-v24 惯例一致);§5 污染文件声明与 git show 实际一致(commit 仅 4 文件,较 v22/v23/v24 连续三轮元数据失真显著改��,予以认可);2 项瑕疵 REV-01(changed_files 声明3实际4含送审报告自身)WARNING+REV-02(Pass4阈值/hard_map经验值需业务观察)INFO 均 blocks_approval=false,待 C1 留档关闭。verdict=APPROVED_WITH_CONDITIONS。"
     }
   },
   "issues": [
@@ -213,6 +215,24 @@
       "blocks_approval": false,
       "status": "resolved",
       "desc": "auto 自动降级分支延期至原 skill 退役时实测;污染 deliverables/dashboards/01_latest/ 归档时排除。C1 留档"
+    },
+    {
+      "id": "REV-v2.5-v25-match-rule-tune-r01-01",
+      "slug": "v25-match-rule-tune",
+      "severity": "WARNING",
+      "category": "DOC_CONSISTENCY",
+      "blocks_approval": false,
+      "status": "open",
+      "desc": "A1 changed_files 声明 3 文件(increment_merge.py+SKILL.md+CHANGELOG.md),git show ae1907e --stat 实际 4 文件(多送审报告 A1-*.md 自身+184行)。送审报告入 commit 属正常惯例,清单口径瑕疵不阻断。commit 洁净无污染(未混入 abs_common/entity_alias/gen/台账)。待 C1 留档"
+    },
+    {
+      "id": "REV-v2.5-v25-match-rule-tune-r01-02",
+      "slug": "v25-match-rule-tune",
+      "severity": "INFO",
+      "category": "FUNCTION_EQUIVALENCE",
+      "blocks_approval": false,
+      "status": "open",
+      "desc": "Pass4 核心名匹配 len(inst_core)>=3 阈值+MATCH_HARD_MAP(当前2条)属经验值。2字核心名(利曦/中信/长江)走 hard_map 兜底,阈值机制有效,当前0703/0626台账无误匹配。建议业务观察1-2周,发现新难匹配 case 再扩 hard_map。待 C1 留档"
     }
   ],
   "counters": {
@@ -239,6 +259,11 @@
       "closed_at": "2026-07-05"
     },
     "v24-self-check": {
+      "max_round": 1,
+      "rebase_count": 0,
+      "blocked_count": 0
+    },
+    "v25-match-rule-tune": {
       "max_round": 1,
       "rebase_count": 0,
       "blocked_count": 0
