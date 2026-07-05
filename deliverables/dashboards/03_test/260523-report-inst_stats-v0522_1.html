@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>机构统计看板</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       background:#f4f5f7; color:#000; font-size:13px; }
+
+.page-banner { background:linear-gradient(135deg,#0d1b2e 0%,#1a3a5c 60%,#0d2a40 100%);
+               color:#fff; padding:18px 32px 16px; }
+.banner-top { display:flex; justify-content:space-between; align-items:flex-start; }
+.banner-tag { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#7db8e8; margin-bottom:4px; }
+.banner-title { font-size:20px; font-weight:700; }
+.banner-subtitle { font-size:11px; color:rgba(255,255,255,.65); margin-top:4px; }
+.banner-badge { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25);
+                border-radius:4px; padding:5px 12px; font-size:11px; color:#c8dded;
+                text-align:right; line-height:1.7; }
+.banner-badge strong { color:#fff; font-size:13px; }
+
+.note-bar { padding:8px 32px; background:#fffbec; border-bottom:1px solid #ffe58f;
+            font-size:11px; color:#7a6010; line-height:1.5; display:flex; gap:24px; flex-wrap:wrap; }
+
+.content { padding:20px 32px; }
+
+.section { margin-bottom:28px; border-radius:8px; overflow:hidden;
+           box-shadow:0 1px 3px rgba(0,0,0,.07); }
+.section-header { padding:12px 16px 10px; color:#fff;
+                  display:flex; justify-content:space-between; align-items:center; }
+.section-title { font-size:16px; font-weight:700; letter-spacing:.5px; }
+.section-sub { font-size:11px; color:rgba(255,255,255,.75); text-align:right; line-height:1.5; }
+
+.stat-table { width:100%; border-collapse:collapse; background:#fff; table-layout:fixed; }
+.stat-table thead th { color:#fff; padding:8px 12px; text-align:left;
+                       font-size:11px; font-weight:600; letter-spacing:.3px; }
+.stat-table thead th.col-cnt { text-align:center; width:80px; }
+.stat-table thead th.col-num { text-align:right; width:120px; }
+.stat-table thead th.col-pct { text-align:right; width:90px; }
+.stat-table thead th.col-name { width:auto; }
+.stat-table tbody tr:nth-child(even) { background:#f7f9fc; }
+.stat-table tbody tr:hover { background:#eef3fa; }
+.stat-table tbody tr:not(:last-child) td { border-bottom:1px solid #eaeef4; }
+.stat-table tbody td { padding:7px 12px; font-size:12px; color:#000; }
+.stat-table tbody td.name { font-weight:500; }
+.stat-table tbody td.cnt { text-align:center; }
+.stat-table tbody td.num { text-align:right; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.stat-table tbody td.pct { text-align:right; }
+
+.footer { text-align:center; padding:16px 0 24px; font-size:11px; color:#9aa5b5; }
+</style>
+</head>
+<body>
+<div class="page-banner">
+  <div class="banner-top">
+    <div>
+      <div class="banner-tag">ABS Institution Statistics</div>
+      <div class="banner-title">机构统计看板</div>
+      <div class="banner-subtitle">
+        管理人/销售机构/托管行 三维度统计 ·
+        申万宏源系合并 · 托管行分行归并 · 券商only
+      </div>
+    </div>
+    <div class="banner-badge">
+      数据期间 <strong>2025-05-12 ~ 2026-05-22</strong><br>
+      项目 <strong>64</strong> 个 · 总规模 <strong>648.70 亿</strong>
+    </div>
+  </div>
+</div>
+
+<div class="note-bar">
+  <span>管理人/销售机构：仅统计券商，剔除信托/银行/保险</span>
+  <span>申万宏源/申万宏源资管/申万资管合并为同一主体</span>
+  <span>联席承销商即销售机构</span>
+  <span>托管行分行名归并为总行名（XX银行），同名合并</span>
+  <span>规模占比 = 机构规模 / 全部项目总规模</span>
+</div>
+
+<div class="content">
+<div class="section">
+  <div class="section-header" style="background:linear-gradient(135deg,#0d1b2e,#1a3a5c)">
+    <span class="section-title">表一：管理人统计表</span>
+    <span class="section-sub">12家券商 · 剔除信托/银行/保险 · 申万宏源系合并</span>
+  </div>
+  <table class="stat-table"><thead style="background:#0d1b2e"><tr><th class="col-name">机构名称</th><th class="col-cnt">管理项目数</th><th class="col-num">管理规模(亿)</th><th class="col-pct">规模占比</th><th class="col-num">投行认购规模(亿)</th></tr></thead><tbody><tr><td class="name">中信建投</td><td class="cnt">7</td><td class="num">67.45 亿</td><td class="pct">10.40%</td><td class="num">0.28</td></tr><tr><td class="name">招商证券</td><td class="cnt">7</td><td class="num">67.35 亿</td><td class="pct">10.38%</td><td class="num">1.00</td></tr><tr><td class="name">中信证券</td><td class="cnt">7</td><td class="num">63.60 亿</td><td class="pct">9.80%</td><td class="num">3.29</td></tr><tr><td class="name">国泰海通</td><td class="cnt">6</td><td class="num">59.30 亿</td><td class="pct">9.14%</td><td class="num">2.52</td></tr><tr><td class="name">华泰资管</td><td class="cnt">6</td><td class="num">56.00 亿</td><td class="pct">8.63%</td><td class="num">0.00</td></tr><tr><td class="name">财通资管</td><td class="cnt">4</td><td class="num">45.00 亿</td><td class="pct">6.94%</td><td class="num">0.00</td></tr><tr><td class="name">国投证券</td><td class="cnt">3</td><td class="num">30.00 亿</td><td class="pct">4.62%</td><td class="num">0.00</td></tr><tr><td class="name">申万宏源</td><td class="cnt">2</td><td class="num">20.00 亿</td><td class="pct">3.08%</td><td class="num">0.04</td></tr><tr><td class="name">首创证券</td><td class="cnt">2</td><td class="num">20.00 亿</td><td class="pct">3.08%</td><td class="num">0.03</td></tr><tr><td class="name">天风证券</td><td class="cnt">1</td><td class="num">15.00 亿</td><td class="pct">2.31%</td><td class="num">0.00</td></tr><tr><td class="name">兴业证券</td><td class="cnt">1</td><td class="num">10.00 亿</td><td class="pct">1.54%</td><td class="num">0.60</td></tr><tr><td class="name">国证资管</td><td class="cnt">1</td><td class="num">5.00 亿</td><td class="pct">0.77%</td><td class="num">0.00</td></tr></tbody></table>
+</div>
+<div class="section">
+  <div class="section-header" style="background:linear-gradient(135deg,#1c3a2a,#2d7a4f)">
+    <span class="section-title">表二：销售机构统计表</span>
+    <span class="section-sub">16家券商 · 联席承销商=销售机构 · 申万宏源系合并</span>
+  </div>
+  <table class="stat-table"><thead style="background:#1c3a2a"><tr><th class="col-name">机构名称</th><th class="col-cnt">销售项目数</th><th class="col-num">参与项目规模(亿)</th><th class="col-pct">规模占比</th><th class="col-num">投行认购规模(亿)</th></tr></thead><tbody><tr><td class="name">兴业证券</td><td class="cnt">7</td><td class="num">68.00 亿</td><td class="pct">10.48%</td><td class="num">0.60</td></tr><tr><td class="name">光大证券</td><td class="cnt">6</td><td class="num">63.00 亿</td><td class="pct">9.71%</td><td class="num">1.10</td></tr><tr><td class="name">华福证券</td><td class="cnt">5</td><td class="num">49.30 亿</td><td class="pct">7.60%</td><td class="num">1.29</td></tr><tr><td class="name">中信证券</td><td class="cnt">5</td><td class="num">44.30 亿</td><td class="pct">6.83%</td><td class="num">3.29</td></tr><tr><td class="name">国信证券</td><td class="cnt">3</td><td class="num">30.00 亿</td><td class="pct">4.62%</td><td class="num">1.40</td></tr><tr><td class="name">东方证券</td><td class="cnt">3</td><td class="num">29.30 亿</td><td class="pct">4.52%</td><td class="num">0.30</td></tr><tr><td class="name">信达证券</td><td class="cnt">3</td><td class="num">29.30 亿</td><td class="pct">4.52%</td><td class="num">0.00</td></tr><tr><td class="name">国开证券</td><td class="cnt">2</td><td class="num">20.00 亿</td><td class="pct">3.08%</td><td class="num">0.00</td></tr><tr><td class="name">国联证券</td><td class="cnt">2</td><td class="num">20.00 亿</td><td class="pct">3.08%</td><td class="num">0.24</td></tr><tr><td class="name">平安证券</td><td class="cnt">2</td><td class="num">20.00 亿</td><td class="pct">3.08%</td><td class="num">0.15</td></tr><tr><td class="name">申万宏源</td><td class="cnt">2</td><td class="num">19.30 亿</td><td class="pct">2.98%</td><td class="num">0.04</td></tr><tr><td class="name">国泰海通</td><td class="cnt">1</td><td class="num">15.00 亿</td><td class="pct">2.31%</td><td class="num">2.52</td></tr><tr><td class="name">长城证券</td><td class="cnt">1</td><td class="num">10.00 亿</td><td class="pct">1.54%</td><td class="num">0.00</td></tr><tr><td class="name">财通资管</td><td class="cnt">1</td><td class="num">9.45 亿</td><td class="pct">1.46%</td><td class="num">0.00</td></tr><tr><td class="name">国金证券</td><td class="cnt">1</td><td class="num">9.30 亿</td><td class="pct">1.43%</td><td class="num">0.00</td></tr><tr><td class="name">中信建投</td><td class="cnt">1</td><td class="num">3.00 亿</td><td class="pct">0.46%</td><td class="num">0.28</td></tr></tbody></table>
+</div>
+<div class="section">
+  <div class="section-header" style="background:linear-gradient(135deg,#3a2010,#c05a20)">
+    <span class="section-title">表三：托管行统计表</span>
+    <span class="section-sub">19家银行 · 分行归并至总行 · 同名合并</span>
+  </div>
+  <table class="stat-table"><thead style="background:#3a2010"><tr><th class="col-name">机构名称</th><th class="col-cnt">托管项目数</th><th class="col-num">托管规模(亿)</th><th class="col-pct">规模占比</th></tr></thead><tbody><tr><td class="name">江苏银行</td><td class="cnt">9</td><td class="num">82.30 亿</td><td class="pct">12.69%</td></tr><tr><td class="name">邮储银行</td><td class="cnt">7</td><td class="num">65.00 亿</td><td class="pct">10.02%</td></tr><tr><td class="name">民生银行</td><td class="cnt">6</td><td class="num">64.30 亿</td><td class="pct">9.91%</td></tr><tr><td class="name">兴业银行</td><td class="cnt">5</td><td class="num">50.00 亿</td><td class="pct">7.71%</td></tr><tr><td class="name">南京银行</td><td class="cnt">3</td><td class="num">50.00 亿</td><td class="pct">7.71%</td></tr><tr><td class="name">建设银行</td><td class="cnt">4</td><td class="num">50.00 亿</td><td class="pct">7.71%</td></tr><tr><td class="name">光大银行</td><td class="cnt">4</td><td class="num">44.30 亿</td><td class="pct">6.83%</td></tr><tr><td class="name">青岛银行</td><td class="cnt">4</td><td class="num">39.00 亿</td><td class="pct">6.01%</td></tr><tr><td class="name">平安银行</td><td class="cnt">3</td><td class="num">34.45 亿</td><td class="pct">5.31%</td></tr><tr><td class="name">中国银行</td><td class="cnt">3</td><td class="num">29.30 亿</td><td class="pct">4.52%</td></tr><tr><td class="name">中信银行</td><td class="cnt">3</td><td class="num">25.00 亿</td><td class="pct">3.85%</td></tr><tr><td class="name">交通银行</td><td class="cnt">3</td><td class="num">23.75 亿</td><td class="pct">3.66%</td></tr><tr><td class="name">招商银行</td><td class="cnt">3</td><td class="num">23.00 亿</td><td class="pct">3.55%</td></tr><tr><td class="name">工商银行</td><td class="cnt">2</td><td class="num">20.00 亿</td><td class="pct">3.08%</td></tr><tr><td class="name">渤海银行</td><td class="cnt">1</td><td class="num">10.00 亿</td><td class="pct">1.54%</td></tr><tr><td class="name">广发银行</td><td class="cnt">1</td><td class="num">10.00 亿</td><td class="pct">1.54%</td></tr><tr><td class="name">浦发银行</td><td class="cnt">1</td><td class="num">10.00 亿</td><td class="pct">1.54%</td></tr><tr><td class="name">上海银行</td><td class="cnt">1</td><td class="num">9.30 亿</td><td class="pct">1.43%</td></tr><tr><td class="name">浙商上分</td><td class="cnt">1</td><td class="num">9.00 亿</td><td class="pct">1.39%</td></tr></tbody></table>
+</div>
+</div>
+
+<div class="footer">
+  数据来源：2026年ABS发行台账-0522-簿记录入完成.xlsx ·
+  生成时间：2026-05-23 ·
+  机构统计 Skill v1.0.0
+</div>
+</body>
+</html>

@@ -1,0 +1,3981 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABS机构成本比对工具</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    background: #f0f2f5; color: #1a1a2e; font-size: 13px;
+  }
+  .tool-banner {
+    background: linear-gradient(135deg,#0d1b2e 0%,#1a3a5c 60%,#0d2a40 100%);
+    color: #fff; padding: 20px 36px 18px;
+  }
+  .banner-tag { font-size: 10px; letter-spacing: 2px; color: #7db8e8; margin-bottom: 4px; }
+  .banner-title { font-size: 18px; font-weight: 700; }
+  .banner-sub { font-size: 11px; color: #a0bfd4; margin-top: 3px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 20px 40px; }
+  .ctrl-panel {
+    background: #fff; border-radius: 8px; padding: 20px 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 20px;
+  }
+  .ctrl-row { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-label { font-size: 11px; color: #6b7a95; letter-spacing: 1px; text-transform: uppercase; }
+  select {
+    height: 38px; border: 1px solid #d0d8e4; border-radius: 5px;
+    padding: 0 12px; font-size: 13px; font-family: inherit;
+    color: #1a1a2e; background: #fafbfc; outline: none; transition: border-color .2s;
+    cursor: pointer; min-width: 170px;
+  }
+  select:focus { border-color: #2563a8; }
+  select#tenorSelect { min-width: 130px; }
+  .btn {
+    height: 38px; padding: 0 24px; background: #c0392b; color: #fff;
+    border: none; border-radius: 5px; font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer; letter-spacing: .5px; transition: background .2s;
+  }
+  .btn:hover { background: #a93226; }
+
+  /* 成本微调：输入框 + 两侧按钮 */
+  .cost-ctrl { display: flex; align-items: center; gap: 6px; }
+  .cost-input {
+    width: 72px; height: 38px; border: 1.5px solid #d0d8e4; border-radius: 5px;
+    text-align: center; font-size: 14px; font-weight: 600; font-family: inherit;
+    color: #1a1a2e; background: #fff; outline: none; cursor: text;
+    transition: border-color .2s;
+  }
+  .cost-input:focus { border-color: #2563a8; }
+  .cost-input::-webkit-inner-spin-button,
+  .cost-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .cost-input[type=number] { -moz-appearance: textfield; }
+  .cost-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1.5px solid #c0392b; background: #fff; color: #c0392b;
+    font-size: 18px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s, color .15s; flex-shrink: 0;
+    line-height: 1;
+  }
+  .cost-btn:hover { background: #c0392b; color: #fff; }
+  .cost-btn:active { background: #a93226; }
+  .cost-val {
+    min-width: 50px; text-align: center; font-size: 13px;
+    font-weight: 600; color: #1a3a5c;
+    padding: 5px 8px; background: #f0f4fa; border-radius: 5px;
+    border: 1px solid #d0d8e4;
+  }
+
+  .result-area { display: none; }
+  .result-area.show { display: block; }
+  .hint-bar {
+    padding: 10px 16px; background: #e8f0fc; border-radius: 8px 8px 0 0;
+    font-size: 12px; color: #2a4a7c; display: flex;
+    justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;
+  }
+  .hint-bar strong { color: #1a3a5c; font-size: 14px; }
+  .res-table-wrap {
+    background: #fff; border-radius: 0 0 8px 8px;
+    overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  }
+  .res-table { width: 100%; border-collapse: collapse; }
+  .res-table thead th {
+    background: #0d1b2e; color: #fff; padding: 9px 16px;
+    font-size: 11px; font-weight: 600; letter-spacing: .5px; text-align: left;
+  }
+  .res-table thead th:last-child { text-align: right; }
+  .res-table tbody td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .res-table tbody tr:nth-child(even) { background: #f7f9fc; }
+  .res-table tbody tr:hover { background: #eef3fa; }
+  .res-table tbody td {
+    padding: 9px 16px; font-size: 12px; border-bottom: 1px solid #eaeef4;
+  }
+  .inst-cell { font-weight: 500; color: #1a2a40; }
+  .cost-cell { color: #2d7a4f; font-weight: 600; }
+  .spread-cell { font-weight: 600; color: #1a3a5c; }
+  .date-cell { color: #6b7a95; font-size: 11px; }
+  .rank-num { font-size: 12px; }
+  .summary-row td { background: #f0f4fa !important; border-top: 2px solid #d0d8e4; }
+  .tenor-badge {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px; margin-left: 8px;
+    background: #dde8f4; color: #2a4a7a; border: 1px solid #aac4e0;
+  }
+  .empty-state {
+    background: #fff; border-radius: 8px; padding: 40px;
+    text-align: center; color: #8a9ab5; font-size: 13px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  }
+  .footer-note { margin-top: 14px; font-size: 11px; color: #9aa5b5; text-align: center; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+  .result-area.show { animation: fadeIn .3s ease; }
+</style>
+</head>
+<body>
+
+<div class="tool-banner">
+  <div class="banner-tag">ABS Investor Intelligence Tool · Priority A</div>
+  <div class="banner-title">机构成本比对工具</div>
+  <div class="banner-sub">优先A · 产品类型（资产类型+期限） · 不高于目标成本的认购机构排名</div>
+</div>
+
+<div class="container">
+  <div class="ctrl-panel">
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <div class="ctrl-label">期限筛选</div>
+        <select id="tenorSelect" onchange="onTenorChange()">
+          <option value="">全部</option>
+          <option value="1年期">1年期</option>
+          <option value="超1年期">超1年期</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">产品类型</div>
+        <select id="productSelect">
+          <option value="">— 选择产品类型 —</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">目标成本上限（%）</div>
+        <div class="cost-ctrl">
+          <button class="cost-btn" onclick="adjCost(-0.01)" title="减0.01%">&#8722;</button>
+          <input type="number" id="costInput" class="cost-input"
+                 min="1.50" max="2.50" step="0.01" value="1.80"
+                 placeholder="1.50~2.20" onclick="this.select()">
+          <button class="cost-btn" onclick="adjCost(0.01)" title="加0.01%">+</button>
+        </div>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">&nbsp;</div>
+        <button class="btn" onclick="doSearch()">查询</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-area" id="resultArea">
+    <div class="hint-bar">
+      <span id="hintText"></span>
+      <span id="metaTag" style="font-size:11px;color:#5a7aa8"></span>
+    </div>
+    <div class="res-table-wrap">
+      <table class="res-table">
+        <thead>
+          <tr>
+            <th style="width:36px;text-align:center">#</th>
+            <th>认购机构</th>
+            <th>簿记日期</th>
+            <th>实际成本</th>
+            <th>基准利差</th>
+            <th>认购份额（亿元）</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="empty-state" id="emptyState">
+    选择产品类型，输入目标成本上限，点击查询
+  </div>
+
+  <div class="footer-note">
+    仅统计分层情况为"优先A"的条目 ·
+    产品类型 = 资产类型 + 期限分类（单一期限） ·
+    基准利差 = 成本 &#8722; 国股CD ·
+    数据来源：1779946966778-2026_ABS____-0522-______v4.xlsx · 分析报告员 pBuddy
+  </div>
+</div>
+
+<script>
+const ALL_PRODUCTS = ["1年期赊销白条", "超1年期赊销白条", "1年期信托金条", "超1年期信托金条", "1年期白条取现", "1年期信托企业主贷", "超1年期信托企业主贷", "1年期小贷企业主贷", "超1年期小贷企业主贷", "超1年期京企贷", "1年期保理", "1年期动产质押", "1年期京企贷", "1年期信托白取", "1年期金采"];
+const ALL_DATA = [
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.56,
+    "spread": 0.115,
+    "inst": "杭银理财",
+    "share": 0.45
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.55,
+    "spread": 0.105,
+    "inst": "杭州联合银行",
+    "share": 0.5
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.55,
+    "spread": 0.105,
+    "inst": "杭州银行",
+    "share": 1.35
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.55,
+    "spread": 0.105,
+    "inst": "江苏银行",
+    "share": 1.8
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.55,
+    "spread": 0.105,
+    "inst": "南京银行",
+    "share": 0.8
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.53,
+    "spread": 0.085,
+    "inst": "平安理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.56,
+    "spread": 0.115,
+    "inst": "招银理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.57,
+    "spread": 0.125,
+    "inst": "招商证券",
+    "share": 1.0
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.57,
+    "spread": 0.125,
+    "inst": "平安养老保险",
+    "share": 1.08
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.57,
+    "spread": 0.125,
+    "inst": "杭州联合",
+    "share": 0.5
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.59,
+    "spread": 0.145,
+    "inst": "交银理财",
+    "share": 0.3
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "交银理财",
+    "share": 1.7
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "中邮理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.62,
+    "spread": 0.175,
+    "inst": "交银理财",
+    "share": 0.7
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "广银理财",
+    "share": 2.0
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 2.3,
+    "spread": 0.855,
+    "inst": "利曦基金",
+    "share": 2.0
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.5,
+    "spread": 0.055,
+    "inst": "宿迁钧腾",
+    "share": 0.45
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.57,
+    "spread": 0.125,
+    "inst": "杭州联合银行",
+    "share": 0.5
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.55,
+    "spread": 0.105,
+    "inst": "交银理财",
+    "share": 0.1
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.5,
+    "spread": 0.055,
+    "inst": "平安理财",
+    "share": 1.13
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.57,
+    "spread": 0.125,
+    "inst": "平安养老",
+    "share": 1.08
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.58,
+    "spread": 0.135,
+    "inst": "招银理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.59,
+    "spread": 0.145,
+    "inst": "中邮理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.59,
+    "spread": 0.145,
+    "inst": "交银理财",
+    "share": 0.3
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "中邮理财",
+    "share": 1.7
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "交银理财",
+    "share": 1.5
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.62,
+    "spread": 0.175,
+    "inst": "交银理财",
+    "share": 0.5
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "交银理财",
+    "share": 0.09
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.8,
+    "spread": 0.355,
+    "inst": "中金公司（投顾）",
+    "share": 0.3
+  },
+  {
+    "product": "1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.8,
+    "spread": 0.355,
+    "inst": "交银理财",
+    "share": 0.2
+  },
+  {
+    "product": "超1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "超1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.83,
+    "spread": 0.31,
+    "inst": "交银理财",
+    "share": 1.8
+  },
+  {
+    "product": "超1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "超1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.83,
+    "spread": 0.31,
+    "inst": "国信证券投行",
+    "share": 1.3
+  },
+  {
+    "product": "超1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "超1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.83,
+    "spread": 0.31,
+    "inst": "国泰海通投行",
+    "share": 1.1
+  },
+  {
+    "product": "超1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "超1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.83,
+    "spread": 0.31,
+    "inst": "招银理财",
+    "share": 1.0
+  },
+  {
+    "product": "超1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "超1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.83,
+    "spread": 0.31,
+    "inst": "青岛银行",
+    "share": 1.0
+  },
+  {
+    "product": "超1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "超1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.83,
+    "spread": 0.31,
+    "inst": "华福证券投行",
+    "share": 0.935
+  },
+  {
+    "product": "超1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "超1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.83,
+    "spread": 0.31,
+    "inst": "国联民生投行",
+    "share": 0.83
+  },
+  {
+    "product": "超1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "超1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.83,
+    "spread": 0.31,
+    "inst": "青岸投资",
+    "share": 0.3
+  },
+  {
+    "product": "超1年期赊销白条",
+    "asset": "赊销白条",
+    "tenor": "超1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.83,
+    "spread": 0.31,
+    "inst": "京东世贸",
+    "share": 0.435
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "中邮理财",
+    "share": 2.3
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "招商证券投行",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.59,
+    "spread": 0.145,
+    "inst": "渝农商理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "申万宏源资管",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "建信理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.64,
+    "spread": 0.195,
+    "inst": "杭州联合银行",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "广银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.64,
+    "spread": 0.195,
+    "inst": "工银瑞信基金",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "中邮理财",
+    "share": 0.4
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "渝农商理财",
+    "share": 0.37
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.85,
+    "spread": 0.405,
+    "inst": "中信建投衍生品投顾",
+    "share": 0.12
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.85,
+    "spread": 0.405,
+    "inst": "渝农商理财",
+    "share": 0.02
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 2.4,
+    "spread": 0.955,
+    "inst": "利曦基金",
+    "share": 2.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "建信理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.58,
+    "spread": 0.135,
+    "inst": "招银理财",
+    "share": 2.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "中邮理财",
+    "share": 2.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.59,
+    "spread": 0.145,
+    "inst": "渝农商理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "杭州联合银行",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "广银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "工银瑞信基金",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.64,
+    "spread": 0.195,
+    "inst": "杭州农商行资管",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.67,
+    "spread": 0.225,
+    "inst": "中邮理财",
+    "share": 0.7
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "国金资管",
+    "share": 1.3
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "渝农商理财",
+    "share": 0.37
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.75,
+    "spread": 0.305,
+    "inst": "中金公司（投顾）",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.8,
+    "spread": 0.355,
+    "inst": "上海利曦私募",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.84,
+    "spread": 0.395,
+    "inst": "杭州农商行资管",
+    "share": 0.09
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.85,
+    "spread": 0.405,
+    "inst": "中信证券（投行上报)",
+    "share": 0.05
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.9,
+    "spread": 0.455,
+    "inst": "渝农商理财",
+    "share": 0.02
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 2.4,
+    "spread": 0.955,
+    "inst": "上海利曦私募",
+    "share": 2.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.58,
+    "spread": 0.135,
+    "inst": "招银理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "渝农商理财",
+    "share": 0.1
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "建信理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.62,
+    "spread": 0.175,
+    "inst": "中邮理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.62,
+    "spread": 0.175,
+    "inst": "广银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "利曦基金",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "广银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.85,
+    "spread": 0.405,
+    "inst": "财通资管",
+    "share": 0.1
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 1.9,
+    "spread": 0.455,
+    "inst": "渝农商理财",
+    "share": 0.02
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 2.4,
+    "spread": 0.955,
+    "inst": "利曦基金",
+    "share": 2.0
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "国联民生",
+    "share": 1.05
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "建信理财",
+    "share": 0.3
+  },
+  {
+    "product": "1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-06",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "渝农商理财",
+    "share": 1.0
+  },
+  {
+    "product": "超1年期信托金条",
+    "asset": "信托金条",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-29",
+    "cost": 2.35,
+    "spread": 0.77,
+    "inst": "国寿投资",
+    "share": 13.5
+  },
+  {
+    "product": "1年期白条取现",
+    "asset": "白条取现",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-26",
+    "cost": 1.7,
+    "spread": 0.2,
+    "inst": "交银理财",
+    "share": 1.5
+  },
+  {
+    "product": "1年期白条取现",
+    "asset": "白条取现",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-26",
+    "cost": 1.7,
+    "spread": 0.2,
+    "inst": "招银理财",
+    "share": 1.8
+  },
+  {
+    "product": "1年期白条取现",
+    "asset": "白条取现",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-26",
+    "cost": 1.7,
+    "spread": 0.2,
+    "inst": "广银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期白条取现",
+    "asset": "白条取现",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-26",
+    "cost": 1.7,
+    "spread": 0.2,
+    "inst": "兴银理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期白条取现",
+    "asset": "白条取现",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-26",
+    "cost": 1.7,
+    "spread": 0.2,
+    "inst": "重庆农商行金市",
+    "share": 2.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.55,
+    "spread": 0.105,
+    "inst": "民生理财",
+    "share": 2.49
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.56,
+    "spread": 0.115,
+    "inst": "招银理财",
+    "share": 1.5
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "交银理财",
+    "share": 2.48
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "中邮理财",
+    "share": 2.49
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.56,
+    "spread": 0.115,
+    "inst": "渝农商理财",
+    "share": 1.49
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.56,
+    "spread": 0.115,
+    "inst": "重庆农商银行",
+    "share": 2.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "工银理财",
+    "share": 0.92
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "渝农商理财",
+    "share": 0.2
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.64,
+    "spread": 0.195,
+    "inst": "交银理财",
+    "share": 0.01
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "渝农商理财",
+    "share": 0.45
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.69,
+    "spread": 0.245,
+    "inst": "易方达基金",
+    "share": 1.6
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "中金公司",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "利曦基金",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "华夏理财",
+    "share": 2.49
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "广银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "易方达基金",
+    "share": 0.89
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "渝农商理财",
+    "share": 0.05
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.72,
+    "spread": 0.275,
+    "inst": "渝农商理财",
+    "share": 0.1
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.74,
+    "spread": 0.295,
+    "inst": "建信信托",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.75,
+    "spread": 0.305,
+    "inst": "建信信托",
+    "share": 0.8
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.75,
+    "spread": 0.305,
+    "inst": "中金投顾",
+    "share": 0.3
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.8,
+    "spread": 0.355,
+    "inst": "建信信托",
+    "share": 0.69
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 2.4,
+    "spread": 0.955,
+    "inst": "利曦基金",
+    "share": 2.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.54,
+    "spread": 0.095,
+    "inst": "渝农商理财",
+    "share": 1.39
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "交银理财",
+    "share": 0.2
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.55,
+    "spread": 0.105,
+    "inst": "民生理财",
+    "share": 2.49
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.5,
+    "spread": 0.055,
+    "inst": "招银理财",
+    "share": 1.5
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "工银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "中邮理财",
+    "share": 2.49
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.57,
+    "spread": 0.125,
+    "inst": "重庆农商银行",
+    "share": 2.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.59,
+    "spread": 0.145,
+    "inst": "渝农商理财",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "渝农商理财",
+    "share": 0.4
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.61,
+    "spread": 0.165,
+    "inst": "建信信托",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.62,
+    "spread": 0.175,
+    "inst": "交银理财",
+    "share": 0.48
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "渝农商理财",
+    "share": 0.2
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "交银理财",
+    "share": 1.8
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "中金公司",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "交银理财",
+    "share": 0.01
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "中金公司",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "建投机构部",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.8,
+    "spread": 0.355,
+    "inst": "申万宏源证券资管",
+    "share": 0.95
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 2.0,
+    "spread": 0.555,
+    "inst": "建信信托",
+    "share": 1.5
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 2.0,
+    "spread": 0.555,
+    "inst": "西部证券",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 2.0,
+    "spread": 0.555,
+    "inst": "信达证券",
+    "share": 0.8
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 2.1,
+    "spread": 0.655,
+    "inst": "德邦证券",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 2.4,
+    "spread": 0.955,
+    "inst": "利曦基金",
+    "share": 2.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "华鑫国际信托(建投投顾）",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "中信建投证券",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "国信证券",
+    "share": 0.8
+  },
+  {
+    "product": "超1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-23",
+    "cost": 2.1,
+    "spread": 0.5,
+    "inst": "交银理财",
+    "share": 1.9
+  },
+  {
+    "product": "超1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-23",
+    "cost": 2.1,
+    "spread": 0.5,
+    "inst": "中金自营",
+    "share": 0.3
+  },
+  {
+    "product": "超1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-23",
+    "cost": 2.1,
+    "spread": 0.5,
+    "inst": "顺德农商行",
+    "share": 0.5
+  },
+  {
+    "product": "超1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-23",
+    "cost": 2.1,
+    "spread": 0.5,
+    "inst": "建信信托",
+    "share": 1.2
+  },
+  {
+    "product": "超1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-23",
+    "cost": 2.1,
+    "spread": 0.5,
+    "inst": "招银理财",
+    "share": 1.1
+  },
+  {
+    "product": "超1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-23",
+    "cost": 2.1,
+    "spread": 0.5,
+    "inst": "中金资管",
+    "share": 0.5
+  },
+  {
+    "product": "超1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-23",
+    "cost": 2.1,
+    "spread": 0.5,
+    "inst": "宁夏银行",
+    "share": 0.3
+  },
+  {
+    "product": "超1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-23",
+    "cost": 2.1,
+    "spread": 0.5,
+    "inst": "易方达基金",
+    "share": 2.4
+  },
+  {
+    "product": "超1年期信托企业主贷",
+    "asset": "信托企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-23",
+    "cost": 2.1,
+    "spread": 0.5,
+    "inst": "申万宏源投顾",
+    "share": 0.1
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.5,
+    "spread": 0.055,
+    "inst": "盛际小货",
+    "share": 0.625
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "中邮理财",
+    "share": 3.734
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "工银理财",
+    "share": 2.49
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "交银理财",
+    "share": 2.78
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.63,
+    "spread": 0.185,
+    "inst": "华夏理财",
+    "share": 3.73
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.63,
+    "spread": 0.185,
+    "inst": "交银理财",
+    "share": 0.3
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.64,
+    "spread": 0.195,
+    "inst": "中信证券（投顾）",
+    "share": 0.5
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.64,
+    "spread": 0.195,
+    "inst": "交银理财",
+    "share": 0.3
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "交银理财",
+    "share": 0.355
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "建信信托",
+    "share": 1.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.67,
+    "spread": 0.225,
+    "inst": "华泰证券（资管）",
+    "share": 0.2
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "中信证券（投顾）",
+    "share": 0.3
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "广银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.74,
+    "spread": 0.295,
+    "inst": "中信证券（投顾）",
+    "share": 1.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.75,
+    "spread": 0.305,
+    "inst": "中金公司（投顾）",
+    "share": 0.3
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.75,
+    "spread": 0.305,
+    "inst": "中金公司（自营）",
+    "share": 1.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.75,
+    "spread": 0.305,
+    "inst": "建信信托",
+    "share": 1.9
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.77,
+    "spread": 0.325,
+    "inst": "中信证券（投顾）",
+    "share": 1.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.8,
+    "spread": 0.355,
+    "inst": "申万宏源证券（自营）",
+    "share": 0.5
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 1.8,
+    "spread": 0.355,
+    "inst": "光大证券（包销）",
+    "share": 1.5
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 2.4,
+    "spread": 0.955,
+    "inst": "利曦基金",
+    "share": 2.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "沛轩投资",
+    "share": 0.3
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-18",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "中信建投（投顾）",
+    "share": 1.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.0,
+    "spread": -0.445,
+    "inst": "盛际小货",
+    "share": 0.625
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.57,
+    "spread": 0.125,
+    "inst": "交银理财",
+    "share": 0.1
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "中邮理财",
+    "share": 3.734
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "工银理财",
+    "share": 1.5
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "华夏理财",
+    "share": 0.36
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "中金自营",
+    "share": 1.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "交银理财",
+    "share": 3.63
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.64,
+    "spread": 0.195,
+    "inst": "华夏理财",
+    "share": 0.5
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "华夏理财",
+    "share": 1.25
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.74,
+    "spread": 0.295,
+    "inst": "华夏理财",
+    "share": 0.36
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.75,
+    "spread": 0.305,
+    "inst": "华夏理财",
+    "share": 1.26
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.68,
+    "spread": 0.235,
+    "inst": "中金投顾",
+    "share": 0.5
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.68,
+    "spread": 0.235,
+    "inst": "中金财富",
+    "share": 1.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.68,
+    "spread": 0.235,
+    "inst": "利曦基金",
+    "share": 2.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "利曦基金",
+    "share": 0.5
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.68,
+    "spread": 0.235,
+    "inst": "国泰海通",
+    "share": 2.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.75,
+    "spread": 0.305,
+    "inst": "建投机构部",
+    "share": 1.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 1.8,
+    "spread": 0.355,
+    "inst": "财通资管",
+    "share": 1.8
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-21",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "建投自营",
+    "share": 1.0
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-22",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "盛际小贷",
+    "share": 0.625
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-22",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "建信信托",
+    "share": 1.6
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-22",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "中邮理财",
+    "share": 3.71
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-22",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "工银理财",
+    "share": 1.5
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-22",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "华夏理财",
+    "share": 2.085
+  },
+  {
+    "product": "1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-22",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "交银理财",
+    "share": 2.93
+  },
+  {
+    "product": "超1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-27",
+    "cost": 2.04,
+    "spread": 0.45,
+    "inst": "交银理财",
+    "share": 1.3
+  },
+  {
+    "product": "超1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-27",
+    "cost": 2.04,
+    "spread": 0.45,
+    "inst": "天津银行",
+    "share": 1.0
+  },
+  {
+    "product": "超1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-27",
+    "cost": 2.04,
+    "spread": 0.45,
+    "inst": "中金财富",
+    "share": 0.485
+  },
+  {
+    "product": "超1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-27",
+    "cost": 2.04,
+    "spread": 0.45,
+    "inst": "工银理财",
+    "share": 1.6
+  },
+  {
+    "product": "超1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-27",
+    "cost": 2.04,
+    "spread": 0.45,
+    "inst": "招银理财",
+    "share": 1.2
+  },
+  {
+    "product": "超1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-27",
+    "cost": 2.04,
+    "spread": 0.45,
+    "inst": "易方达基金",
+    "share": 2.0
+  },
+  {
+    "product": "超1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-27",
+    "cost": 2.04,
+    "spread": 0.45,
+    "inst": "申万宏源投顾",
+    "share": 0.3
+  },
+  {
+    "product": "超1年期小贷企业主贷",
+    "asset": "小贷企业主贷",
+    "tenor": "超1年期",
+    "month": "2026-01",
+    "date": "2026-01-27",
+    "cost": 2.04,
+    "spread": 0.45,
+    "inst": "盛际小贷",
+    "share": 0.415
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "盛际小贷",
+    "share": 0.45
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "财达资管",
+    "share": 0.3
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "中金资管",
+    "share": 0.1
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "中金自营",
+    "share": 1.0
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "渤银理财",
+    "share": 0.5
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "建信信托",
+    "share": 1.85
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "中信投顾",
+    "share": 1.3
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "广银理财",
+    "share": 1.15
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "申万宏源投顾",
+    "share": 1.1
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "中泰证券自营",
+    "share": 0.3
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "申万宏源资管",
+    "share": 0.1
+  },
+  {
+    "product": "超1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "超1年期",
+    "month": "2026-02",
+    "date": "2026-02-09",
+    "cost": 2.1,
+    "spread": 0.51,
+    "inst": "宁夏银行",
+    "share": 0.85
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.48,
+    "spread": 0.0475,
+    "inst": "平安资产",
+    "share": 1.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.5,
+    "spread": 0.0675,
+    "inst": "交银理财",
+    "share": 0.8
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.4,
+    "spread": -0.0325,
+    "inst": "民生理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.49,
+    "spread": 0.0575,
+    "inst": "光大理财",
+    "share": 0.3
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.5,
+    "spread": 0.0675,
+    "inst": "平安理财",
+    "share": 0.28
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.5,
+    "spread": 0.0675,
+    "inst": "建信理财",
+    "share": 1.48
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.49,
+    "spread": 0.0575,
+    "inst": "平安资产",
+    "share": 1.47
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.5,
+    "spread": 0.0675,
+    "inst": "民生理财",
+    "share": 0.48
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.5,
+    "spread": 0.0675,
+    "inst": "光大理财",
+    "share": 1.18
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.5,
+    "spread": 0.0675,
+    "inst": "平安资产",
+    "share": 1.23
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.55,
+    "spread": 0.1175,
+    "inst": "交银理财",
+    "share": 0.48
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.55,
+    "spread": 0.1175,
+    "inst": "中银理财",
+    "share": 0.5
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.58,
+    "spread": 0.1475,
+    "inst": "中银理财",
+    "share": 0.9
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.6,
+    "spread": 0.1675,
+    "inst": "中信证券（投行上报）",
+    "share": 0.74
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.6,
+    "spread": 0.1675,
+    "inst": "中邮理财",
+    "share": 1.48
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-14",
+    "cost": 1.64,
+    "spread": 0.2075,
+    "inst": "交银理财",
+    "share": 0.2
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.5,
+    "spread": 0.06,
+    "inst": "平安理财",
+    "share": 2.47
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.5,
+    "spread": 0.06,
+    "inst": "工银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.5,
+    "spread": 0.06,
+    "inst": "北银理财",
+    "share": 0.1
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.5,
+    "spread": 0.06,
+    "inst": "浦银理财",
+    "share": 2.76
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.5,
+    "spread": 0.06,
+    "inst": "民生理财",
+    "share": 2.97
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.5,
+    "spread": 0.06,
+    "inst": "光大理财",
+    "share": 1.95
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.5,
+    "spread": 0.06,
+    "inst": "建信理财",
+    "share": 2.9
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.5,
+    "spread": 0.06,
+    "inst": "平安资产",
+    "share": 4.95
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.52,
+    "spread": 0.08,
+    "inst": "工银理财",
+    "share": 0.5
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.52,
+    "spread": 0.08,
+    "inst": "上银理财",
+    "share": 0.5
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.53,
+    "spread": 0.09,
+    "inst": "光大理财",
+    "share": 0.5
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.53,
+    "spread": 0.09,
+    "inst": "建信理财",
+    "share": 0.07
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.54,
+    "spread": 0.1,
+    "inst": "光大理财",
+    "share": 0.5
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.55,
+    "spread": 0.11,
+    "inst": "工银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.55,
+    "spread": 0.11,
+    "inst": "中银理财",
+    "share": 2.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.56,
+    "spread": 0.12,
+    "inst": "中银理财",
+    "share": 0.9
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.56,
+    "spread": 0.12,
+    "inst": "交银理财",
+    "share": 0.48
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.56,
+    "spread": 0.12,
+    "inst": "平安银行",
+    "share": 1.96
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.57,
+    "spread": 0.13,
+    "inst": "交银理财",
+    "share": 0.3
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.57,
+    "spread": 0.13,
+    "inst": "上银理财",
+    "share": 0.33
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.58,
+    "spread": 0.14,
+    "inst": "交银理财",
+    "share": 0.4
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.58,
+    "spread": 0.14,
+    "inst": "中邮理财",
+    "share": 1.5
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.58,
+    "spread": 0.14,
+    "inst": "上银理财",
+    "share": 0.53
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.59,
+    "spread": 0.15,
+    "inst": "上银理财",
+    "share": 0.53
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.6,
+    "spread": 0.16,
+    "inst": "交银理财",
+    "share": 1.1
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.6,
+    "spread": 0.16,
+    "inst": "中邮理财",
+    "share": 1.47
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.6,
+    "spread": 0.16,
+    "inst": "上银理财",
+    "share": 1.08
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.65,
+    "spread": 0.21,
+    "inst": "建信基金",
+    "share": 0.1
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 1.75,
+    "spread": 0.31,
+    "inst": "中金公司（投顾）",
+    "share": 0.3
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 2.4,
+    "spread": 0.96,
+    "inst": "利曦基金",
+    "share": 2.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-12",
+    "cost": 2.5,
+    "spread": 1.06,
+    "inst": "平安银行",
+    "share": 2.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.48,
+    "spread": 0.035,
+    "inst": "平安资产",
+    "share": 2.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.41,
+    "spread": -0.035,
+    "inst": "平安理财",
+    "share": 2.47
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.5,
+    "spread": 0.055,
+    "inst": "民生理财",
+    "share": 2.97
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.49,
+    "spread": 0.045,
+    "inst": "建信理财",
+    "share": 0.29
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.5,
+    "spread": 0.055,
+    "inst": "浦银理财",
+    "share": 2.76
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.5,
+    "spread": 0.055,
+    "inst": "光大理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.5,
+    "spread": 0.055,
+    "inst": "交银理财",
+    "share": 0.2
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.49,
+    "spread": 0.045,
+    "inst": "平安资产",
+    "share": 2.95
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.5,
+    "spread": 0.055,
+    "inst": "建信理财",
+    "share": 1.78
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.53,
+    "spread": 0.085,
+    "inst": "工银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.55,
+    "spread": 0.105,
+    "inst": "中银理财",
+    "share": 2.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.56,
+    "spread": 0.115,
+    "inst": "交银理财",
+    "share": 0.48
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.56,
+    "spread": 0.115,
+    "inst": "中银理财",
+    "share": 0.9
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.56,
+    "spread": 0.115,
+    "inst": "工银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.56,
+    "spread": 0.115,
+    "inst": "平安银行",
+    "share": 3.96
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.57,
+    "spread": 0.125,
+    "inst": "工银理财",
+    "share": 0.5
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "光大证券",
+    "share": 1.0
+  },
+  {
+    "product": "1年期保理",
+    "asset": "保理",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "中邮理财",
+    "share": 2.96
+  },
+  {
+    "product": "1年期动产质押",
+    "asset": "动产质押",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.8,
+    "spread": 0.28,
+    "inst": "太平基金",
+    "share": 0.2
+  },
+  {
+    "product": "1年期动产质押",
+    "asset": "动产质押",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.8,
+    "spread": 0.28,
+    "inst": "招银理财",
+    "share": 0.77
+  },
+  {
+    "product": "1年期动产质押",
+    "asset": "动产质押",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.8,
+    "spread": 0.28,
+    "inst": "中邮理财",
+    "share": 0.77
+  },
+  {
+    "product": "1年期动产质押",
+    "asset": "动产质押",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.8,
+    "spread": 0.28,
+    "inst": "华泰保兴基金",
+    "share": 0.2
+  },
+  {
+    "product": "1年期动产质押",
+    "asset": "动产质押",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.8,
+    "spread": 0.28,
+    "inst": "易方达基金",
+    "share": 0.3
+  },
+  {
+    "product": "1年期动产质押",
+    "asset": "动产质押",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.8,
+    "spread": 0.28,
+    "inst": "申万宏源资管",
+    "share": 0.08
+  },
+  {
+    "product": "1年期动产质押",
+    "asset": "动产质押",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.8,
+    "spread": 0.28,
+    "inst": "广银理财",
+    "share": 0.13
+  },
+  {
+    "product": "1年期动产质押",
+    "asset": "动产质押",
+    "tenor": "1年期",
+    "month": "2026-03",
+    "date": "2026-03-24",
+    "cost": 1.8,
+    "spread": 0.28,
+    "inst": "华夏理财",
+    "share": 0.13
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.5,
+    "spread": 0.055,
+    "inst": "盛际小贷",
+    "share": 0.36
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.58,
+    "spread": 0.135,
+    "inst": "招银理财",
+    "share": 1.8
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.67,
+    "spread": 0.225,
+    "inst": "中邮理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.74,
+    "spread": 0.295,
+    "inst": "建信信托",
+    "share": 0.5
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.75,
+    "spread": 0.305,
+    "inst": "广银理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.75,
+    "spread": 0.305,
+    "inst": "华泰证券自营",
+    "share": 0.3
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "华泰资管",
+    "share": 0.4
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "光大证券投行",
+    "share": 1.1
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.69,
+    "spread": 0.245,
+    "inst": "中邮理财",
+    "share": 1.16
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "华泰证券自营",
+    "share": 0.3
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.8,
+    "spread": 0.355,
+    "inst": "中信证券（投顾）",
+    "share": 0.5
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.8,
+    "spread": 0.355,
+    "inst": "中金公司自营",
+    "share": 0.8
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.82,
+    "spread": 0.375,
+    "inst": "申万宏源证券（投顾）",
+    "share": 1.5
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.85,
+    "spread": 0.405,
+    "inst": "中信证券（投顾）",
+    "share": 0.3
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.85,
+    "spread": 0.405,
+    "inst": "中金公司（投顾）",
+    "share": 0.3
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 1.89,
+    "spread": 0.445,
+    "inst": "中信证券（投顾）",
+    "share": 0.4
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "中信建投（机构部）",
+    "share": 0.5
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "中信建投（衍生品）",
+    "share": 1.0
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "利曦基金",
+    "share": 0.8
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "华宝证券资管",
+    "share": 0.5
+  },
+  {
+    "product": "1年期京企贷",
+    "asset": "京企贷",
+    "tenor": "1年期",
+    "month": "2026-04",
+    "date": "2026-04-27",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "国信证券自营",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.59,
+    "spread": 0.13,
+    "inst": "渝农商理财",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.56,
+    "spread": 0.1,
+    "inst": "民生理财",
+    "share": 2.0
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.6,
+    "spread": 0.14,
+    "inst": "交银理财",
+    "share": 2.09
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.6,
+    "spread": 0.14,
+    "inst": "中邮理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.65,
+    "spread": 0.19,
+    "inst": "建信信托",
+    "share": 0.5
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.63,
+    "spread": 0.17,
+    "inst": "民生理财",
+    "share": 0.2
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.65,
+    "spread": 0.19,
+    "inst": "渝农商理财",
+    "share": 0.1
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.68,
+    "spread": 0.22,
+    "inst": "渝农商理财",
+    "share": 0.05
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.7,
+    "spread": 0.24,
+    "inst": "光大证券",
+    "share": 1.0
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.7,
+    "spread": 0.24,
+    "inst": "民生理财",
+    "share": 0.09
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.7,
+    "spread": 0.24,
+    "inst": "渝农商理财",
+    "share": 0.37
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.85,
+    "spread": 0.39,
+    "inst": "国投证券",
+    "share": 0.04
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 1.85,
+    "spread": 0.39,
+    "inst": "渝农商理财",
+    "share": 0.02
+  },
+  {
+    "product": "1年期信托白取",
+    "asset": "信托白取",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-07",
+    "cost": 2.5,
+    "spread": 1.04,
+    "inst": "国投证券",
+    "share": 0.96
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.5,
+    "spread": 0.055,
+    "inst": "邦汇保理",
+    "share": 0.45
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.58,
+    "spread": 0.135,
+    "inst": "工银理财",
+    "share": 1.5
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.58,
+    "spread": 0.135,
+    "inst": "华夏基金",
+    "share": 0.9
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.58,
+    "spread": 0.135,
+    "inst": "建信理财",
+    "share": 0.4
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.58,
+    "spread": 0.135,
+    "inst": "建信信托",
+    "share": 0.9
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.58,
+    "spread": 0.135,
+    "inst": "交银理财",
+    "share": 0.68
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.55,
+    "spread": 0.105,
+    "inst": "民生理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "中邮理财",
+    "share": 2.698
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.6,
+    "spread": 0.155,
+    "inst": "交银理财",
+    "share": 2.02
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.65,
+    "spread": 0.205,
+    "inst": "华夏理财",
+    "share": 2.7
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 1.7,
+    "spread": 0.255,
+    "inst": "宝武财务",
+    "share": 0.5
+  },
+  {
+    "product": "1年期金采",
+    "asset": "金采",
+    "tenor": "1年期",
+    "month": "2026-05",
+    "date": "2026-05-19",
+    "cost": 2.5,
+    "spread": 1.055,
+    "inst": "建投投顾",
+    "share": 1.0
+  }
+];
+
+// 初始化：填充全部产品
+function populateProducts(products) {
+  const sel = document.getElementById('productSelect');
+  sel.innerHTML = '<option value="">— 选择产品类型 —</option>';
+  products.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p;
+    o.textContent = p;
+    sel.appendChild(o);
+  });
+}
+
+// 期限切换：根据选中期限过滤产品下拉列表
+function onTenorChange() {
+  const tenor = document.getElementById('tenorSelect').value;
+  if (tenor === '') {
+    populateProducts(ALL_PRODUCTS);
+  } else {
+    const filtered = ALL_PRODUCTS.filter(p => p.startsWith(tenor));
+    populateProducts(filtered);
+  }
+  // 清除已选产品（避免选到不属于当前期限的类型）
+  document.getElementById('productSelect').value = '';
+}
+
+// 成本微调：每次 +/- 0.01%，直接在输入框内调整
+function adjCost(delta) {
+  const inp = document.getElementById('costInput');
+  let v = parseFloat(inp.value);
+  if (isNaN(v)) { v = 1.80; }
+  v = Math.round((v + delta) * 100) / 100;
+  v = Math.max(1.50, Math.min(2.50, v));
+  inp.value = v.toFixed(2);
+  inp.select();
+}
+
+// 查询
+function doSearch() {
+  const product = document.getElementById('productSelect').value;
+  const costLimit = parseFloat(document.getElementById('costInput').value);
+  const resultArea = document.getElementById('resultArea');
+  const emptyState = document.getElementById('emptyState');
+  const tbody = document.getElementById('resultBody');
+
+  if (!product || isNaN(costLimit)) {
+    alert('请选择产品类型并输入目标成本');
+    return;
+  }
+
+  // 筛选：不高于（≤）目标成本
+  const filtered = ALL_DATA
+    .filter(r => r.product === product && r.cost <= costLimit)
+    .sort(function(a, b) { return a.cost - b.cost || b.share - a.share; });
+
+  // 合并：相同机构 + 相同日期 + 相同成本 + 相同利差 → 认购份额加总
+  const mergedMap = {};
+  filtered.forEach(r => {
+    const key = r.inst + '|' + r.date + '|' + r.cost + '|' + r.spread;
+    if (!mergedMap[key]) {
+      mergedMap[key] = Object.assign({}, r);
+    } else {
+      mergedMap[key].share = parseFloat((mergedMap[key].share + r.share).toFixed(4));
+    }
+  });
+  const merged = Object.values(mergedMap).sort(function(a, b) { return a.cost - b.cost || b.share - a.share; });
+
+  const latestMonth = [...new Set(merged.map(r => r.month))].sort().reverse()[0] || '—';
+  const tenorLabel = merged.length > 0 ? merged[0].tenor : '—';
+  document.getElementById('hintText').innerHTML =
+    '<strong>' + product + '</strong> · 不高于 <strong>' + costLimit.toFixed(2) + '%</strong> 的机构' +
+    ' <span class="tenor-badge">' + tenorLabel + '</span>';
+  document.getElementById('metaTag').textContent =
+    '最新月份：' + latestMonth + ' · ' + merged.length + ' 家机构';
+
+  if (merged.length === 0) {
+    resultArea.classList.remove('show');
+    emptyState.style.display = 'block';
+    emptyState.textContent = '该产品在最新月份暂无成本不高于 ' + costLimit.toFixed(2) + '% 的记录';
+    return;
+  }
+
+  const total = merged.reduce(function(s, r) { return s + r.share; }, 0).toFixed(2);
+  const rows = merged.map(function(r, i) {
+    return '<tr>' +
+      '<td style="text-align:center" class="rank-num">' + (i+1) + '</td>' +
+      '<td class="inst-cell">' + r.inst + '</td>' +
+      '<td class="date-cell">' + r.date + '</td>' +
+      '<td class="cost-cell">' + r.cost.toFixed(2) + '%</td>' +
+      '<td class="spread-cell">+' + r.spread.toFixed(2) + '%</td>' +
+      '<td>' + r.share.toFixed(2) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  tbody.innerHTML = rows +
+    '<tr class="summary-row">' +
+      '<td colspan="5" style="text-align:right;font-size:11px;color:#6b7a95;padding-right:16px">' +
+        merged.length + ' 家机构 合计' +
+      '</td>' +
+      '<td>' + total + '</td>' +
+    '</tr>';
+
+  resultArea.classList.add('show');
+  emptyState.style.display = 'none';
+}
+
+// 页面加载时初始化
+populateProducts(ALL_PRODUCTS);
+</script>
+</body>
+</html>

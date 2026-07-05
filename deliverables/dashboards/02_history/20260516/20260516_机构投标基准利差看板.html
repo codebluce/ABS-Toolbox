@@ -1,0 +1,2780 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ABS 优先A 基准利差分析（产品类型维度）</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  background: #f4f5f7; color: #1a1a2e; font-size: 13px;
+}
+a { text-decoration: none; }
+
+/* ── banner ── */
+.page-banner {
+  background: linear-gradient(135deg, #0d1b2e 0%, #1a3a5c 60%, #0d2a40 100%);
+  color: #fff; padding: 18px 32px 16px;
+}
+.banner-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.banner-tag { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #7db8e8; margin-bottom: 4px; }
+.banner-title { font-size: 20px; font-weight: 700; }
+.banner-subtitle { font-size: 11px; color: rgba(255,255,255,.65); margin-top: 4px; }
+.banner-badge {
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+  border-radius: 4px; padding: 5px 12px; font-size: 11px; color: #c8dded;
+  text-align: right; line-height: 1.7;
+}
+.banner-badge strong { color: #fff; font-size: 13px; }
+
+/* ── overview cards ── */
+.overview { padding: 14px 32px; background: #fff; border-bottom: 1px solid #e0e4ea; }
+.overview-label { font-size: 11px; color: #6b7a95; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.summary-cards { display: flex; gap: 10px; flex-wrap: wrap; }
+.summary-card {
+  background: #fafbfc; border: 1px solid #e4e8ee; border-radius: 5px;
+  padding: 10px 16px; min-width: 130px; flex: 1;
+}
+.sc-title { font-size: 11px; color: #6b7a95; margin-bottom: 4px; }
+.sc-val   { font-size: 18px; font-weight: 700; color: #1a1a2e; line-height: 1; }
+.sc-unit  { font-size: 10px; font-weight: 400; color: #8a9ab5; }
+.sc-sub   { font-size: 11px; color: #9aa5b5; margin-top: 3px; }
+
+/* ── note bar ── */
+.note-bar {
+  padding: 8px 32px; background: #fffbec; border-bottom: 1px solid #ffe58f;
+  font-size: 11px; color: #7a6010; line-height: 1.5; display: flex; gap: 24px; flex-wrap: wrap;
+}
+
+/* ── main content ── */
+.content { padding: 20px 32px; }
+
+/* ── month section ── */
+.month-section {
+  margin-bottom: 28px; border-radius: 6px; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.07);
+}
+.month-header { padding: 12px 16px 10px; color: #fff; }
+.month-label  { font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+.month-kpis   { display: flex; align-items: center; font-size: 12px; color: rgba(255,255,255,.8); margin-top: 6px; flex-wrap: wrap; gap: 4px; }
+.kpi     { padding: 0 8px; }
+.kpi-val { font-weight: 700; color: #fff; font-size: 14px; }
+.kpi-sep { opacity: .4; }
+.monthly-product-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.monthly-product-chip {
+  background: rgba(255,255,255,.12); border-radius: 4px; padding: 5px 12px;
+  display: flex; align-items: center; gap: 8px; flex: 1; min-width: 140px;
+}
+.chip-name { font-size: 11px; color: rgba(255,255,255,.85); flex: 1; }
+.chip-tenor { font-size: 10px; color: rgba(255,255,255,.6); margin-left: 4px; }
+.chip-val  { font-size: 14px; font-weight: 700; color: #fff; }
+.chip-sub  { font-size: 10px; color: rgba(255,255,255,.6); }
+
+.month-body {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+  gap: 14px; padding: 14px; background: #e8f0fc;
+}
+
+/* ── product block ── */
+.product-block { background: #fff; border-radius: 4px; overflow: hidden; }
+.product-header {
+  padding: 8px 12px; color: #fff; display: flex;
+  justify-content: space-between; align-items: center;
+}
+.product-name  { font-size: 13px; font-weight: 700; }
+.product-stats { font-size: 11px; color: rgba(255,255,255,.75); text-align: right; line-height: 1.5; }
+
+/* ── data table ── */
+.data-table { width: 100%; border-collapse: collapse; background: #fff; table-layout: fixed; }
+.data-table thead th {
+  color: #fff; padding: 7px 10px; text-align: left; font-size: 11px; font-weight: 600;
+}
+.data-table thead th:nth-child(1) { width: 130px; }
+.data-table thead th:nth-child(3) { width: 100px; text-align: right; }
+.data-table thead th:nth-child(4) { width: 80px;  text-align: right; }
+.data-table tbody tr:nth-child(even) { background: #f7f9fc; }
+.data-table tbody tr:hover { background: #eef3fa; }
+.data-table tbody tr:not(:last-child) td { border-bottom: 1px solid #eaeef4; }
+
+/* ── cell styles ── */
+.interval-cell {
+  padding: 7px 10px; vertical-align: middle;
+  border-right: 1px solid #dde3ed; background: #f9fafc !important; white-space: nowrap;
+}
+.interval-label { font-size: 11px; font-weight: 600; color: #2a3a55; margin-bottom: 2px; }
+.spread-badge {
+  display: inline-block; font-size: 10px; color: #fff;
+  padding: 1px 6px; border-radius: 3px; margin-top: 1px;
+}
+.inst-cell  { padding: 7px 10px; font-weight: 500; color: #1a2a40; font-size: 12px; }
+.share-cell {
+  padding: 7px 10px; font-variant-numeric: tabular-nums; font-weight: 600;
+  color: #1a3a5c; text-align: right; font-size: 12px; white-space: nowrap;
+}
+.spread-cell {
+  padding: 7px 10px; font-variant-numeric: tabular-nums; font-weight: 600;
+  color: #c05a20; text-align: right; font-size: 12px; white-space: nowrap;
+}
+
+/* ── footer ── */
+.footer {
+  text-align: center; padding: 16px 0 24px;
+  font-size: 11px; color: #9aa5b5;
+}
+</style>
+</head>
+<body>
+<div class="page-banner">
+  <div class="banner-top">
+    <div>
+      <div class="banner-tag">ABS Spread Analysis · Priority A</div>
+      <div class="banner-title">优先A 基准利差分析</div>
+      <div class="banner-subtitle">
+        基准利差 = 认购成本 − 同日国股CD ·
+        维度：月份 + 产品类型（资产类型+期限）+ 机构利差 ·
+        区间步长 0.05%
+      </div>
+    </div>
+    <div class="banner-badge">
+      数据期间 <strong>2026-01-08 ~ 2026-05-14</strong><br>
+      优先A <strong>388</strong> 笔 · 总额 <strong>432.81 亿</strong> · <strong>102</strong> 家机构<br>
+      全局均利差 <strong>+0.27%</strong>
+    </div>
+  </div>
+</div>
+
+<div class="overview">
+  <div class="overview-label">各产品类型合计（按业务顺序）</div>
+  <div class="summary-cards"><div class="summary-card" style="border-top:3px solid #2563a8">
+  <div class="sc-title">1年期赊销白条</div>
+  <div class="sc-val">83.25<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">74笔 · 均利差 +0.18% · 1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #3e7cc1">
+  <div class="sc-title">超1年期赊销白条</div>
+  <div class="sc-val">13.40<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">15笔 · 均利差 +0.33% · 超1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #2d7a4f">
+  <div class="sc-title">1年期信托金条</div>
+  <div class="sc-val">125.41<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">103笔 · 均利差 +0.26% · 1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #469368">
+  <div class="sc-title">超1年期信托金条</div>
+  <div class="sc-val">13.50<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">1笔 · 均利差 +0.77% · 超1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #3a6090">
+  <div class="sc-title">1年期白条取现</div>
+  <div class="sc-val">9.00<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">5笔 · 均利差 +0.20% · 1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #c05a20">
+  <div class="sc-title">1年期信托企业主贷</div>
+  <div class="sc-val">20.75<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">19笔 · 均利差 +0.29% · 1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #d97339">
+  <div class="sc-title">超1年期信托企业主贷</div>
+  <div class="sc-val">8.30<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">9笔 · 均利差 +0.50% · 超1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #6b3daa">
+  <div class="sc-title">1年期小贷企业主贷</div>
+  <div class="sc-val">17.84<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">23笔 · 均利差 +0.25% · 1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #8456c3">
+  <div class="sc-title">超1年期小贷企业主贷</div>
+  <div class="sc-val">8.30<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">8笔 · 均利差 +0.45% · 超1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #b94949">
+  <div class="sc-title">超1年期京企贷</div>
+  <div class="sc-val">9.00<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">12笔 · 均利差 +0.51% · 超1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #1a7a7a">
+  <div class="sc-title">1年期保理</div>
+  <div class="sc-val">72.47<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">56笔 · 均利差 +0.14% · 1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #8a8a30">
+  <div class="sc-title">1年期动产质押</div>
+  <div class="sc-val">2.58<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">8笔 · 均利差 +0.28% · 1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #a03030">
+  <div class="sc-title">1年期京企贷</div>
+  <div class="sc-val">15.02<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">21笔 · 均利差 +0.47% · 1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #207a5a">
+  <div class="sc-title">1年期信托白取</div>
+  <div class="sc-val">11.12<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">14笔 · 均利差 +0.27% · 1Y</div>
+</div><div class="summary-card" style="border-top:3px solid #4a4a4a">
+  <div class="sc-title">1年期金采</div>
+  <div class="sc-val">22.88<span class="sc-unit"> 亿</span></div>
+  <div class="sc-sub">20笔 · 均利差 +0.43% · 1Y</div>
+</div></div>
+</div>
+
+<div class="note-bar">
+  <span>筛选条件：分层情况 = "优先A"</span>
+  <span>基准利差 = 认购成本 − 同日国股CD（单位：%）</span>
+  <span>产品类型 = 资产类型 + 期限分类（单一期限，无混合）</span>
+  <span>利差区间步长 0.05%，左闭右开</span>
+  <span>同一机构同利差的多笔认购已合并</span>
+</div>
+
+<div class="content"><div class="month-section">
+  <div class="month-header" style="background:#0d2a4a">
+    <div class="month-label">2026-05</div>
+    <div class="month-kpis">
+      <span class="kpi">认购总额 <span class="kpi-val">131.97亿</span></span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">124笔</span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">46家机构</span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">均利差 <span class="kpi-val">+0.28%</span></span>
+    </div>
+    <div class="monthly-product-row"><div class="monthly-product-chip" style="border-left:3px solid #2d7a4f">
+  <span class="chip-name">1年期信托金条</span>
+  <span class="chip-val">45.31<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #1a7a7a">
+  <span class="chip-name">1年期保理</span>
+  <span class="chip-val">52.67<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #207a5a">
+  <span class="chip-name">1年期信托白取</span>
+  <span class="chip-val">11.12<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #4a4a4a">
+  <span class="chip-name">1年期金采</span>
+  <span class="chip-val">22.88<span class="chip-sub"> 亿</span></span>
+</div></div>
+  </div>
+  <div class="month-body"><div class="product-block">
+  <div class="product-header" style="background:#1c3a2a">
+    <span class="product-name">1年期信托金条</span>
+    <span class="product-stats">43笔 · 45.31亿 · 均利差 +0.35%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#1c3a2a">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.10%~+0.15%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.14%</span>
+</td>
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">4.70 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="6">
+  <div class="interval-label">+0.15%~+0.20%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.15%</span>
+</td>
+  <td class="inst-cell">建信理财</td>
+  <td class="share-cell">8.10 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">2.70 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭州农商行资管</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭州联合银行</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银瑞信基金</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="9">
+  <div class="interval-label">+0.20%~+0.25%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.20%</span>
+</td>
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">4.30 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">0.70 亿</td>
+  <td class="spread-cell">+0.23%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">3.00 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招商证券投行</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭州联合银行</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">申万宏源资管</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">利曦基金</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银瑞信基金</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="3">
+  <div class="interval-label">+0.25%~+0.30%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.26%</span>
+</td>
+  <td class="inst-cell">国金资管</td>
+  <td class="share-cell">1.30 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">0.74 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">0.40 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.30%~+0.35%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.30%</span>
+</td>
+  <td class="inst-cell">中金公司（投顾）</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.30%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.35%~+0.40%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.35%</span>
+</td>
+  <td class="inst-cell">上海利曦私募</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.35%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭州农商行资管</td>
+  <td class="share-cell">0.09 亿</td>
+  <td class="spread-cell">+0.40%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="4">
+  <div class="interval-label">+0.40%~+0.45%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.41%</span>
+</td>
+  <td class="inst-cell">中信建投衍生品投顾</td>
+  <td class="share-cell">0.12 亿</td>
+  <td class="spread-cell">+0.41%</td>
+</tr><tr>
+  
+  <td class="inst-cell">财通资管</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.41%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中信证券（投行上报)</td>
+  <td class="share-cell">0.05 亿</td>
+  <td class="spread-cell">+0.41%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">0.02 亿</td>
+  <td class="spread-cell">+0.41%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.45%~+0.50%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.46%</span>
+</td>
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">0.04 亿</td>
+  <td class="spread-cell">+0.46%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.95%~+1.00%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.95%</span>
+</td>
+  <td class="inst-cell">利曦基金</td>
+  <td class="share-cell">4.00 亿</td>
+  <td class="spread-cell">+0.95%</td>
+</tr><tr>
+  
+  <td class="inst-cell">上海利曦私募</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.95%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="3">
+  <div class="interval-label">+1.05%~+1.15%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+1.05%</span>
+</td>
+  <td class="inst-cell">国联民生</td>
+  <td class="share-cell">1.05 亿</td>
+  <td class="spread-cell">+1.05%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+1.05%</td>
+</tr><tr>
+  
+  <td class="inst-cell">建信理财</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+1.05%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#0d3a3a">
+    <span class="product-name">1年期保理</span>
+    <span class="product-stats">47笔 · 52.67亿 · 均利差 +0.14%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#0d3a3a">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="20">
+  <div class="interval-label">+0.05%~+0.10%</div>
+  <span class="spread-badge" style="background:#1a7a7a">+0.06%</span>
+</td>
+  <td class="inst-cell">平安资产</td>
+  <td class="share-cell">1.47 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安资产</td>
+  <td class="share-cell">1.23 亿</td>
+  <td class="spread-cell">+0.07%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安资产</td>
+  <td class="share-cell">4.95 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">建信理财</td>
+  <td class="share-cell">1.48 亿</td>
+  <td class="spread-cell">+0.07%</td>
+</tr><tr>
+  
+  <td class="inst-cell">建信理财</td>
+  <td class="share-cell">2.90 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">建信理财</td>
+  <td class="share-cell">0.07 亿</td>
+  <td class="spread-cell">+0.09%</td>
+</tr><tr>
+  
+  <td class="inst-cell">光大理财</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">光大理财</td>
+  <td class="share-cell">1.95 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">光大理财</td>
+  <td class="share-cell">1.18 亿</td>
+  <td class="spread-cell">+0.07%</td>
+</tr><tr>
+  
+  <td class="inst-cell">光大理财</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.09%</td>
+</tr><tr>
+  
+  <td class="inst-cell">民生理财</td>
+  <td class="share-cell">0.48 亿</td>
+  <td class="spread-cell">+0.07%</td>
+</tr><tr>
+  
+  <td class="inst-cell">民生理财</td>
+  <td class="share-cell">2.97 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">浦银理财</td>
+  <td class="share-cell">2.76 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.47 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">0.28 亿</td>
+  <td class="spread-cell">+0.07%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.08%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+0.07%</td>
+</tr><tr>
+  
+  <td class="inst-cell">上银理财</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.08%</td>
+</tr><tr>
+  
+  <td class="inst-cell">北银理财</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="14">
+  <div class="interval-label">+0.10%~+0.15%</div>
+  <span class="spread-badge" style="background:#1a7a7a">+0.15%</span>
+</td>
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">0.90 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">0.90 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.11%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安银行</td>
+  <td class="share-cell">1.96 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.48 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.48 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.13%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.40 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">1.50 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.11%</td>
+</tr><tr>
+  
+  <td class="inst-cell">上银理财</td>
+  <td class="share-cell">0.53 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">上银理财</td>
+  <td class="share-cell">0.33 亿</td>
+  <td class="spread-cell">+0.13%</td>
+</tr><tr>
+  
+  <td class="inst-cell">光大理财</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.10%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="6">
+  <div class="interval-label">+0.15%~+0.20%</div>
+  <span class="spread-badge" style="background:#1a7a7a">+0.17%</span>
+</td>
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">1.48 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">1.47 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">上银理财</td>
+  <td class="share-cell">1.08 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">上银理财</td>
+  <td class="share-cell">0.53 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">1.10 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中信证券（投行上报）</td>
+  <td class="share-cell">0.74 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.20%~+0.25%</div>
+  <span class="spread-badge" style="background:#1a7a7a">+0.21%</span>
+</td>
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.20 亿</td>
+  <td class="spread-cell">+0.21%</td>
+</tr><tr>
+  
+  <td class="inst-cell">建信基金</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.21%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.30%~+0.35%</div>
+  <span class="spread-badge" style="background:#1a7a7a">+0.31%</span>
+</td>
+  <td class="inst-cell">中金公司（投顾）</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.31%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.95%~+1.00%</div>
+  <span class="spread-badge" style="background:#1a7a7a">+0.96%</span>
+</td>
+  <td class="inst-cell">利曦基金</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.96%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+1.05%~+1.15%</div>
+  <span class="spread-badge" style="background:#1a7a7a">+1.06%</span>
+</td>
+  <td class="inst-cell">平安银行</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+1.06%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#103a2a">
+    <span class="product-name">1年期信托白取</span>
+    <span class="product-stats">14笔 · 11.12亿 · 均利差 +0.27%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#103a2a">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="4">
+  <div class="interval-label">+0.10%~+0.15%</div>
+  <span class="spread-badge" style="background:#207a5a">+0.14%</span>
+</td>
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">2.70 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">2.09 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">民生理财</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.10%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.13%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="3">
+  <div class="interval-label">+0.15%~+0.20%</div>
+  <span class="spread-badge" style="background:#207a5a">+0.19%</span>
+</td>
+  <td class="inst-cell">建信信托</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.19%</td>
+</tr><tr>
+  
+  <td class="inst-cell">民生理财</td>
+  <td class="share-cell">0.20 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.19%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="4">
+  <div class="interval-label">+0.20%~+0.25%</div>
+  <span class="spread-badge" style="background:#207a5a">+0.24%</span>
+</td>
+  <td class="inst-cell">光大证券</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">0.05 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">0.37 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">民生理财</td>
+  <td class="share-cell">0.09 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.35%~+0.40%</div>
+  <span class="spread-badge" style="background:#207a5a">+0.39%</span>
+</td>
+  <td class="inst-cell">国投证券</td>
+  <td class="share-cell">0.04 亿</td>
+  <td class="spread-cell">+0.39%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">0.02 亿</td>
+  <td class="spread-cell">+0.39%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+1.00%~+1.05%</div>
+  <span class="spread-badge" style="background:#207a5a">+1.04%</span>
+</td>
+  <td class="inst-cell">国投证券</td>
+  <td class="share-cell">0.96 亿</td>
+  <td class="spread-cell">+1.04%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#1a1a1a">
+    <span class="product-name">1年期金采</span>
+    <span class="product-stats">20笔 · 22.88亿 · 均利差 +0.43%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#1a1a1a">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.05%~+0.10%</div>
+  <span class="spread-badge" style="background:#4a4a4a">+0.06%</span>
+</td>
+  <td class="inst-cell">邦汇保理</td>
+  <td class="share-cell">0.41 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.10%~+0.15%</div>
+  <span class="spread-badge" style="background:#4a4a4a">+0.11%</span>
+</td>
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">2.43 亿</td>
+  <td class="spread-cell">+0.11%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.48 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="5">
+  <div class="interval-label">+0.15%~+0.20%</div>
+  <span class="spread-badge" style="background:#4a4a4a">+0.16%</span>
+</td>
+  <td class="inst-cell">建信理财</td>
+  <td class="share-cell">2.43 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">2.42 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">1.65 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华夏基金</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="3">
+  <div class="interval-label">+0.25%~+0.30%</div>
+  <span class="spread-badge" style="background:#4a4a4a">+0.26%</span>
+</td>
+  <td class="inst-cell">兴业证券</td>
+  <td class="share-cell">1.30 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中信建投</td>
+  <td class="share-cell">1.20 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.30%~+0.35%</div>
+  <span class="spread-badge" style="background:#4a4a4a">+0.31%</span>
+</td>
+  <td class="inst-cell">中金自营</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.31%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.40%~+0.45%</div>
+  <span class="spread-badge" style="background:#4a4a4a">+0.41%</span>
+</td>
+  <td class="inst-cell">百瑞信托</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.41%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.55%~+0.60%</div>
+  <span class="spread-badge" style="background:#4a4a4a">+0.56%</span>
+</td>
+  <td class="inst-cell">信达证券</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+0.56%</td>
+</tr><tr>
+  
+  <td class="inst-cell">西部证券</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.56%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.65%~+0.70%</div>
+  <span class="spread-badge" style="background:#4a4a4a">+0.66%</span>
+</td>
+  <td class="inst-cell">德邦证券自营</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.66%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.95%~+1.00%</div>
+  <span class="spread-badge" style="background:#4a4a4a">+0.96%</span>
+</td>
+  <td class="inst-cell">利曦基金</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.96%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="3">
+  <div class="interval-label">+1.05%~+1.15%</div>
+  <span class="spread-badge" style="background:#4a4a4a">+1.06%</span>
+</td>
+  <td class="inst-cell">中信建投衍生品自营</td>
+  <td class="share-cell">1.35 亿</td>
+  <td class="spread-cell">+1.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华兴证券</td>
+  <td class="share-cell">1.20 亿</td>
+  <td class="spread-cell">+1.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">国信证券</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+1.06%</td>
+</tr></tbody>
+  </table>
+</div></div>
+</div><div class="month-section">
+  <div class="month-header" style="background:#1a3a6c">
+    <div class="month-label">2026-04</div>
+    <div class="month-kpis">
+      <span class="kpi">认购总额 <span class="kpi-val">98.41亿</span></span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">94笔</span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">42家机构</span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">均利差 <span class="kpi-val">+0.24%</span></span>
+    </div>
+    <div class="monthly-product-row"><div class="monthly-product-chip" style="border-left:3px solid #2563a8">
+  <span class="chip-name">1年期赊销白条</span>
+  <span class="chip-val">20.55<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #2d7a4f">
+  <span class="chip-name">1年期信托金条</span>
+  <span class="chip-val">35.10<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #c05a20">
+  <span class="chip-name">1年期信托企业主贷</span>
+  <span class="chip-val">8.30<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #6b3daa">
+  <span class="chip-name">1年期小贷企业主贷</span>
+  <span class="chip-val">9.54<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #1a7a7a">
+  <span class="chip-name">1年期保理</span>
+  <span class="chip-val">9.90<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #a03030">
+  <span class="chip-name">1年期京企贷</span>
+  <span class="chip-val">15.02<span class="chip-sub"> 亿</span></span>
+</div></div>
+  </div>
+  <div class="month-body"><div class="product-block">
+  <div class="product-header" style="background:#1a3a5c">
+    <span class="product-name">1年期赊销白条</span>
+    <span class="product-stats">21笔 · 20.55亿 · 均利差 +0.15%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#1a3a5c">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.05%~+0.10%</div>
+  <span class="spread-badge" style="background:#2563a8">+0.06%</span>
+</td>
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">1.13 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  
+  <td class="inst-cell">宿迁钧腾</td>
+  <td class="share-cell">0.45 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="13">
+  <div class="interval-label">+0.10%~+0.15%</div>
+  <span class="spread-badge" style="background:#2563a8">+0.12%</span>
+</td>
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">1.59 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">2.70 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.70 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">江苏银行</td>
+  <td class="share-cell">1.80 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭州银行</td>
+  <td class="share-cell">1.20 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安养老</td>
+  <td class="share-cell">1.08 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭州联合银行</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭州联合银行</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南京银行</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭银理财</td>
+  <td class="share-cell">0.41 亿</td>
+  <td class="spread-cell">+0.12%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.10%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="3">
+  <div class="interval-label">+0.15%~+0.20%</div>
+  <span class="spread-badge" style="background:#2563a8">+0.15%</span>
+</td>
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">1.50 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">1.70 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.25%~+0.30%</div>
+  <span class="spread-badge" style="background:#2563a8">+0.26%</span>
+</td>
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.09 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.35%~+0.40%</div>
+  <span class="spread-badge" style="background:#2563a8">+0.35%</span>
+</td>
+  <td class="inst-cell">中金公司（投顾）</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.35%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.20 亿</td>
+  <td class="spread-cell">+0.35%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#1c3a2a">
+    <span class="product-name">1年期信托金条</span>
+    <span class="product-stats">25笔 · 35.10亿 · 均利差 +0.16%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#1c3a2a">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="10">
+  <div class="interval-label">+0.10%~+0.15%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.14%</span>
+</td>
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">5.30 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">民生理财</td>
+  <td class="share-cell">4.93 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">3.32 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭州联合银行</td>
+  <td class="share-cell">3.00 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">2.70 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">建信理财</td>
+  <td class="share-cell">2.28 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">建信信托</td>
+  <td class="share-cell">2.17 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渝农商理财</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广州银行</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中信证券投行</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="7">
+  <div class="interval-label">+0.20%~+0.25%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.22%</span>
+</td>
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">2.43 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">2.40 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">民生理财</td>
+  <td class="share-cell">1.50 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.96 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">苏银理财</td>
+  <td class="share-cell">0.46 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">兴银理财</td>
+  <td class="share-cell">0.20 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">厦门国际银行</td>
+  <td class="share-cell">0.15 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#3a2010">
+    <span class="product-name">1年期信托企业主贷</span>
+    <span class="product-stats">6笔 · 8.30亿 · 均利差 +0.19%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#3a2010">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="6">
+  <div class="interval-label">+0.15%~+0.20%</div>
+  <span class="spread-badge" style="background:#c05a20">+0.19%</span>
+</td>
+  <td class="inst-cell">民生理财</td>
+  <td class="share-cell">2.40 亿</td>
+  <td class="spread-cell">+0.19%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">2.30 亿</td>
+  <td class="spread-cell">+0.19%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">1.50 亿</td>
+  <td class="spread-cell">+0.19%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.19%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">0.90 亿</td>
+  <td class="spread-cell">+0.19%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.20 亿</td>
+  <td class="spread-cell">+0.19%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#2a1040">
+    <span class="product-name">1年期小贷企业主贷</span>
+    <span class="product-stats">17笔 · 9.54亿 · 均利差 +0.25%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#2a1040">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.10%~+0.15%</div>
+  <span class="spread-badge" style="background:#6b3daa">+0.14%</span>
+</td>
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.20 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.15%~+0.20%</div>
+  <span class="spread-badge" style="background:#6b3daa">+0.15%</span>
+</td>
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">1.20 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="4">
+  <div class="interval-label">+0.20%~+0.25%</div>
+  <span class="spread-badge" style="background:#6b3daa">+0.23%</span>
+</td>
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.23%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">1.49 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.29 亿</td>
+  <td class="spread-cell">+0.23%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="8">
+  <div class="interval-label">+0.25%~+0.30%</div>
+  <span class="spread-badge" style="background:#6b3daa">+0.26%</span>
+</td>
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中信建投（衍生品部）</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.27%</td>
+</tr><tr>
+  
+  <td class="inst-cell">德邦证券投行</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.27%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华福证券投行</td>
+  <td class="share-cell">0.35 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中金公司自营</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中金自营</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中信证券投行</td>
+  <td class="share-cell">0.26 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.15 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.30%~+0.35%</div>
+  <span class="spread-badge" style="background:#6b3daa">+0.30%</span>
+</td>
+  <td class="inst-cell">中金公司（投顾）</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.30%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.55%~+0.60%</div>
+  <span class="spread-badge" style="background:#6b3daa">+0.56%</span>
+</td>
+  <td class="inst-cell">中金公司自营</td>
+  <td class="share-cell">0.20 亿</td>
+  <td class="spread-cell">+0.56%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#0d3a3a">
+    <span class="product-name">1年期保理</span>
+    <span class="product-stats">4笔 · 9.90亿 · 均利差 +0.08%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#0d3a3a">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="4">
+  <div class="interval-label">+0.05%~+0.10%</div>
+  <span class="spread-badge" style="background:#1a7a7a">+0.08%</span>
+</td>
+  <td class="inst-cell">平安资产</td>
+  <td class="share-cell">3.96 亿</td>
+  <td class="spread-cell">+0.08%</td>
+</tr><tr>
+  
+  <td class="inst-cell">光大理财</td>
+  <td class="share-cell">2.47 亿</td>
+  <td class="spread-cell">+0.08%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.47 亿</td>
+  <td class="spread-cell">+0.08%</td>
+</tr><tr>
+  
+  <td class="inst-cell">民生理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.08%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#3a1010">
+    <span class="product-name">1年期京企贷</span>
+    <span class="product-stats">21笔 · 15.02亿 · 均利差 +0.47%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#3a1010">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.05%~+0.10%</div>
+  <span class="spread-badge" style="background:#a03030">+0.06%</span>
+</td>
+  <td class="inst-cell">盛际小贷</td>
+  <td class="share-cell">0.36 亿</td>
+  <td class="spread-cell">+0.06%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.10%~+0.15%</div>
+  <span class="spread-badge" style="background:#a03030">+0.14%</span>
+</td>
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">1.80 亿</td>
+  <td class="spread-cell">+0.14%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.20%~+0.25%</div>
+  <span class="spread-badge" style="background:#a03030">+0.23%</span>
+</td>
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.23%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">1.16 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="4">
+  <div class="interval-label">+0.25%~+0.30%</div>
+  <span class="spread-badge" style="background:#a03030">+0.26%</span>
+</td>
+  <td class="inst-cell">光大证券投行</td>
+  <td class="share-cell">1.10 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">建信信托</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.29%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华泰资管</td>
+  <td class="share-cell">0.40 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华泰证券自营</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="2">
+  <div class="interval-label">+0.30%~+0.35%</div>
+  <span class="spread-badge" style="background:#a03030">+0.30%</span>
+</td>
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.30%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华泰证券自营</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.30%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="3">
+  <div class="interval-label">+0.35%~+0.40%</div>
+  <span class="spread-badge" style="background:#a03030">+0.38%</span>
+</td>
+  <td class="inst-cell">申万宏源证券（投顾）</td>
+  <td class="share-cell">1.50 亿</td>
+  <td class="spread-cell">+0.38%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中金公司自营</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+0.35%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中信证券（投顾）</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.35%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="3">
+  <div class="interval-label">+0.40%~+0.45%</div>
+  <span class="spread-badge" style="background:#a03030">+0.41%</span>
+</td>
+  <td class="inst-cell">中信证券（投顾）</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.41%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中信证券（投顾）</td>
+  <td class="share-cell">0.40 亿</td>
+  <td class="spread-cell">+0.45%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中金公司（投顾）</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.41%</td>
+</tr><tr>
+  <td class="interval-cell" rowspan="5">
+  <div class="interval-label">+1.05%~+1.15%</div>
+  <span class="spread-badge" style="background:#a03030">+1.05%</span>
+</td>
+  <td class="inst-cell">中信建投（衍生品）</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+1.05%</td>
+</tr><tr>
+  
+  <td class="inst-cell">利曦基金</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+1.05%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中信建投（机构部）</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+1.05%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华宝证券资管</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+1.05%</td>
+</tr><tr>
+  
+  <td class="inst-cell">国信证券自营</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+1.05%</td>
+</tr></tbody>
+  </table>
+</div></div>
+</div><div class="month-section">
+  <div class="month-header" style="background:#2a4a8c">
+    <div class="month-label">2026-03</div>
+    <div class="month-kpis">
+      <span class="kpi">认购总额 <span class="kpi-val">96.33亿</span></span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">79笔</span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">34家机构</span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">均利差 <span class="kpi-val">+0.21%</span></span>
+    </div>
+    <div class="monthly-product-row"><div class="monthly-product-chip" style="border-left:3px solid #2563a8">
+  <span class="chip-name">1年期赊销白条</span>
+  <span class="chip-val">44.70<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #3e7cc1">
+  <span class="chip-name">超1年期赊销白条</span>
+  <span class="chip-val">8.70<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #2d7a4f">
+  <span class="chip-name">1年期信托金条</span>
+  <span class="chip-val">9.00<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #3a6090">
+  <span class="chip-name">1年期白条取现</span>
+  <span class="chip-val">9.00<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #c05a20">
+  <span class="chip-name">1年期信托企业主贷</span>
+  <span class="chip-val">4.15<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #6b3daa">
+  <span class="chip-name">1年期小贷企业主贷</span>
+  <span class="chip-val">8.30<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #1a7a7a">
+  <span class="chip-name">1年期保理</span>
+  <span class="chip-val">9.90<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #8a8a30">
+  <span class="chip-name">1年期动产质押</span>
+  <span class="chip-val">2.58<span class="chip-sub"> 亿</span></span>
+</div></div>
+  </div>
+  <div class="month-body"><div class="product-block">
+  <div class="product-header" style="background:#1a3a5c">
+    <span class="product-name">1年期赊销白条</span>
+    <span class="product-stats">36笔 · 44.70亿 · 均利差 +0.17%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#1a3a5c">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="30">
+  <div class="interval-label">+0.15%~+0.20%</div>
+  <span class="spread-badge" style="background:#2563a8">+0.15%</span>
+</td>
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">2.50 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">5.00 亿</td>
+  <td class="spread-cell">+0.18%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">2.50 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">5.00 亿</td>
+  <td class="spread-cell">+0.18%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">2.70 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.25 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.11 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.25 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">兴银理财</td>
+  <td class="share-cell">4.40 亿</td>
+  <td class="spread-cell">+0.18%</td>
+</tr><tr>
+  
+  <td class="inst-cell">兴银理财</td>
+  <td class="share-cell">0.40 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">2.70 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">0.90 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">江苏银行</td>
+  <td class="share-cell">0.70 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">江苏银行</td>
+  <td class="share-cell">1.80 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南京银行</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南京银行</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">1.29 亿</td>
+  <td class="spread-cell">+0.18%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">0.49 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.24 亿</td>
+  <td class="spread-cell">+0.18%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.65 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">建信基金</td>
+  <td class="share-cell">1.17 亿</td>
+  <td class="spread-cell">+0.18%</td>
+</tr><tr>
+  
+  <td class="inst-cell">京东世贸</td>
+  <td class="share-cell">0.60 亿</td>
+  <td class="spread-cell">+0.18%</td>
+</tr><tr>
+  
+  <td class="inst-cell">京东世贸</td>
+  <td class="share-cell">0.45 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭银理财</td>
+  <td class="share-cell">0.40 亿</td>
+  <td class="spread-cell">+0.16%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭银理财</td>
+  <td class="share-cell">0.40 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">兴业证券投行</td>
+  <td class="share-cell">0.60 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭州联合银行</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.15%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭州银行</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">财通投行</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#476789">
+    <span class="product-name">超1年期赊销白条</span>
+    <span class="product-stats">9笔 · 8.70亿 · 均利差 +0.31%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#476789">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="9">
+  <div class="interval-label">+0.30%~+0.35%</div>
+  <span class="spread-badge" style="background:#3e7cc1">+0.31%</span>
+</td>
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">1.80 亿</td>
+  <td class="spread-cell">+0.31%</td>
+</tr><tr>
+  
+  <td class="inst-cell">国信证券投行</td>
+  <td class="share-cell">1.30 亿</td>
+  <td class="spread-cell">+0.31%</td>
+</tr><tr>
+  
+  <td class="inst-cell">国泰海通投行</td>
+  <td class="share-cell">1.10 亿</td>
+  <td class="spread-cell">+0.31%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.31%</td>
+</tr><tr>
+  
+  <td class="inst-cell">青岛银行</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.31%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华福证券投行</td>
+  <td class="share-cell">0.94 亿</td>
+  <td class="spread-cell">+0.31%</td>
+</tr><tr>
+  
+  <td class="inst-cell">国联民生投行</td>
+  <td class="share-cell">0.83 亿</td>
+  <td class="spread-cell">+0.31%</td>
+</tr><tr>
+  
+  <td class="inst-cell">京东世贸</td>
+  <td class="share-cell">0.43 亿</td>
+  <td class="spread-cell">+0.31%</td>
+</tr><tr>
+  
+  <td class="inst-cell">青岸投资</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.31%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#1c3a2a">
+    <span class="product-name">1年期信托金条</span>
+    <span class="product-stats">5笔 · 9.00亿 · 均利差 +0.17%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#1c3a2a">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="5">
+  <div class="interval-label">+0.15%~+0.20%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.17%</span>
+</td>
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">2.38 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">2.38 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">2.38 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南银理财</td>
+  <td class="share-cell">1.80 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">0.06 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#1a3048">
+    <span class="product-name">1年期白条取现</span>
+    <span class="product-stats">5笔 · 9.00亿 · 均利差 +0.20%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#1a3048">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="5">
+  <div class="interval-label">+0.20%~+0.25%</div>
+  <span class="spread-badge" style="background:#3a6090">+0.20%</span>
+</td>
+  <td class="inst-cell">兴银理财</td>
+  <td class="share-cell">2.70 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">重庆农商行金市</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">1.80 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">1.50 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#3a2010">
+    <span class="product-name">1年期信托企业主贷</span>
+    <span class="product-stats">5笔 · 4.15亿 · 均利差 +0.24%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#3a2010">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="5">
+  <div class="interval-label">+0.20%~+0.25%</div>
+  <span class="spread-badge" style="background:#c05a20">+0.24%</span>
+</td>
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">0.90 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">苏银理财</td>
+  <td class="share-cell">0.90 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.85 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">易方达基金</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南银理财</td>
+  <td class="share-cell">0.70 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#2a1040">
+    <span class="product-name">1年期小贷企业主贷</span>
+    <span class="product-stats">6笔 · 8.30亿 · 均利差 +0.24%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#2a1040">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="6">
+  <div class="interval-label">+0.20%~+0.25%</div>
+  <span class="spread-badge" style="background:#6b3daa">+0.24%</span>
+</td>
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">2.49 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">2.20 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南银理财</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">苏银理财</td>
+  <td class="share-cell">1.09 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">盛际小贷</td>
+  <td class="share-cell">0.41 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr><tr>
+  
+  <td class="inst-cell">易方达基金</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.24%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#0d3a3a">
+    <span class="product-name">1年期保理</span>
+    <span class="product-stats">5笔 · 9.90亿 · 均利差 +0.17%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#0d3a3a">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="5">
+  <div class="interval-label">+0.15%~+0.20%</div>
+  <span class="spread-badge" style="background:#1a7a7a">+0.17%</span>
+</td>
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.47 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">2.36 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">浦银理财</td>
+  <td class="share-cell">1.96 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">光大理财</td>
+  <td class="share-cell">1.80 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr><tr>
+  
+  <td class="inst-cell">江苏银行</td>
+  <td class="share-cell">1.31 亿</td>
+  <td class="spread-cell">+0.17%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#2a2a10">
+    <span class="product-name">1年期动产质押</span>
+    <span class="product-stats">8笔 · 2.58亿 · 均利差 +0.28%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#2a2a10">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="8">
+  <div class="interval-label">+0.25%~+0.30%</div>
+  <span class="spread-badge" style="background:#8a8a30">+0.28%</span>
+</td>
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">0.77 亿</td>
+  <td class="spread-cell">+0.28%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">0.77 亿</td>
+  <td class="spread-cell">+0.28%</td>
+</tr><tr>
+  
+  <td class="inst-cell">易方达基金</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.28%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华泰保兴基金</td>
+  <td class="share-cell">0.20 亿</td>
+  <td class="spread-cell">+0.28%</td>
+</tr><tr>
+  
+  <td class="inst-cell">太平基金</td>
+  <td class="share-cell">0.20 亿</td>
+  <td class="spread-cell">+0.28%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华夏理财</td>
+  <td class="share-cell">0.13 亿</td>
+  <td class="spread-cell">+0.28%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">0.13 亿</td>
+  <td class="spread-cell">+0.28%</td>
+</tr><tr>
+  
+  <td class="inst-cell">申万宏源资管</td>
+  <td class="share-cell">0.08 亿</td>
+  <td class="spread-cell">+0.28%</td>
+</tr></tbody>
+  </table>
+</div></div>
+</div><div class="month-section">
+  <div class="month-header" style="background:#3a5a9c">
+    <div class="month-label">2026-02</div>
+    <div class="month-kpis">
+      <span class="kpi">认购总额 <span class="kpi-val">36.00亿</span></span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">36笔</span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">25家机构</span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">均利差 <span class="kpi-val">+0.32%</span></span>
+    </div>
+    <div class="monthly-product-row"><div class="monthly-product-chip" style="border-left:3px solid #2563a8">
+  <span class="chip-name">1年期赊销白条</span>
+  <span class="chip-val">9.00<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #2d7a4f">
+  <span class="chip-name">1年期信托金条</span>
+  <span class="chip-val">18.00<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #b94949">
+  <span class="chip-name">超1年期京企贷</span>
+  <span class="chip-val">9.00<span class="chip-sub"> 亿</span></span>
+</div></div>
+  </div>
+  <div class="month-body"><div class="product-block">
+  <div class="product-header" style="background:#1a3a5c">
+    <span class="product-name">1年期赊销白条</span>
+    <span class="product-stats">8笔 · 9.00亿 · 均利差 +0.26%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#1a3a5c">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="8">
+  <div class="interval-label">+0.25%~+0.30%</div>
+  <span class="spread-badge" style="background:#2563a8">+0.26%</span>
+</td>
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">2.50 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.25 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">国泰海通自营</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">京东世贸</td>
+  <td class="share-cell">0.45 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">东方证券投行</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#1c3a2a">
+    <span class="product-name">1年期信托金条</span>
+    <span class="product-stats">16笔 · 18.00亿 · 均利差 +0.21%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#1c3a2a">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="16">
+  <div class="interval-label">+0.20%~+0.25%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.20%</span>
+</td>
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.25 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.25 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">2.25 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">厦门国际银行</td>
+  <td class="share-cell">1.40 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">厦门国际银行</td>
+  <td class="share-cell">0.90 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">1.30 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">0.86 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">1.15 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.20%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中邮理财</td>
+  <td class="share-cell">1.52 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭州联合银行</td>
+  <td class="share-cell">0.60 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华夏基金</td>
+  <td class="share-cell">0.52 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华泰资管</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.22%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#673d3d">
+    <span class="product-name">超1年期京企贷</span>
+    <span class="product-stats">12笔 · 9.00亿 · 均利差 +0.51%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#673d3d">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="12">
+  <div class="interval-label">+0.50%~+0.55%</div>
+  <span class="spread-badge" style="background:#b94949">+0.51%</span>
+</td>
+  <td class="inst-cell">建信信托</td>
+  <td class="share-cell">1.85 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中信投顾</td>
+  <td class="share-cell">1.30 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广银理财</td>
+  <td class="share-cell">1.15 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr><tr>
+  
+  <td class="inst-cell">申万宏源投顾</td>
+  <td class="share-cell">1.10 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中金自营</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr><tr>
+  
+  <td class="inst-cell">宁夏银行</td>
+  <td class="share-cell">0.85 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr><tr>
+  
+  <td class="inst-cell">渤银理财</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr><tr>
+  
+  <td class="inst-cell">盛际小贷</td>
+  <td class="share-cell">0.45 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中泰证券自营</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr><tr>
+  
+  <td class="inst-cell">财达资管</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中金资管</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr><tr>
+  
+  <td class="inst-cell">申万宏源资管</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.51%</td>
+</tr></tbody>
+  </table>
+</div></div>
+</div><div class="month-section">
+  <div class="month-header" style="background:#4a6aac">
+    <div class="month-label">2026-01</div>
+    <div class="month-kpis">
+      <span class="kpi">认购总额 <span class="kpi-val">70.10亿</span></span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">55笔</span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">35家机构</span>
+      <span class="kpi-sep">|</span>
+      <span class="kpi">均利差 <span class="kpi-val">+0.36%</span></span>
+    </div>
+    <div class="monthly-product-row"><div class="monthly-product-chip" style="border-left:3px solid #2563a8">
+  <span class="chip-name">1年期赊销白条</span>
+  <span class="chip-val">9.00<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #3e7cc1">
+  <span class="chip-name">超1年期赊销白条</span>
+  <span class="chip-val">4.70<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #2d7a4f">
+  <span class="chip-name">1年期信托金条</span>
+  <span class="chip-val">18.00<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #469368">
+  <span class="chip-name">超1年期信托金条</span>
+  <span class="chip-val">13.50<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #c05a20">
+  <span class="chip-name">1年期信托企业主贷</span>
+  <span class="chip-val">8.30<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #d97339">
+  <span class="chip-name">超1年期信托企业主贷</span>
+  <span class="chip-val">8.30<span class="chip-sub"> 亿</span></span>
+</div><div class="monthly-product-chip" style="border-left:3px solid #8456c3">
+  <span class="chip-name">超1年期小贷企业主贷</span>
+  <span class="chip-val">8.30<span class="chip-sub"> 亿</span></span>
+</div></div>
+  </div>
+  <div class="month-body"><div class="product-block">
+  <div class="product-header" style="background:#1a3a5c">
+    <span class="product-name">1年期赊销白条</span>
+    <span class="product-stats">9笔 · 9.00亿 · 均利差 +0.21%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#1a3a5c">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="9">
+  <div class="interval-label">+0.20%~+0.25%</div>
+  <span class="spread-badge" style="background:#2563a8">+0.21%</span>
+</td>
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">2.70 亿</td>
+  <td class="spread-cell">+0.21%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.25 亿</td>
+  <td class="spread-cell">+0.21%</td>
+</tr><tr>
+  
+  <td class="inst-cell">江苏银行</td>
+  <td class="share-cell">1.80 亿</td>
+  <td class="spread-cell">+0.21%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南京银行</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+0.21%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南银理财</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.21%</td>
+</tr><tr>
+  
+  <td class="inst-cell">杭银理财</td>
+  <td class="share-cell">0.45 亿</td>
+  <td class="spread-cell">+0.21%</td>
+</tr><tr>
+  
+  <td class="inst-cell">利曦基金</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.21%</td>
+</tr><tr>
+  
+  <td class="inst-cell">兴银理财</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.21%</td>
+</tr><tr>
+  
+  <td class="inst-cell">国信证券投行</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.21%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#476789">
+    <span class="product-name">超1年期赊销白条</span>
+    <span class="product-stats">6笔 · 4.70亿 · 均利差 +0.35%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#476789">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="6">
+  <div class="interval-label">+0.35%~+0.40%</div>
+  <span class="spread-badge" style="background:#3e7cc1">+0.35%</span>
+</td>
+  <td class="inst-cell">中信证券投行</td>
+  <td class="share-cell">1.30 亿</td>
+  <td class="spread-cell">+0.35%</td>
+</tr><tr>
+  
+  <td class="inst-cell">国泰海通投行</td>
+  <td class="share-cell">1.30 亿</td>
+  <td class="spread-cell">+0.35%</td>
+</tr><tr>
+  
+  <td class="inst-cell">国开证券自营</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.35%</td>
+</tr><tr>
+  
+  <td class="inst-cell">京东世贸</td>
+  <td class="share-cell">0.43 亿</td>
+  <td class="spread-cell">+0.35%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中信建投投顾</td>
+  <td class="share-cell">0.36 亿</td>
+  <td class="spread-cell">+0.35%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.35%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#1c3a2a">
+    <span class="product-name">1年期信托金条</span>
+    <span class="product-stats">14笔 · 18.00亿 · 均利差 +0.26%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#1c3a2a">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="14">
+  <div class="interval-label">+0.25%~+0.30%</div>
+  <span class="spread-badge" style="background:#2d7a4f">+0.26%</span>
+</td>
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.25 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安理财</td>
+  <td class="share-cell">2.20 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南银理财</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南银理财</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">2.70 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">广州银行</td>
+  <td class="share-cell">2.70 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">华夏基金</td>
+  <td class="share-cell">0.90 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">光大理财</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">南京银行</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">苏银理财</td>
+  <td class="share-cell">0.40 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">申万宏源投顾</td>
+  <td class="share-cell">0.20 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr><tr>
+  
+  <td class="inst-cell">平安证券投行</td>
+  <td class="share-cell">0.15 亿</td>
+  <td class="spread-cell">+0.26%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#496757">
+    <span class="product-name">超1年期信托金条</span>
+    <span class="product-stats">1笔 · 13.50亿 · 均利差 +0.77%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#496757">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="1">
+  <div class="interval-label">+0.75%~+0.80%</div>
+  <span class="spread-badge" style="background:#469368">+0.77%</span>
+</td>
+  <td class="inst-cell">国寿投资</td>
+  <td class="share-cell">13.50 亿</td>
+  <td class="spread-cell">+0.77%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#3a2010">
+    <span class="product-name">1年期信托企业主贷</span>
+    <span class="product-stats">8笔 · 8.30亿 · 均利差 +0.39%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#3a2010">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="8">
+  <div class="interval-label">+0.35%~+0.40%</div>
+  <span class="spread-badge" style="background:#c05a20">+0.39%</span>
+</td>
+  <td class="inst-cell">南银理财</td>
+  <td class="share-cell">2.10 亿</td>
+  <td class="spread-cell">+0.39%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">1.66 亿</td>
+  <td class="spread-cell">+0.39%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">1.30 亿</td>
+  <td class="spread-cell">+0.39%</td>
+</tr><tr>
+  
+  <td class="inst-cell">苏银理财</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.39%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+0.39%</td>
+</tr><tr>
+  
+  <td class="inst-cell">申万宏源投顾</td>
+  <td class="share-cell">0.80 亿</td>
+  <td class="spread-cell">+0.39%</td>
+</tr><tr>
+  
+  <td class="inst-cell">国金证券资管</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.39%</td>
+</tr><tr>
+  
+  <td class="inst-cell">申万宏源资管</td>
+  <td class="share-cell">0.14 亿</td>
+  <td class="spread-cell">+0.39%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#674d3d">
+    <span class="product-name">超1年期信托企业主贷</span>
+    <span class="product-stats">9笔 · 8.30亿 · 均利差 +0.50%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#674d3d">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="9">
+  <div class="interval-label">+0.50%~+0.55%</div>
+  <span class="spread-badge" style="background:#d97339">+0.50%</span>
+</td>
+  <td class="inst-cell">易方达基金</td>
+  <td class="share-cell">2.40 亿</td>
+  <td class="spread-cell">+0.50%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">1.90 亿</td>
+  <td class="spread-cell">+0.50%</td>
+</tr><tr>
+  
+  <td class="inst-cell">建信信托</td>
+  <td class="share-cell">1.20 亿</td>
+  <td class="spread-cell">+0.50%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">1.10 亿</td>
+  <td class="spread-cell">+0.50%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中金资管</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.50%</td>
+</tr><tr>
+  
+  <td class="inst-cell">顺德农商行</td>
+  <td class="share-cell">0.50 亿</td>
+  <td class="spread-cell">+0.50%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中金自营</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.50%</td>
+</tr><tr>
+  
+  <td class="inst-cell">宁夏银行</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.50%</td>
+</tr><tr>
+  
+  <td class="inst-cell">申万宏源投顾</td>
+  <td class="share-cell">0.10 亿</td>
+  <td class="spread-cell">+0.50%</td>
+</tr></tbody>
+  </table>
+</div><div class="product-block">
+  <div class="product-header" style="background:#573d6d">
+    <span class="product-name">超1年期小贷企业主贷</span>
+    <span class="product-stats">8笔 · 8.30亿 · 均利差 +0.45%</span>
+  </div>
+  <table class="data-table">
+    <thead style="background:#573d6d">
+      <tr>
+        <th>利差区间</th><th>认购机构</th><th>累计认购</th><th>均利差</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+  <td class="interval-cell" rowspan="8">
+  <div class="interval-label">+0.45%~+0.50%</div>
+  <span class="spread-badge" style="background:#8456c3">+0.45%</span>
+</td>
+  <td class="inst-cell">易方达基金</td>
+  <td class="share-cell">2.00 亿</td>
+  <td class="spread-cell">+0.45%</td>
+</tr><tr>
+  
+  <td class="inst-cell">工银理财</td>
+  <td class="share-cell">1.60 亿</td>
+  <td class="spread-cell">+0.45%</td>
+</tr><tr>
+  
+  <td class="inst-cell">交银理财</td>
+  <td class="share-cell">1.30 亿</td>
+  <td class="spread-cell">+0.45%</td>
+</tr><tr>
+  
+  <td class="inst-cell">招银理财</td>
+  <td class="share-cell">1.20 亿</td>
+  <td class="spread-cell">+0.45%</td>
+</tr><tr>
+  
+  <td class="inst-cell">天津银行</td>
+  <td class="share-cell">1.00 亿</td>
+  <td class="spread-cell">+0.45%</td>
+</tr><tr>
+  
+  <td class="inst-cell">中金财富</td>
+  <td class="share-cell">0.48 亿</td>
+  <td class="spread-cell">+0.45%</td>
+</tr><tr>
+  
+  <td class="inst-cell">盛际小贷</td>
+  <td class="share-cell">0.41 亿</td>
+  <td class="spread-cell">+0.45%</td>
+</tr><tr>
+  
+  <td class="inst-cell">申万宏源投顾</td>
+  <td class="share-cell">0.30 亿</td>
+  <td class="spread-cell">+0.45%</td>
+</tr></tbody>
+  </table>
+</div></div>
+</div></div>
+
+<div class="footer">
+  数据来源：ledger_v3_new_filled.xlsx ·
+  生成时间：2026-05-16 ·
+  分析报告员 pBuddy
+</div>
+</body>
+</html>
