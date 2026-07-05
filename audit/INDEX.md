@@ -5,11 +5,11 @@
 
 ## 统计概览
 
-- 送审轮次(submissions):4
-- 复审轮次(reviews):3(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档)
-- 归档(closed):4(v20-institution-stats r1 + v21-bookkeeping r1 + v22-pricing r1 + v23-internal-merge-unify r1 均已归档)
+- 送审轮次(submissions):5
+- 复审轮次(reviews):4(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档;v24-self-check r1 APPROVED_WITH_CONDITIONS 待 C 归档)
+- 归档(closed):4(v20-institution-stats r1 + v21-bookkeeping r1 + v22-pricing r1 + v23-internal-merge-unify r1 均已归档;v24-self-check r1 待归档)
 - 已验证 Issue:0
-- 待处理 Issue:0(v23-internal-merge-unify r1 四项 DOC_CONSISTENCY/FUNCTION_EQUIVALENCE 已由 C1 归档留档关闭;技术债 #ABS-002 已闭环)
+- 待处理 Issue:4(v24-self-check r1 三项 DOC_CONSISTENCY WARNING + 一项 INFO,均无害不阻断,待 C1 留档关闭)
 
 ## Submissions
 
@@ -19,6 +19,7 @@
 | v21-bookkeeping | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.1-v21-bookkeeping-r01`(✅已双推) | `27f08a8` | [A1-v21-bookkeeping-r1.md](submissions/A1-v21-bookkeeping-r1.md) |
 | v22-pricing | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.2-v22-pricing-r01`(✅已双推) | `1e14550` | [A1-v22-pricing-r1.md](submissions/A1-v22-pricing-r1.md) |
 | v23-internal-merge-unify | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.3-v23-internal-merge-unify-r01`(✅已双推) | `1ef0612` | [A1-v23-internal-merge-unify-r1.md](submissions/A1-v23-internal-merge-unify-r1.md) |
+| v24-self-check | r1 | REVIEWED(APPROVED_WITH_CONDITIONS,待C归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.4-v24-self-check-r01`(✅已双推) | `31f716f` | [A1-v24-self-check-r1.md](submissions/A1-v24-self-check-r1.md) |
 
 ## Reviews
 
@@ -27,6 +28,7 @@
 | v21-bookkeeping | r1 | REVIEWED / APPROVED | 3(全部关闭:2 WARNING 平反 resolved + 1 INFO) | 2026-07-05 | [B1-v21-bookkeeping-r1.md](reviews/B1-v21-bookkeeping-r1.md) |
 | v22-pricing | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 3(全部 DOC_CONSISTENCY WARNING,均无害不阻断,待 C 留档) | 2026-07-05 | [B1-v22-pricing-r1.md](reviews/B1-v22-pricing-r1.md) |
 | v23-internal-merge-unify | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 4(3 WARNING + 1 INFO,全部 DOC_CONSISTENCY/FUNCTION_EQUIVALENCE,均无害不阻断,待 C 留档) | 2026-07-05 | [B1-v23-internal-merge-unify-r1.md](reviews/B1-v23-internal-merge-unify-r1.md) |
+| v24-self-check | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 4(3 WARNING + 1 INFO,全部 DOC_CONSISTENCY/MAINTAINABILITY,均无害不阻断,待 C 留档) | 2026-07-05 | [B1-v24-self-check-r1.md](reviews/B1-v24-self-check-r1.md) |
 
 > 注:v20 r1 已通过用户委托的独立审计(4 瑕疵已修正),审计意见未走正式 B 流程,直接待 Agent C 归档。
 
@@ -53,6 +55,10 @@
 | REV-v2.3-v23-internal-merge-unify-r01-02 | v23-internal-merge-unify | r1 | WARNING | resolved(C1 留档:补记完整 13 文件 changed_files 清单;§1§6.3 矛盾留档) | [B1](reviews/B1-v23-internal-merge-unify-r1.md) |
 | REV-v2.3-v23-internal-merge-unify-r01-03 | v23-internal-merge-unify | r1 | WARNING | resolved(SKILL.md version 已由 C 顺手升至 2.3.0) | [B1](reviews/B1-v23-internal-merge-unify-r1.md) |
 | REV-v2.3-v23-internal-merge-unify-r01-04 | v23-internal-merge-unify | r1 | INFO | resolved(C1 留档:22列实际24列口径确认,不影响等价性) | [B1](reviews/B1-v23-internal-merge-unify-r1.md) |
+| REV-v2.4-v24-self-check-r01-01 | v24-self-check | r1 | WARNING | open(A1 self_check.py 声明642行实际919行,待C留档) | [B1](reviews/B1-v24-self-check-r1.md) |
+| REV-v2.4-v24-self-check-r01-02 | v24-self-check | r1 | WARNING | open(A1 changed_files 多声明 .gitkeep 实际未提交,待C留档) | [B1](reviews/B1-v24-self-check-r1.md) |
+| REV-v2.4-v24-self-check-r01-03 | v24-self-check | r1 | WARNING | open(A1 误报 pitfall_log.md modified 实际v2.3后未改,待C留档) | [B1](reviews/B1-v24-self-check-r1.md) |
+| REV-v2.4-v24-self-check-r01-04 | v24-self-check | r1 | INFO | open(auto自动降级分支延期实测+污染文件排除) | [B1](reviews/B1-v24-self-check-r1.md) |
 
 > 注:首轮 2 项 WARNING(REV-01/REV-02)经二次独立复核确认均为本地核查环境假阳性(.git 损坏 + 编码搜索漏匹配),已全部平反 resolved,无阻断归档的遗留 Issue。
 > 技术债 #ABS-002(internal_merge 与 run_increment_merge 并存)留第三轮封装层处理,详见 [C1 归档报告](closed/C1-v21-bookkeeping-r1.md) §3 audit_escape_risks。
@@ -67,6 +73,7 @@
 | v21-bookkeeping | r1 已归档(COMPLETED) | — | 功能字节级等价无回归;首轮 2 项 WARNING 均系核查环境假阳性已平反;技术债 #ABS-002 留第三轮封装层处理 |
 | v22-pricing | r1 已归档(COMPLETED) | — | v2.2.0 第三轮发行定价迁入,APPROVED_WITH_CONDITIONS;3 项 DOC_CONSISTENCY 瑕疵 REV-03 已修复,REV-01/02 由 C1 留档关闭 |
 | v23-internal-merge-unify | r1 已归档(COMPLETED,APPROVED_WITH_CONDITIONS) | — | v2.3.0 第四轮 internal_merge 翻译官改造,闭环 #ABS-002(解除 v20/v21/v22 三个 C1 的 deferred_critical);6 层自检通过;4 项瑕疵 REV-03 已修复,REV-01/02/04 由 C1 留档关闭 |
+| v24-self-check | r1 已复审(REVIEWED,APPROVED_WITH_CONDITIONS) | 待 Agent C 归档 | v2.4.0 新增 5 层自检工具脚本;核心层 3 逐 cell diff 回归闸门通过(13753 cell 0 差异);降级模式 --mode degraded 已验;3 项 DOC_CONSISTENCY WARNING + 1 INFO 待 C 留档 |
 
 ## 命名规则
 

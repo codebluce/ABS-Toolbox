@@ -57,6 +57,21 @@
       "reviews": ["B1-v23-internal-merge-unify-r1"],
       "closed": "C1-v23-internal-merge-unify-r1",
       "notes": "v2.3.0 第四轮。已归档(C1-v23-internal-merge-unify-r1)。internal_merge 翻译官改造(88 行→15 行+upgrade_22_to_25 40 行),闭环技术债 #ABS-002,解除三个 C1(v20/v21/v22)的 deferred_critical。Agent B 独立复核完成:6 层自检全部重跑通过,功能等价性完整无回归。4 项瑕疵 REV-03(SKILL.md version)由 C 顺手升至 2.3.0 resolved;REV-01(commit_hash 以 tag→1ef0612 为准)/REV-02(补记完整 13 文件 changed_files 清单,§1§6.3 矛盾留档)/REV-04(22列实际24列口径确认)由 C1 归档留档关闭。verdict=APPROVED_WITH_CONDITIONS。"
+    },
+    "v24-self-check": {
+      "skill_version": "v2.4.0",
+      "current_round": 1,
+      "status": "REVIEWED",
+      "verdict": "APPROVED_WITH_CONDITIONS",
+      "next_action": "待 Agent C 归档",
+      "submissions": [
+        "A1-v24-self-check-r1"
+      ],
+      "reviews": [
+        "B1-v24-self-check-r1"
+      ],
+      "closed": null,
+      "notes": "v2.4.0 第五轮。新增自检工具 skill(非 skill 迁入),核心产物 scripts/self_check.py(git 实测 919 行),提供 5 层自检框架 + 降级接口 --mode auto|full|degraded。Agent B 独立复核完成:v21-bookkeeping 5 层自检全部重跑通过,核心层 3 逐 cell diff 回归闸门 total_cells_compared=13753 diff_count=0 完全复现 A1 断言;降级模式 --mode degraded 已验(只跑层 2+5,PASS=2 SKIP=3)。QC FAIL 系 0626 数据已知问题不阻断真正闸门。commit_hash 以 tag->31f716f 为准(与 A1 一致,未重复 v22/v23 误填)。4 项瑕疵均 blocks_approval=false:REV-01(self_check.py 声明642行实际919行)/REV-02(changed_files 多声明 .gitkeep 未提交)/REV-03(误报 pitfall_log.md modified 实际 v2.3 后未改)/REV-04(auto 自动降级分支延期实测+污染文件排除),待 C1 留档关闭。verdict=APPROVED_WITH_CONDITIONS。"
     }
   },
   "issues": [
@@ -149,6 +164,42 @@
       "blocks_approval": false,
       "status": "resolved",
       "desc": "A1 §4.2 自检层 2 称'22 列台账',实际 0626 源 openpyxl max_column=24(W/X 列格式残留),真实数据列 22。upgrade_22_to_25 对 24 列仍执行升级,功能正确,口径说明模糊。不影响等价性,C1 归档确认留档"
+    },
+    {
+      "id": "REV-v2.4-v24-self-check-r01-01",
+      "slug": "v24-self-check",
+      "severity": "WARNING",
+      "category": "DOC_CONSISTENCY",
+      "blocks_approval": false,
+      "status": "open",
+      "desc": "A1 声明 self_check.py 642 行,git 实测 919 行(cat_file -s 与 wc -l 一致)。仅文档失真,脚本功能正常,5 层自检可运行。待 C1 留档以 919 行为准"
+    },
+    {
+      "id": "REV-v2.4-v24-self-check-r01-02",
+      "slug": "v24-self-check",
+      "severity": "WARNING",
+      "category": "DOC_CONSISTENCY",
+      "blocks_approval": false,
+      "status": "open",
+      "desc": "A1 changed_files 多声明 audit/self_check/.gitkeep,git show 31f716f --stat 实际未提交该文件(目录已有产出文件无需 .gitkeep)。无害元数据偏差,待 C1 留档"
+    },
+    {
+      "id": "REV-v2.4-v24-self-check-r01-03",
+      "slug": "v24-self-check",
+      "severity": "WARNING",
+      "category": "DOC_CONSISTENCY",
+      "blocks_approval": false,
+      "status": "open",
+      "desc": "A1 误报 scripts/pitfall_log.md modified,git log 确认 pitfall_log.md 自 v2.3 后未改动(本轮 diff 不含)。v22/v23/v24 连续三轮元数据失真,强烈建议 A 形成 changed_files 自查流程。待 C1 留档"
+    },
+    {
+      "id": "REV-v2.4-v24-self-check-r01-04",
+      "slug": "v24-self-check",
+      "severity": "INFO",
+      "category": "MAINTAINABILITY",
+      "blocks_approval": false,
+      "status": "open",
+      "desc": "auto 自动降级分支(检测原 skill 缺失自动切 degraded)本轮未实测(原 skill 存在故走 full);建议后续构造原 skill 缺失场景补测 auto 分支。另 deliverables/dashboards/01_latest/ 污染文件非本轮引入,commit 时已排除。待 C1 留档+延期"
     }
   ],
   "counters": {
@@ -173,6 +224,11 @@
       "rebase_count": 0,
       "blocked_count": 0,
       "closed_at": "2026-07-05"
+    },
+    "v24-self-check": {
+      "max_round": 1,
+      "rebase_count": 0,
+      "blocked_count": 0
     }
   }
 }
