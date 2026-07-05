@@ -10,7 +10,7 @@ author: agent_a
 
 # --- 代码快照 ---
 git_tag: audit/v2.5-v25-match-rule-tune-r01
-commit_hash: TBD                              # commit 后补记
+commit_hash: ae1907e                          # 主提交 hash(补记)
 previous_git_tag: audit/v2.4-v24-self-check-r01
 
 # --- 变更文件 ---
