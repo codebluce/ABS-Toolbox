@@ -26,12 +26,13 @@
     "v22-pricing": {
       "skill_version": "v2.2.0",
       "current_round": 1,
-      "status": "PENDING_REVIEW",
-      "next_action": "review_by_agent_b",
+      "status": "REVIEWED",
+      "verdict": "APPROVED_WITH_CONDITIONS",
+      "next_action": "archive_by_agent_c",
       "submissions": ["A1-v22-pricing-r1"],
-      "reviews": [],
+      "reviews": ["B1-v22-pricing-r1"],
       "closed": null,
-      "notes": "v2.2.0 第三轮。发行定价 v1.5.0 迁入:3 gen + test_smoke 共 4 文件,4 处路径改造(唯一改动),6 层自检通过。abs_common.py 复用 v2.0.0 已复制版本(字节一致)。待 Agent B 审计。"
+      "notes": "v2.2.0 第三轮。发行定价 v1.5.0 迁入:3 gen + test_smoke 共 4 文件。Agent B 独立复核完成:4 文件 diff 仅路径改造(无逻辑改动)、abs_common.py 字节一致、QC FAIL 经源脚本对比确认为 0626 数据问题非回归,功能等价性完整无 CRITICAL。3 项 DOC_CONSISTENCY 瑕疵(commit_hash 误填 03225ef/changed_files 遗漏 pitfall_log 删除+.gitignore/SKILL.md version 未升 2.2.0)均无害不阻断,verdict=APPROVED_WITH_CONDITIONS,待 Agent C 归档留档。"
     }
   },
   "issues": [
