@@ -7,16 +7,16 @@
 
 - 送审轮次(submissions):2
 - 复审轮次(reviews):1(v21-bookkeeping r1 已完成,APPROVED 无条件通过)
-- 归档(closed):0
+- 归档(closed):1(v21-bookkeeping r1 已归档)
 - 已验证 Issue:0
-- 待处理 Issue:0(首轮 2 项 WARNING 经复核均为核查环境假阳性并已平反 resolved;仅 1 项 INFO 提示无需处理)
+- 待处理 Issue:0(首轮 2 项 WARNING 经复核均为核查环境假阳性并已平反 resolved;1 项 INFO 提示无需处理;1 项 MEDIUM 技术债 #ABS-002 留第三轮封装层处理)
 
 ## Submissions
 
 | slug | round | status | self_review | created | git_tag | commit | file |
 |---|---|---|---|---|---|---|---|
 | v20-institution-stats | r1 | PENDING_REVIEW(已通过独立审计,4 瑕疵已修正) | ✅ 4/4 | 2026-07-05 | `audit/v2.0-v20-institution-stats-r01` | `524cdae` | [A1-v20-institution-stats-r1.md](submissions/A1-v20-institution-stats-r1.md) |
-| v21-bookkeeping | r1 | REVIEWED(APPROVED) | ✅ 4/4 | 2026-07-05 | `audit/v2.1-v21-bookkeeping-r01`(✅已双推) | `27f08a8` | [A1-v21-bookkeeping-r1.md](submissions/A1-v21-bookkeeping-r1.md) |
+| v21-bookkeeping | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.1-v21-bookkeeping-r01`(✅已双推) | `27f08a8` | [A1-v21-bookkeeping-r1.md](submissions/A1-v21-bookkeeping-r1.md) |
 
 ## Reviews
 
@@ -30,7 +30,7 @@
 
 | slug | round | final_verdict | total_rounds | closed_at | file |
 |---|---|---|---|---|---|
-| _暂无_ | | | | | |
+| v21-bookkeeping | r1 | APPROVED | 1 | 2026-07-05 | [C1-v21-bookkeeping-r1.md](closed/C1-v21-bookkeeping-r1.md) |
 
 ## Open Issues
 
@@ -41,13 +41,14 @@
 | REV-v2.1-v21-bookkeeping-r01-03 | v21-bookkeeping | r1 | INFO | open(仅提示,无需处理) | [B1](reviews/B1-v21-bookkeeping-r1.md) |
 
 > 注:首轮 2 项 WARNING(REV-01/REV-02)经二次独立复核确认均为本地核查环境假阳性(.git 损坏 + 编码搜索漏匹配),已全部平反 resolved,无阻断归档的遗留 Issue。
+> 技术债 #ABS-002(internal_merge 与 run_increment_merge 并存)留第三轮封装层处理,详见 [C1 归档报告](closed/C1-v21-bookkeeping-r1.md) §3 audit_escape_risks。
 
 ## slug 流转状态
 
 | slug | 当前轮次 | 下一动作 | 备注 |
 |---|---|---|---|
 | v20-institution-stats | r1 已通过独立审计 | 待 Agent C 归档 | 4 瑕疵已在修正轮处理,可直接归档 |
-| v21-bookkeeping | r1 REVIEWED(APPROVED) | 待 Agent C 归档 | 功能字节级等价无回归;首轮 2 项 WARNING 均系核查环境假阳性已平反,无遗留条件,可直接归档 |
+| v21-bookkeeping | r1 已归档(COMPLETED) | — | 功能字节级等价无回归;首轮 2 项 WARNING 均系核查环境假阳性已平反;技术债 #ABS-002 留第三轮封装层处理 |
 
 ## 命名规则
 

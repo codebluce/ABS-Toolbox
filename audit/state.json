@@ -15,13 +15,13 @@
     "v21-bookkeeping": {
       "skill_version": "v2.1.0",
       "current_round": 1,
-      "status": "REVIEWED",
+      "status": "COMPLETED",
       "verdict": "APPROVED",
-      "next_action": "archive_by_agent_c",
+      "next_action": null,
       "submissions": ["A1-v21-bookkeeping-r1"],
       "reviews": ["B1-v21-bookkeeping-r1"],
-      "closed": null,
-      "notes": "v2.1.0 第二轮。Agent B 独立复核完成:5 层自检全部重跑通过,功能字节级等价无回归。首轮 2 项 WARNING 经复核均为核查环境假阳性并已平反(REV-01 internal_merge_bookkeeping 真实存在于 gen_institution_stats.py:268,REV-02 git tag 系.git损坏假阳性已恢复),verdict 升级为无条件 APPROVED。仅 1 项 INFO(cell 计数口径)。待 Agent C 归档。"
+      "closed": "C1-v21-bookkeeping-r1",
+      "notes": "v2.1.0 第二轮。已归档(C1-v21-bookkeeping-r1)。Agent B 独立复核完成:5 层自检全部重跑通过,功能字节级等价无回归。首轮 2 项 WARNING 经复核均为核查环境假阳性并已平反,verdict 升级为无条件 APPROVED。技术债 #ABS-002(internal_merge 与 run_increment_merge 并存)留第三轮封装层处理,详见 C1 §3 audit_escape_risks。"
     }
   },
   "issues": [
@@ -31,6 +31,6 @@
   ],
   "counters": {
     "v20-institution-stats": {"max_round": 1, "rebase_count": 0, "blocked_count": 0},
-    "v21-bookkeeping": {"max_round": 1, "rebase_count": 0, "blocked_count": 0}
+    "v21-bookkeeping": {"max_round": 1, "rebase_count": 0, "blocked_count": 0, "closed_at": "2026-07-05"}
   }
 }
