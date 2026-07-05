@@ -8,12 +8,14 @@
 - 标题:理财子×资产类型投资规模矩阵
 """
 import os, sys
+# 同时把 scripts/ 和 lab/ 加入 path
+_SCRIPTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _SCRIPTS_DIR)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 from matplotlib.colors import LinearSegmentedColormap
 from abs_common import preprocess_xlsx_for_pandas
 
@@ -111,8 +113,8 @@ def main():
     print(f'\n理财子数量: {len(inst_total)}')
     print(f'理财子列表:\n{inst_total}')
 
-    # 资产分类顺序
-    asset_order = ['赊销白条', '现金贷', '企业主贷', '保理', '金采', '其他']
+    # 资产分类顺序(用户指定)
+    asset_order = ['保理', '赊销白条', '现金贷', '金采', '企业主贷', '其他']
 
     # 透视表:行=理财子,列=资产分类,值=认购份额合计
     pivot = df.groupby(['认购机构', '资产分类'])['认购份额'].sum().unstack(fill_value=0)
@@ -121,12 +123,9 @@ def main():
     print(f'\n=== 透视表 ===')
     print(pivot)
 
-    # 绘图
-    fig = plt.figure(figsize=(13, max(7, len(pivot) * 0.5 + 2)), facecolor=HBR_CREAM)
-    gs = gridspec.GridSpec(1, 2, width_ratios=[3.2, 1.1], wspace=0.18)
-    ax = fig.add_subplot(gs[0, 0])
-    ax_sidebar = fig.add_subplot(gs[0, 1])
-    ax_sidebar.axis('off')
+    # 绘图:单栏全宽主图(无 sidebar)
+    fig, ax = plt.subplots(figsize=(11, max(7, len(pivot) * 0.45 + 2)),
+                           facecolor=HBR_CREAM)
 
     data = pivot.values
     vmax = data.max()
@@ -160,12 +159,10 @@ def main():
     for spine in ax.spines.values():
         spine.set_visible(False)
 
+    # 标题(纯标题,无副标题,避免与图像重叠)
     ax.set_title('理财子×资产类型投资规模矩阵',
                  fontsize=14, color=HBR_CHARCOAL, fontweight='bold',
                  pad=12, loc='left')
-    ax.text(0, -1.2, '发行场所:上交所 / 深交所 / 银行间  |  金额单位:亿元(V列认购份额合计)',
-            fontsize=9, color=HBR_GRAY, style='italic',
-            transform=ax.transData)
 
     # colorbar
     cbar = plt.colorbar(im, ax=ax, shrink=0.7, pad=0.02)
@@ -173,58 +170,13 @@ def main():
     cbar.ax.tick_params(labelsize=8, colors=HBR_GRAY, length=0)
     cbar.outline.set_visible(False)
 
-    # Sidebar
-    ax_sidebar.text(0, 0.95, '关键洞察', fontsize=12, color=HBR_CHARCOAL,
-                    fontweight='bold', transform=ax_sidebar.transAxes)
-    ax_sidebar.plot([0, 0.85], [0.92, 0.92], color=HBR_CRIMSON,
-                    linewidth=2, transform=ax_sidebar.transAxes)
+    # 底部备注(发行场所 + 数据来源)
+    plt.figtext(0.5, 0.02,
+                '发行场所:上交所 / 深交所 / 银行间  |  金额单位:亿元(V列认购份额合计)  |  '
+                '数据来源:0703 定稿台账',
+                ha='center', fontsize=8.5, color=HBR_GRAY, style='italic')
 
-    # 洞察计算
-    total = pivot.values.sum()
-    most_diverse_inst = (pivot > 0).sum(axis=1).idxmax()
-    most_diverse_n = (pivot > 0).sum(axis=1).max()
-    biggest_inst = pivot.sum(axis=1).idxmax()
-    biggest_amt = pivot.sum(axis=1).max()
-    top_asset = pivot.sum(axis=0).idxmax()
-    top_asset_amt = pivot.sum(axis=0).max()
-    sparsity = (pivot.values == 0).sum() / pivot.values.size * 100
-
-    insights = [
-        f'■ 矩阵规模',
-        f'  {len(pivot)} 家理财子 × 6 资产类型',
-        f'  总规模 {total:.1f} 亿元',
-        f'',
-        f'■ 最大理财子',
-        f'  {biggest_inst}',
-        f'  合计 {biggest_amt:.1f} 亿元',
-        f'',
-        f'■ 最多元理财子',
-        f'  {most_diverse_inst}',
-        f'  覆盖 {most_diverse_n}/6 资产',
-        f'',
-        f'■ 主流资产',
-        f'  {top_asset} ({top_asset_amt:.1f}亿)',
-        f'',
-        f'■ 矩阵稀疏度',
-        f'  {sparsity:.0f}% 单元为 0',
-        f'  反映理财子资产偏好分化',
-        f'',
-        f'■ Crimson 单元',
-        f'  规模 > {vmax*0.7:.1f} 亿的强参与',
-    ]
-    for i, line in enumerate(insights):
-        color = HBR_CRIMSON if line.startswith('■ 最大') or line.startswith('■ 主流') else HBR_CHARCOAL
-        weight = 'bold' if line.startswith('■') else 'normal'
-        ax_sidebar.text(0, 0.87 - i * 0.055, line,
-                        fontsize=8.5, color=color, fontweight=weight,
-                        transform=ax_sidebar.transAxes,
-                        family='sans-serif')
-
-    plt.figtext(0.5, 0.01,
-                '数据来源:0703 定稿台账 | 筛选:发行场所∈{上交所,深交所,银行间} + 理财子 | HBR 风格',
-                ha='center', fontsize=8, color=HBR_GRAY, style='italic')
-
-    plt.tight_layout(rect=[0, 0.02, 1, 1])
+    plt.tight_layout(rect=[0, 0.04, 1, 1])
     plt.savefig(OUTPUT, dpi=150, bbox_inches='tight', facecolor=HBR_CREAM)
     print(f'\n已保存: {OUTPUT}')
 
