@@ -16,16 +16,16 @@
       "skill_version": "v2.1.0",
       "current_round": 1,
       "status": "REVIEWED",
-      "verdict": "APPROVED_WITH_CONDITIONS",
+      "verdict": "APPROVED",
       "next_action": "archive_by_agent_c",
       "submissions": ["A1-v21-bookkeeping-r1"],
       "reviews": ["B1-v21-bookkeeping-r1"],
       "closed": null,
-      "notes": "v2.1.0 第二轮。Agent B 独立复核完成:5 层自检全部重跑通过,功能字节级等价无回归,APPROVED_WITH_CONDITIONS。2 项 WARNING(git tag 缺失/internal_merge 文档失实)归档前须处理,1 项 INFO(cell 计数口径)。待 Agent C 归档。"
+      "notes": "v2.1.0 第二轮。Agent B 独立复核完成:5 层自检全部重跑通过,功能字节级等价无回归。首轮 2 项 WARNING 经复核均为核查环境假阳性并已平反(REV-01 internal_merge_bookkeeping 真实存在于 gen_institution_stats.py:268,REV-02 git tag 系.git损坏假阳性已恢复),verdict 升级为无条件 APPROVED。仅 1 项 INFO(cell 计数口径)。待 Agent C 归档。"
     }
   },
   "issues": [
-    {"id": "REV-v2.1-v21-bookkeeping-r01-01", "slug": "v21-bookkeeping", "severity": "WARNING", "category": "DOC_CONSISTENCY", "blocks_approval": false, "status": "open", "desc": "pitfall_log #ABS-002 声称 internal_merge_bookkeeping 并存,代码中不存在"},
+    {"id": "REV-v2.1-v21-bookkeeping-r01-01", "slug": "v21-bookkeeping", "severity": "INFO", "category": "DOC_CONSISTENCY", "blocks_approval": false, "status": "resolved", "desc": "首轮误判 internal_merge_bookkeeping 不存在系搜索假阳性;findstr 确认真实存在于 gen_institution_stats.py:268 并被 load_data(:370)调用,pitfall #ABS-001/002 描述属实,已平反"},
     {"id": "REV-v2.1-v21-bookkeeping-r01-02", "slug": "v21-bookkeeping", "severity": "WARNING", "category": "DOC_CONSISTENCY", "blocks_approval": false, "status": "resolved", "desc": "git_tag 缺失系首轮本地 .git 损坏假阳性;仓库恢复后 tag audit/v2.1-v21-bookkeeping-r01→27f08a8 确认存在并已双推,已解决"},
     {"id": "REV-v2.1-v21-bookkeeping-r01-03", "slug": "v21-bookkeeping", "severity": "INFO", "category": "FUNCTION_EQUIVALENCE", "blocks_approval": false, "status": "open", "desc": "cell 计数口径 A=50125 单sheet / B=64811 全sheet,0 差异一致"}
   ],
