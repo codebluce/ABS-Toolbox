@@ -5,7 +5,8 @@ description: >
   ABS业务多功能工具箱。整合发行定价、机构统计、簿记录入三大业务模块,提供从台账录入到机构统计到发行定价分析的端到端工作流。
   第一轮(v2.0.0)激活:机构统计 + 产出归档。
   第二轮(v2.1.0)激活:簿记录入(原样迁入,0 改动,5 层自检通过)。
-  第三轮(规划中)激活:发行定价 + 全流程编排。
+  第三轮(v2.2.0)激活:发行定价(3 个 gen 脚本,4 处路径改造,6 层自检通过)。
+  全流程编排:录入→统计→定价 三步串行已激活。
   触发词包括:ABS工具箱、ABS机构统计、ABS归档、台账归档、看板归档、
   机构统计看板、管理人统计、销售机构统计、托管行统计、机构排名、
   申万宏源合并、机构合并统计、ABS发行台账、ABS产出索引。
@@ -14,8 +15,9 @@ description: >
 # ABS工具箱 Skill
 
 > **v2.0.0 第一轮(2026-07-05)**:激活机构统计 + 产出归档两条路径。
-> **v2.1.0 第二轮(2026-07-05)**:迁入簿记录入 v2.1(原样,0 改动,5 层自检通过)。
-> **第三轮(规划中)**:迁入发行定价 v1.5.0,激活"ABS 全流程"串行编排。
+> **v2.1.0 第二轮(2026-07-05)**:迁入簿记录入 v2.1(原样,0 改动,5 层自检通过,已归档 APPROVED)。
+> **v2.2.0 第三轮(2026-07-05)**:迁入发行定价 v1.5.0(3 个 gen 脚本,4 处路径改造,6 层自检通过)。
+> **全流程编排**:录入→统计→定价 三步串行已激活。
 > **回滚备份**:原 `skills/发行定价/` `skills/机构统计/` `skills/簿记录入/` 保留不动,新 skill 出问题随时回滚。
 
 ## 与原 3 skill 的关系
@@ -24,9 +26,9 @@ description: >
 |---|---|---|---|
 | 机构统计 | v1.1.0 | 已迁入(v2.0.0) | `scripts/gen_institution_stats.py` |
 | 簿记录入 | v2.1 | 已迁入(v2.1.0) | `scripts/increment_merge.py` |
-| 发行定价 | v1.5.0 | 第二轮迁入(规划中) | 暂引导回原 skill |
+| 发行定价 | v1.5.0 | 已迁入(v2.2.0) | `scripts/gen_abs_cost_report.py` + `gen_compare_tool.py` + `gen_spread_report.py` |
 
-**触发"ABS 发行定价"时**:本 skill 会引导你回 `skills/发行定价/` 执行,直至第三轮迁入完成。
+**触发"ABS 全流程"时**:本 skill 串行调用 录入→统计→定价 三步。
 
 ## 触发词路由
 
@@ -36,8 +38,8 @@ description: >
 | ABS 归档 / 台账归档 / 看板归档 | `scripts/abs_archive.py` | ✅ v2.0.0 |
 | ABS 产出索引 / 文件索引 | `scripts/abs_archive.py index` | ✅ v2.0.0 |
 | ABS 簿记录入 / 补充簿记数据 / 增量台账合并 | `scripts/increment_merge.py` | ✅ v2.1.0 |
-| ABS 发行定价 / 成本分析 / 利差分析 | 引导回 `skills/发行定价/` | 🟡 第三轮 |
-| ABS 全流程 | 第三轮激活 | 🟡 第三轮 |
+| ABS 发行定价 / 成本分析 / 利差分析 | `scripts/gen_abs_cost_report.py` + `gen_compare_tool.py` + `gen_spread_report.py` | ✅ v2.2.0 |
+| ABS 全流程 | 录入→统计→定价 串行 | ✅ v2.2.0 |
 
 ## 使用示例
 
@@ -85,6 +87,46 @@ PYTHONUTF8=1 python skills/ABS工具箱/scripts/increment_merge.py \
   --output "deliverables/ledger/02_processing/本周台账.xlsx"
 ```
 
+### 5. 发行定价(三看板一次跑)
+
+```bash
+PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_abs_cost_report.py \
+  "skills/ABS工具箱/deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx"
+
+PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_compare_tool.py \
+  "skills/ABS工具箱/deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx"
+
+PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_spread_report.py \
+  "skills/ABS工具箱/deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx"
+```
+
+产出 3 份 HTML 到 `deliverables/dashboards/01_latest/`:
+- `YYYYMMDD_机构投标利率看板.html`(工具一:成本分布)
+- `YYYYMMDD_发行定价分析工具.html`(工具二:机构比对)
+- `YYYYMMDD_机构投标基准利差看板.html`(工具三:利差分析)
+
+### 6. ABS 全流程(录入→统计→定价串行)
+
+```bash
+# Step 1: 簿记录入(补充簿记明细)
+PYTHONUTF8=1 python skills/ABS工具箱/scripts/increment_merge.py \
+  --processed "deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx" \
+  --supplement --details deliverables/ledger/05_bookkeeping_details/*.xlsx \
+  --output "deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
+
+# Step 2: 机构统计(用补充簿记后的台账)
+PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_institution_stats.py \
+  "deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
+
+# Step 3: 发行定价(3 看板,用补充簿记后的台账)
+PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_abs_cost_report.py \
+  "deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
+PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_compare_tool.py \
+  "deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
+PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_spread_report.py \
+  "deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
+```
+
 ## 目录结构
 
 ```
@@ -106,6 +148,10 @@ skills/ABS工具箱/
 │   ├── entity_alias.py            (机构名映射)
 │   ├── gen_institution_stats.py   (机构统计)
 │   ├── increment_merge.py         (簿记录入 v2.1)
+│   ├── gen_abs_cost_report.py     (发行定价 工具一:成本分布)
+│   ├── gen_compare_tool.py        (发行定价 工具二:机构比对)
+│   ├── gen_spread_report.py       (发行定价 工具三:利差分析)
+│   ├── test_smoke.py              (冒烟测试)
 │   └── abs_archive.py             (归档工具)
 └── deliverables/                  (产出,英文化目录)
     ├── ledger/                    (台账)

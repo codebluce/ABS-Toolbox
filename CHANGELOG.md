@@ -12,6 +12,48 @@
 
 ---
 
+## v2.2.0 — 2026-07-05 第三轮
+
+### 新增
+
+- **发行定价 v1.5.0 迁入**:3 个 gen 脚本 + test_smoke,共 4 文件
+  - `scripts/gen_abs_cost_report.py`(544 行,工具一:成本分布)
+  - `scripts/gen_compare_tool.py`(565 行,工具二:机构比对)
+  - `scripts/gen_spread_report.py`(619 行,工具三:利差分析)
+  - `scripts/test_smoke.py`(138 行,冒烟测试)
+- **abs_common.py 复用**:v2.0.0 已复制(字节一致),3 个 gen 脚本 import 自动生效
+- **4 处路径改造**(唯一改动):
+  - 3 个 gen 脚本默认输出路径 `../../ABS技能包/看板/` → `../deliverables/dashboards/01_latest/`
+  - test_smoke 测试数据路径 `../../ABS技能包/台账/03-定稿/` → `../deliverables/ledger/03_final/`
+  - 删除 Inbox fallback 逻辑(统一走 deliverables)
+- **6 层自检通过**:
+  1. 改造 diff 仅 4 处路径(无逻辑改动)
+  2. 3 个 gen 跑 0626 定稿产 HTML,QC PASSED
+  3. 新旧产出文本 diff(剔除日期/路径后一致)
+  4. 原 skill test_smoke.py 跑通
+  5. 机构统计 + 簿记录入 QC 不受影响(回归)
+  6. 全流程串联:录入→统计→定价三步跑通
+- **SKILL.md 触发词路由**:"ABS 发行定价" + "ABS 全流程" 从 🟡 第三轮 → ✅ v2.2.0
+- **使用示例**:加 §5 发行定价 + §6 全流程串行
+
+### 验证
+
+- 6 层自检全部通过(详见 `audit/submissions/A1-v22-pricing-r1.md`)
+- 原 3 skill 文件未动(`skills/发行定价/` 完整保留)
+
+### 待办(后续)
+
+- [ ] 原 3 skill(发行定价/机构统计/簿记录入)标 `deprecated`(保留 6 个月观察期)
+- [ ] 设计 internal_merge 封装层(技术债 #ABS-002,需先解决 22 列→25 列升级)
+- [ ] 04_archive/ 19 份历史台账按月压缩
+
+### 已知遗留
+
+- `gen_institution_stats.py` 仍保留 `internal_merge_bookkeeping`(技术债 #ABS-002,与 increment_merge 并存)
+- `skills/发行定价/scripts/gen_*.py` 有上次会话遗留未提交改动(本次迁入复制当前磁盘版本,原 skill 保留不动)
+
+---
+
 ## v2.1.0 — 2026-07-05 第二轮
 
 ### 新增

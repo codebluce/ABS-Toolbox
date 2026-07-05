@@ -22,6 +22,16 @@
       "reviews": ["B1-v21-bookkeeping-r1"],
       "closed": "C1-v21-bookkeeping-r1",
       "notes": "v2.1.0 第二轮。已归档(C1-v21-bookkeeping-r1)。Agent B 独立复核完成:5 层自检全部重跑通过,功能字节级等价无回归。首轮 2 项 WARNING 经复核均为核查环境假阳性并已平反,verdict 升级为无条件 APPROVED。技术债 #ABS-002(internal_merge 与 run_increment_merge 并存)留第三轮封装层处理,详见 C1 §3 audit_escape_risks。"
+    },
+    "v22-pricing": {
+      "skill_version": "v2.2.0",
+      "current_round": 1,
+      "status": "PENDING_REVIEW",
+      "next_action": "review_by_agent_b",
+      "submissions": ["A1-v22-pricing-r1"],
+      "reviews": [],
+      "closed": null,
+      "notes": "v2.2.0 第三轮。发行定价 v1.5.0 迁入:3 gen + test_smoke 共 4 文件,4 处路径改造(唯一改动),6 层自检通过。abs_common.py 复用 v2.0.0 已复制版本(字节一致)。待 Agent B 审计。"
     }
   },
   "issues": [
@@ -31,6 +41,7 @@
   ],
   "counters": {
     "v20-institution-stats": {"max_round": 1, "rebase_count": 0, "blocked_count": 0},
-    "v21-bookkeeping": {"max_round": 1, "rebase_count": 0, "blocked_count": 0, "closed_at": "2026-07-05"}
+    "v21-bookkeeping": {"max_round": 1, "rebase_count": 0, "blocked_count": 0, "closed_at": "2026-07-05"},
+    "v22-pricing": {"max_round": 1, "rebase_count": 0, "blocked_count": 0}
   }
 }

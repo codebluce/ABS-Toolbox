@@ -3,3 +3,7 @@ __pycache__/
 *.tmp
 .DS_Store
 Thumbs.db
+
+# Excel 锁文件
+~$*.xlsx
+~$*.xls

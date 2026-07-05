@@ -5,7 +5,7 @@
 
 ## 统计概览
 
-- 送审轮次(submissions):2
+- 送审轮次(submissions):3
 - 复审轮次(reviews):1(v21-bookkeeping r1 已完成,APPROVED 无条件通过)
 - 归档(closed):1(v21-bookkeeping r1 已归档)
 - 已验证 Issue:0
@@ -17,6 +17,7 @@
 |---|---|---|---|---|---|---|---|
 | v20-institution-stats | r1 | PENDING_REVIEW(已通过独立审计,4 瑕疵已修正) | ✅ 4/4 | 2026-07-05 | `audit/v2.0-v20-institution-stats-r01` | `524cdae` | [A1-v20-institution-stats-r1.md](submissions/A1-v20-institution-stats-r1.md) |
 | v21-bookkeeping | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.1-v21-bookkeeping-r01`(✅已双推) | `27f08a8` | [A1-v21-bookkeeping-r1.md](submissions/A1-v21-bookkeeping-r1.md) |
+| v22-pricing | r1 | PENDING_REVIEW | ✅ 4/4 | 2026-07-05 | `audit/v2.2-v22-pricing-r01`(待打) | `03225ef` | [A1-v22-pricing-r1.md](submissions/A1-v22-pricing-r1.md) |
 
 ## Reviews
 
@@ -49,6 +50,7 @@
 |---|---|---|---|
 | v20-institution-stats | r1 已通过独立审计 | 待 Agent C 归档 | 4 瑕疵已在修正轮处理,可直接归档 |
 | v21-bookkeeping | r1 已归档(COMPLETED) | — | 功能字节级等价无回归;首轮 2 项 WARNING 均系核查环境假阳性已平反;技术债 #ABS-002 留第三轮封装层处理 |
+| v22-pricing | r1 PENDING_REVIEW | 待 Agent B 审计 | 发行定价 v1.5.0 迁入,4 处路径改造,6 层自检通过 |
 
 ## 命名规则
 
