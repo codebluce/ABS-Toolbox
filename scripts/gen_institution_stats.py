@@ -27,7 +27,7 @@ from datetime import datetime
 
 # v2.0.0 改造: 接入同目录 abs_common + entity_alias
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from abs_common import preprocess_xlsx_for_pandas, PRIORITY_LAYERS
+from abs_common import preprocess_xlsx_for_pandas, PRIORITY_LAYERS, filter_excluded_institutions, fix_bookkeeping_year, normalize_investor_name
 from entity_alias import normalize_entity, normalize_bank, ENTITY_MERGE_MAP, BANK_NORM_MAP
 
 # ═══════════════════════════════════════════════════════════════
@@ -112,20 +112,26 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 .section-sub { font-size:11px; color:rgba(255,255,255,.75); text-align:right; line-height:1.5; }
 
 .stat-table { width:100%; border-collapse:collapse; background:#fff; table-layout:fixed; }
-.stat-table thead th { color:#fff; padding:8px 12px; text-align:left;
+.stat-table thead th { color:#fff; padding:10px 12px; text-align:center;
                        font-size:11px; font-weight:600; letter-spacing:.3px; }
-.stat-table thead th.col-cnt { text-align:center; width:80px; }
-.stat-table thead th.col-num { text-align:right; width:120px; }
-.stat-table thead th.col-pct { text-align:right; width:90px; }
-.stat-table thead th.col-name { width:auto; }
+/* 5列表(管理人/销售机构): 机构名称28% + 4列各18% = 100% */
+.stat-table.cols-5 thead th.col-name { width:28%; }
+.stat-table.cols-5 thead th.col-cnt  { width:18%; }
+.stat-table.cols-5 thead th.col-num  { width:18%; }
+.stat-table.cols-5 thead th.col-pct  { width:18%; }
+/* 4列表(托管行): 机构名称30% + 3列各约23.33% = 100% */
+.stat-table.cols-4 thead th.col-name { width:30%; }
+.stat-table.cols-4 thead th.col-cnt  { width:23%; }
+.stat-table.cols-4 thead th.col-num  { width:24%; }
+.stat-table.cols-4 thead th.col-pct  { width:23%; }
 .stat-table tbody tr:nth-child(even) { background:#f7f9fc; }
 .stat-table tbody tr:hover { background:#eef3fa; }
 .stat-table tbody tr:not(:last-child) td { border-bottom:1px solid #eaeef4; }
-.stat-table tbody td { padding:7px 12px; font-size:12px; color:#000; }
-.stat-table tbody td.name { font-weight:500; }
+.stat-table tbody td { padding:8px 12px; font-size:12px; color:#000; text-align:center; }
+.stat-table tbody td.name { font-weight:500; text-align:center; }
 .stat-table tbody td.cnt { text-align:center; }
-.stat-table tbody td.num { text-align:right; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
-.stat-table tbody td.pct { text-align:right; }
+.stat-table tbody td.num { text-align:center; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.stat-table tbody td.pct { text-align:center; }
 
 .footer { text-align:center; padding:16px 0 24px; font-size:11px; color:#9aa5b5; }
 """
@@ -424,6 +430,13 @@ def load_data(xlsx_path, detail_paths=None):
     else:
         df[RESOLVED_INST_COL] = u
 
+    # 机构名自动归并：去公司后缀 + 投行上报后缀
+    before_count = df[RESOLVED_INST_COL].nunique()
+    df[RESOLVED_INST_COL] = df[RESOLVED_INST_COL].apply(normalize_investor_name)
+    after_count = df[RESOLVED_INST_COL].nunique()
+    if before_count != after_count:
+        print(f'[MERGE] 机构名归并：{before_count} → {after_count}（减少 {before_count - after_count} 个变体）')
+
     if '申购规模' in df.columns:
         df[RESOLVED_SHARE_COL] = pd.to_numeric(df['申购规模'], errors='coerce').fillna(v)
     else:
@@ -435,6 +448,13 @@ def load_data(xlsx_path, detail_paths=None):
     else:
         self_hold = df['成本'].astype(str).str.strip().str.match(r'^自持$', na=False)
     df = df[~self_hold]
+
+    # 簿记日期纠错：2025 年 → 2026 年（仅项目名唯一时自动改）
+    df['簿记时间'] = pd.to_datetime(df['簿记时间'], errors='coerce')
+    df = fix_bookkeeping_year(df, label='gen_institution_stats.load_data')
+
+    # 黑名单剔除：管理人/联席承销商/托管行/认购机构/穿透机构任一命中即剔除整行
+    df = filter_excluded_institutions(df, label='gen_institution_stats.load_data')
 
     # 数据质量检查：各分层内U列有值但WXY全空 → 簿记明细可能漏录
     if '申购利率' in df.columns and '申购规模' in df.columns:
@@ -546,12 +566,15 @@ def compute_custodian_table(projects, total_scale):
 # ═══════════════════════════════════════════════════════════════
 
 def build_stat_table(columns, rows_html, thead_bg):
-    """通用统计表格：columns=[(key, label, align_class), ...]"""
+    """通用统计表格：columns=[(key, label, align_class), ...]
+    v2.5.1: 加 cols-N class 用于按列数分配均匀列宽(N=4/5)"""
     th_items = []
     for key, label, cls in columns:
         th_items.append(f'<th class="{cls}">{label}</th>')
     thead = f'<thead style="background:{thead_bg}"><tr>{"".join(th_items)}</tr></thead>'
-    return f'<table class="stat-table">{thead}<tbody>{rows_html}</tbody></table>'
+    n_cols = len(columns)
+    cols_class = f' cols-{n_cols}' if n_cols in (4, 5) else ''
+    return f'<table class="stat-table{cols_class}">{thead}<tbody>{rows_html}</tbody></table>'
 
 
 def build_manager_rows(mgr):
@@ -561,7 +584,7 @@ def build_manager_rows(mgr):
             f'<tr>'
             f'<td class="name">{r["计划管理人"]}</td>'
             f'<td class="cnt">{int(r["管理项目数"])}</td>'
-            f'<td class="num">{r["管理规模"]:.2f} 亿</td>'
+            f'<td class="num">{r["管理规模"]:.2f}</td>'
             f'<td class="pct">{r["规模占比"]:.2f}%</td>'
             f'<td class="num">{r["投行认购规模"]:.2f}</td>'
             f'</tr>'
@@ -576,7 +599,7 @@ def build_sales_rows(sales):
             f'<tr>'
             f'<td class="name">{r["机构名称"]}</td>'
             f'<td class="cnt">{int(r["销售项目数"])}</td>'
-            f'<td class="num">{r["参与项目规模"]:.2f} 亿</td>'
+            f'<td class="num">{r["参与项目规模"]:.2f}</td>'
             f'<td class="pct">{r["规模占比"]:.2f}%</td>'
             f'<td class="num">{r["投行认购规模"]:.2f}</td>'
             f'</tr>'
@@ -591,7 +614,7 @@ def build_custodian_rows(custody):
             f'<tr>'
             f'<td class="name">{r["托管行"]}</td>'
             f'<td class="cnt">{int(r["托管项目数"])}</td>'
-            f'<td class="num">{r["托管规模"]:.2f} 亿</td>'
+            f'<td class="num">{r["托管规模"]:.2f}</td>'
             f'<td class="pct">{r["规模占比"]:.2f}%</td>'
             f'</tr>'
         )
@@ -609,68 +632,81 @@ def build_section(title, subtitle, table_html, color_key):
 </div>'''
 
 
-def generate_html(xlsx_path, mgr, sales, custody, meta):
-    """组装完整HTML"""
-    c1 = SECTION_COLORS['manager']
-    c2 = SECTION_COLORS['sales']
-    c3 = SECTION_COLORS['custodian']
+def _build_section_by_key(key, mgr, sales, custody):
+    """按 section key 构建对应 section HTML"""
+    if key == 'manager':
+        c = SECTION_COLORS['manager']
+        cols = [
+            ('name', '机构名称', 'col-name'),
+            ('cnt', '管理项目数', 'col-cnt'),
+            ('num', '管理规模(亿)', 'col-num'),
+            ('pct', '规模占比', 'col-pct'),
+            ('num', '投行认购规模(亿)', 'col-num'),
+        ]
+        table = build_stat_table(cols, build_manager_rows(mgr), c['thead'])
+        return build_section(
+            '表一：管理人统计表',
+            f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 申万宏源系合并',
+            table, 'manager'
+        )
+    if key == 'sales':
+        c = SECTION_COLORS['sales']
+        cols = [
+            ('name', '机构名称', 'col-name'),
+            ('cnt', '销售项目数', 'col-cnt'),
+            ('num', '参与项目规模(亿)', 'col-num'),
+            ('pct', '规模占比', 'col-pct'),
+            ('num', '投行认购规模(亿)', 'col-num'),
+        ]
+        table = build_stat_table(cols, build_sales_rows(sales), c['thead'])
+        return build_section(
+            '表二：销售机构统计表',
+            f'{len(sales)}家券商 · 联席承销商=销售机构 · 申万宏源系合并',
+            table, 'sales'
+        )
+    if key == 'custodian':
+        c = SECTION_COLORS['custodian']
+        cols = [
+            ('name', '机构名称', 'col-name'),
+            ('cnt', '托管项目数', 'col-cnt'),
+            ('num', '托管规模(亿)', 'col-num'),
+            ('pct', '规模占比', 'col-pct'),
+        ]
+        table = build_stat_table(cols, build_custodian_rows(custody), c['thead'])
+        return build_section(
+            '表三：托管行统计表',
+            f'{len(custody)}家银行 · 分行归并至总行 · 同名合并',
+            table, 'custodian'
+        )
+    raise ValueError(f"unknown section_key: {key}")
 
-    mgr_cols = [
-        ('name', '机构名称', 'col-name'),
-        ('cnt', '管理项目数', 'col-cnt'),
-        ('num', '管理规模(亿)', 'col-num'),
-        ('pct', '规模占比', 'col-pct'),
-        ('num', '投行认购规模(亿)', 'col-num'),
-    ]
-    mgr_table = build_stat_table(mgr_cols, build_manager_rows(mgr), c1['thead'])
 
-    sales_cols = [
-        ('name', '机构名称', 'col-name'),
-        ('cnt', '销售项目数', 'col-cnt'),
-        ('num', '参与项目规模(亿)', 'col-num'),
-        ('pct', '规模占比', 'col-pct'),
-        ('num', '投行认购规模(亿)', 'col-num'),
-    ]
-    sales_table = build_stat_table(sales_cols, build_sales_rows(sales), c2['thead'])
+def render_body(data, section_key=None):
+    """渲染 body 片段（不含 <!DOCTYPE>/<html>/<head>）
 
-    custody_cols = [
-        ('name', '机构名称', 'col-name'),
-        ('cnt', '托管项目数', 'col-cnt'),
-        ('num', '托管规模(亿)', 'col-num'),
-        ('pct', '规模占比', 'col-pct'),
-    ]
-    custody_table = build_stat_table(custody_cols, build_custodian_rows(custody), c3['thead'])
-
-    sec1 = build_section(
-        '表一：管理人统计表',
-        f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 申万宏源系合并',
-        mgr_table, 'manager'
-    )
-    sec2 = build_section(
-        '表二：销售机构统计表',
-        f'{len(sales)}家券商 · 联席承销商=销售机构 · 申万宏源系合并',
-        sales_table, 'sales'
-    )
-    sec3 = build_section(
-        '表三：托管行统计表',
-        f'{len(custody)}家银行 · 分行归并至总行 · 同名合并',
-        custody_table, 'custodian'
-    )
+    section_key=None：渲染完整 body（3 sections，独立看板用）
+    section_key='manager'/'sales'/'custodian'：只渲染对应 section（综合看板用）
+    """
+    mgr = data['mgr']
+    sales = data['sales']
+    custody = data['custody']
+    meta = data['meta']
+    xlsx_basename = data['xlsx_basename']
 
     total_scale = meta['total_scale']
     project_count = meta['project_count']
     date_min = meta['date_min']
     date_max = meta['date_max']
 
-    html = f'''<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>机构统计看板</title>
-<style>{CSS}</style>
-</head>
-<body>
+    if section_key is None:
+        sections_html = '\n'.join(
+            _build_section_by_key(k, mgr, sales, custody)
+            for k in ['manager', 'sales', 'custodian']
+        )
+    else:
+        sections_html = _build_section_by_key(section_key, mgr, sales, custody)
+
+    return f'''
 <div class="page-banner">
   <div class="banner-top">
     <div>
@@ -697,19 +733,97 @@ def generate_html(xlsx_path, mgr, sales, custody, meta):
 </div>
 
 <div class="content">
-{sec1}
-{sec2}
-{sec3}
+{sections_html}
 </div>
 
 <div class="footer">
-  数据来源：{os.path.basename(xlsx_path)} ·
+  数据来源：{xlsx_basename} ·
   生成时间：{datetime.now().strftime("%Y-%m-%d")} ·
-  ABS工具箱 v2.0.0 (机构统计)
-</div>
+  ABS工具箱 v2.0.0 (机构统计) · 分析报告员 Peizhi Wu
+</div>'''
+
+
+def render_html(data, section_key=None):
+    """渲染完整 HTML 文档（含 <!DOCTYPE>/<html>/<head>）
+
+    独立看板用 section_key=None；综合看板调 render_body 取 body 片段。
+    """
+    body = render_body(data, section_key=section_key)
+    return f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>机构统计看板</title>
+<style>{CSS}</style>
+</head>
+<body>{body}
 </body>
 </html>'''
-    return html
+
+
+# 兼容旧接口
+def generate_html(xlsx_path, mgr, sales, custody, meta):
+    """已废弃，用 render_html 替代（保留向后兼容）"""
+    data = {
+        'mgr': mgr, 'sales': sales, 'custody': custody, 'meta': meta,
+        'xlsx_basename': os.path.basename(xlsx_path),
+    }
+    return render_html(data, section_key=None)
+
+
+# ═══════════════════════════════════════════════════════════════
+# §6.5  数据计算层（供综合看板调用）
+# ═══════════════════════════════════════════════════════════════
+
+def compute_data(xlsx_path, detail_paths=None):
+    """读取台账 + 计算三表 + 跑 QC precheck，返回数据 dict
+
+    供综合看板和独立看板共用。QC precheck 失败时抛 RuntimeError。
+    """
+    print(f'Loading: {xlsx_path}')
+    df, projects = load_data(xlsx_path, detail_paths=detail_paths)
+
+    total_scale = projects['规模'].sum()
+    project_count = len(projects)
+    ib_scale = compute_ib_subscription(df)
+
+    mgr = compute_manager_table(projects, ib_scale, total_scale)
+    sales = compute_sales_table(projects, ib_scale, total_scale)
+    custody = compute_custodian_table(projects, total_scale)
+
+    book_dates = df.drop_duplicates(subset='项目名称')['簿记时间']
+    book_dates = pd.to_datetime(book_dates, errors='coerce').dropna()
+    date_min = book_dates.min().strftime('%Y-%m-%d') if len(book_dates) > 0 else 'N/A'
+    date_max = book_dates.max().strftime('%Y-%m-%d') if len(book_dates) > 0 else 'N/A'
+    meta = {
+        'total_scale': total_scale,
+        'project_count': project_count,
+        'date_min': date_min,
+        'date_max': date_max,
+    }
+
+    print(f'项目: {project_count}个 | 总规模: {total_scale:.2f}亿')
+    print(f'管理人: {len(mgr)}家 | 销售机构: {len(sales)}家 | 托管行: {len(custody)}家')
+
+    # QC precheck（不写文件）
+    qc_passed = run_qc(df, projects, mgr, sales, custody, total_scale,
+                       out_path=None, meta=meta, precheck_only=True)
+    if not qc_passed:
+        raise RuntimeError(f'[QC] 机构统计预检未通过，请检查数据或逻辑')
+
+    return {
+        'df': df,
+        'projects': projects,
+        'mgr': mgr,
+        'sales': sales,
+        'custody': custody,
+        'meta': meta,
+        'total_scale': total_scale,
+        'ib_scale': ib_scale,
+        'xlsx_basename': os.path.basename(xlsx_path),
+        'xlsx_path': xlsx_path,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -877,7 +991,7 @@ def run_qc(df, projects, mgr, sales, custody, total_scale,
         # HTML结构完整性
         checks = [
             ('class="section"', '三个表区块'),
-            ('class="stat-table"', '统计表格'),
+            ('class="stat-table', '统计表格'),
             ('class="page-banner"', '顶部横幅'),
             ('class="note-bar"', '说明栏'),
             ('class="footer"', '页脚'),
@@ -1030,54 +1144,26 @@ if __name__ == '__main__':
     # 初始化踩坑日志
     init_pitfall_log()
 
-    # 加载数据
-    print(f'Loading: {xlsx_path}')
-    df, projects = load_data(xlsx_path, detail_paths=detail_paths if detail_paths else None)
-
-    total_scale = projects['规模'].sum()
-    project_count = len(projects)
-    ib_scale = compute_ib_subscription(df)
-
-    # 计算三张表
-    mgr = compute_manager_table(projects, ib_scale, total_scale)
-    sales = compute_sales_table(projects, ib_scale, total_scale)
-    custody = compute_custodian_table(projects, total_scale)
-
-    # 元数据
-    book_dates = df.drop_duplicates(subset='项目名称')['簿记时间']
-    book_dates = pd.to_datetime(book_dates, errors='coerce').dropna()
-    date_min = book_dates.min().strftime('%Y-%m-%d') if len(book_dates) > 0 else 'N/A'
-    date_max = book_dates.max().strftime('%Y-%m-%d') if len(book_dates) > 0 else 'N/A'
-    meta = {
-        'total_scale': total_scale,
-        'project_count': project_count,
-        'date_min': date_min,
-        'date_max': date_max,
-    }
-
-    print(f'项目: {project_count}个 | 总规模: {total_scale:.2f}亿')
-    print(f'管理人: {len(mgr)}家 | 销售机构: {len(sales)}家 | 托管行: {len(custody)}家')
-
-    # 生成HTML
-    html = generate_html(xlsx_path, mgr, sales, custody, meta)
-
-    # 预检
-    qc_passed = run_qc(df, projects, mgr, sales, custody, total_scale,
-                        out_path, meta, precheck_only=True)
-
-    if qc_passed:
-        with open(out_path, 'w', encoding='utf-8') as f:
-            f.write(html)
-        print(f'\nDone: {out_path}')
-        # 最终QC
-        run_qc(df, projects, mgr, sales, custody, total_scale,
-               out_path, meta, precheck_only=False)
-    else:
-        # QC失败时记录踩坑
+    # 计算数据（含 QC precheck）
+    try:
+        data = compute_data(xlsx_path, detail_paths=detail_paths if detail_paths else None)
+    except RuntimeError as e:
         log_pitfall(
             'QC预检未通过，跳过文件写入',
             '请检查数据或逻辑后重试',
             category='逻辑'
         )
-        print(f'\n[ERROR] QC未通过，跳过输出文件写入（{out_path}）')
+        print(f'\n[ERROR] {e}')
         print('[ERROR] 请修正数据或逻辑后重试')
+        sys.exit(1)
+
+    # 生成 HTML
+    html = render_html(data, section_key=None)
+
+    # 写文件 + 最终 QC
+    with open(out_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+    print(f'\nDone: {out_path}')
+    run_qc(data['df'], data['projects'], data['mgr'], data['sales'],
+           data['custody'], data['total_scale'],
+           out_path, data['meta'], precheck_only=False)
