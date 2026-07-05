@@ -26,7 +26,7 @@
   },
   "issues": [
     {"id": "REV-v2.1-v21-bookkeeping-r01-01", "slug": "v21-bookkeeping", "severity": "WARNING", "category": "DOC_CONSISTENCY", "blocks_approval": false, "status": "open", "desc": "pitfall_log #ABS-002 声称 internal_merge_bookkeeping 并存,代码中不存在"},
-    {"id": "REV-v2.1-v21-bookkeeping-r01-02", "slug": "v21-bookkeeping", "severity": "WARNING", "category": "DOC_CONSISTENCY", "blocks_approval": false, "status": "open", "desc": "git_tag audit/v2.1-v21-bookkeeping-r01 从未创建,归档前须补打"},
+    {"id": "REV-v2.1-v21-bookkeeping-r01-02", "slug": "v21-bookkeeping", "severity": "WARNING", "category": "DOC_CONSISTENCY", "blocks_approval": false, "status": "resolved", "desc": "git_tag 缺失系首轮本地 .git 损坏假阳性;仓库恢复后 tag audit/v2.1-v21-bookkeeping-r01→27f08a8 确认存在并已双推,已解决"},
     {"id": "REV-v2.1-v21-bookkeeping-r01-03", "slug": "v21-bookkeeping", "severity": "INFO", "category": "FUNCTION_EQUIVALENCE", "blocks_approval": false, "status": "open", "desc": "cell 计数口径 A=50125 单sheet / B=64811 全sheet,0 差异一致"}
   ],
   "counters": {

@@ -25,9 +25,10 @@ issues:
     severity: WARNING
     category: DOC_CONSISTENCY
     location: "submissions/A1-v21-bookkeeping-r1.md frontmatter git_tag; abs-toolbox 仓库 tag 列表"
-    description: "送审报告 frontmatter 声称 git_tag=audit/v2.1-v21-bookkeeping-r01,但 abs-toolbox 仓库 git tag -l 'audit/*' 为空,该 tag 从未创建。违反 README §2/§3 'git tag 强制' 要求。"
-    evidence: "git -C skills/ABS工具箱 tag -l 'audit/*' → 空输出; commit 27f08a8 存在但无关联 tag"
-    suggested_fix: "补打 tag: git tag audit/v2.1-v21-bookkeeping-r01 27f08a8 && git push gitee --tags && git push github --tags。归档(Agent C)前必须补齐。"
+    status: RESOLVED
+    description: "【原判失实,已更正】首轮审计时因本地 .git 损坏(objects/HEAD 丢失,git 误�主仓库)导致 tag/commit 无法解析,曾误判 tag 从未创建。经 Agent A 从 abs-toolbox 远端 fetch 恢复独立仓库后复核:commit 27f08a8 真实存在,tag audit/v2.1-v21-bookkeeping-r01 已指向 27f08a8 且已推送 gitee/github。此 Issue 系环境损坏造成的假阳性,现已解决。"
+    evidence: "恢复后 git rev-list -n1 audit/v2.1-v21-bookkeeping-r01 → 27f08a8...; git ls-remote --tags gitee → 27f08a8 refs/tags/audit/v2.1-v21-bookkeeping-r01; git log 显示 27f08a8 (tag: audit/v2.1-v21-bookkeeping-r01)"
+    suggested_fix: "无需处理,tag 已存在并双推。归档条件已满足。"
     blocks_approval: false
   - id: REV-v2.1-v21-bookkeeping-r01-03
     severity: INFO
@@ -41,8 +42,8 @@ issues:
 verified_issues: []
 
 conditions:
-  - "归档前补打 git tag audit/v2.1-v21-bookkeeping-r01 指向 27f08a8 并双推(REV-...-02)"
-  - "第三轮修正或关闭 pitfall_log #ABS-002 关于 internal_merge_bookkeeping 并存的失实描述(REV-...-01)"
+  - "[已满足] git tag audit/v2.1-v21-bookkeeping-r01 已指向 27f08a8 并双推 gitee/github(REV-...-02 系本地仓库损坏假阳性,恢复后确认 tag 真实存在)"
+  - "第三轮修正或关闭 pitfall_log #ABS-002 关于 internal_merge_bookkeeping 并存的失实描述(REV-...-01,仍待处理)"
 ---
 
 # v21-bookkeeping r1 审计意见
@@ -51,7 +52,7 @@ conditions:
 
 **Verdict**: APPROVED_WITH_CONDITIONS
 
-簿记录入 v2.1(increment_merge.py,1221 行)以**字节级完全一致**迁入 ABS工具箱,5 层自检经 B 独立复核全部通过,**功能与原 skill 100% 等价、无回归**;放行。但有 2 项 WARNING 级文档瑕疵(git tag 缺失、internal_merge 文档虚构)需在归档前/第三轮修正,故附条件通过。
+簿记录入 v2.1(increment_merge.py,1221 行)以**字节级完全一致**迁入 ABS工具箱,5 层自检经 B 独立复核全部通过,**功能与原 skill 100% 等价、无回归**;放行。原提出 2 项 WARNING,其中 git tag 缺失(REV-...-02)经查系首轮审计时本地 .git 损坏导致的假阳性,仓库恢复后确认 tag/commit 真实存在并已双推,已解决;仅剩 1 项 WARNING(pitfall #ABS-002 internal_merge 文档失实,REV-...-01)待第三轮修正,故附条件通过。
 
 ## 1. 上一轮 Issue 验证
 
