@@ -29,6 +29,9 @@ if str(LAB_DIR) not in sys.path:
     sys.path.insert(0, str(LAB_DIR))
 import fig7_wlz_panel
 
+# 非标额度监控模块
+import fig6_credit_panel
+
 
 # ── 综合看板的 Tab 框架 CSS（独立于 4 份原始 CSS）──────────────
 TAB_CSS = """
@@ -163,7 +166,7 @@ def build_integrated_html(panels, all_css):
                 title_match = re.search(r'<span class="section-title">(.*?)</span>', body)
                 sub_label = title_match.group(1).replace('表一：', '').replace('表二：', '').replace('表三：', '') if title_match else sub
             elif module == 'investor':
-                sub_label_map = {'wlz': '理财子分析'}
+                sub_label_map = {'wlz': '理财子分析', 'credit': '非标额度'}
                 sub_label = sub_label_map.get(sub, sub)
             else:
                 # 发行定价的子 Tab 名固定
@@ -267,6 +270,11 @@ def main():
     wlz_body = fig7_wlz_panel.render_wlz_panel(regenerate=True)
     panels.append(('investor', 'wlz', wlz_body))
 
+    # 投资人分析模块:非标额度 panel
+    print('\n[3.5/4] 生成投资人分析 > 非标额度 panel...')
+    credit_body = fig6_credit_panel.render_credit_panel(ledger_path=xlsx_path)
+    panels.append(('investor', 'credit', credit_body))
+
     # 4. CSS 拼接 + 套 Tab 框架 + 写文件
     print('\n[4/4] 拼接 HTML...')
     all_css = '\n'.join([
@@ -276,6 +284,7 @@ def main():
         gen_compare_tool.CSS,
         gen_compare_tool.PRICING_CSS,
         gen_compare_tool.INVEST_CSS,
+        fig6_credit_panel.CREDIT_CSS,
     ])
     html = build_integrated_html(panels, all_css)
 
@@ -292,8 +301,8 @@ def main():
     panel_count = content.count('<div class="panel"')
     has_select_module = 'function selectModule' in content
     has_select_sub = 'function selectSub' in content
-    if panel_count == 8 and has_select_module and has_select_sub:
-        print(f'[QC] 综合看板结构检查通过：8 个 panel(7 主 + 1 投资人分析) + Tab 切换 JS 齐全')
+    if panel_count == 9 and has_select_module and has_select_sub:
+        print(f'[QC] 综合看板结构检查通过：9 个 panel(7 主 + 理财子分析 + 非标额度) + Tab 切换 JS 齐全')
     else:
         print(f'[QC WARN] 结构异常：panel={panel_count}, selectModule={has_select_module}, selectSub={has_select_sub}')
 

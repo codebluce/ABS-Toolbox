@@ -49,21 +49,18 @@ def render_wlz_panel(regenerate=True):
     html_body = f'''
 <div class="section">
   <div class="section-header" style="background:linear-gradient(135deg,#1a3a5c,#0d1b2e)">
-    <span class="section-title">理财子×资产类型投资规模矩阵</span>
-    <span class="section-sub">21家理财子 · 6类资产类型 · 0703定稿台账</span>
+    <span class="section-title">理财子投资分析(并排视图)</span>
+    <span class="section-sub">21家理财子 · 左:资产类型矩阵 · 右:申购规模×平均利率 · 0703定稿台账</span>
   </div>
-  <div style="padding:16px;background:#FDFBF7">
-    <img src="{fig4_b64}" alt="fig4 理财子矩阵" style="width:100%;max-width:1400px;display:block;margin:0 auto"/>
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-header" style="background:linear-gradient(135deg,#A6192E,#5a0e1a)">
-    <span class="section-title">理财子投资画像:申购规模 × 平均申购利率</span>
-    <span class="section-sub">21家理财子 · 435笔申购 · HBR风格</span>
-  </div>
-  <div style="padding:16px;background:#FDFBF7">
-    <img src="{fig5_b64}" alt="fig5 理财子投资画像" style="width:100%;max-width:1100px;display:block;margin:0 auto"/>
+  <div style="display:flex;gap:12px;padding:16px;background:#FDFBF7;align-items:flex-start">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;color:#666;margin-bottom:6px;font-weight:600">理财子×资产类型投资规模矩阵</div>
+      <img src="{fig4_b64}" alt="fig4 理财子矩阵" style="width:100%;display:block"/>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;color:#666;margin-bottom:6px;font-weight:600">理财子投资画像:申购规模 × 平均申购利率</div>
+      <img src="{fig5_b64}" alt="fig5 理财子投资画像" style="width:100%;display:block"/>
+    </div>
   </div>
 </div>
 '''

@@ -21,13 +21,13 @@ import pandas as pd
 from abs_common import preprocess_xlsx_for_pandas
 
 CREDIT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           '..', '..', 'deliverables', 'dashboards', '04_reference',
+                           '..', 'deliverables', 'dashboards', '04_reference',
                            '20260630额度盘点.xlsx')
 LEDGER_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           '..', '..', 'deliverables', 'ledger', '03_final',
+                           '..', 'deliverables', 'ledger', '03_final',
                            '2026年ABS发行台账-0703-定稿.xlsx')
 OUTPUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                      '..', '..', 'deliverables', 'dashboards', '02_history',
+                      '..', 'deliverables', 'dashboards', '02_history',
                       'lab_viz', 'fig6_investor_analysis.html')
 
 
