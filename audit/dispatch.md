@@ -357,3 +357,173 @@ slug={SLUG} 已归档
 3. **abs-toolbox 独立仓库**:commit 后必须双推 `git push gitee main && git push github main`
 4. **原 3 skill 保留不动**:作回滚备份,整合时只 cp 不 mv
 5. **暂不脚本化**:INDEX.md 和 state.json 手动维护(后续可参考 macro-allocation-strategy/scripts/refresh_audit_index.py 脚本化)
+
+---
+
+## 打磨模式说明(A 角色默认)
+
+A 角色在首轮送审和修复轮都默认走打磨模式:先与用户多轮交互改代码,用户说"可以送审了"或"直接送审"后,才打 tag + 写送审报告。
+
+### 打磨期速查
+
+| 用户说的话 | agent 的反应 |
+|---|---|
+| 「再改 xxx」/「试试 yyy」 | 继续打磨,改代码 + 跑 5 层自检 + 报告 |
+| 「可以送审了」 | 进入正式送审流程:commit + tag + 写 A 文件 + 更新 INDEX/state |
+| 「直接送审」(初始指令里) | 跳过打磨期,立即执行正式送审流程 |
+
+### 打磨期约束
+
+- 打磨期内 agent **不会**打 git tag、**不会**写送审报告、**不会**更新 audit/INDEX.md 和 state.json
+- 打磨期内 agent 只跑 5 层自检(字节对比/端到端穿行/逐 cell diff/原 skill smoke/回归),验证改动有效
+- 用户可随时叫停打磨,直接说"先不送审,我看看代码"
+
+---
+
+## 完整循环示例(簿记录入 v2.1 整合,含打磨期)
+
+假设 slug=`v21-bookkeeping`,skill_version=v2.1.0,预计 1 轮完结(原样迁入,无改造)。
+
+### Step 1:A 首轮送审(含打磨期)
+
+**你下指令**(开新会话 A):
+```
+调度角色=A, slug=v21-bookkeeping, 任务=把 skills/簿记录入/v2.1/increment_merge.py 原样迁入 skills/ABS工具箱/scripts/,0 改动,5 层自检验证功能等价
+```
+
+**A 进入打磨期**(不打 tag / 不写送审报告 / 不更新 INDEX):
+- A 复制 increment_merge.py → 跑字节对比(diff 为空)
+- A 跑 0626 定稿 + 11 份明细 supplement 模式 → QC 结果
+- A 跑原 skill 同输入 → 对比新旧 QC 一致
+- A 跑逐 cell diff(50125 cell)→ 0 差异
+- A 跑机构统计回归 → QC PASSED 35 项
+- A 报告:5 层自检全部通过,功能等价
+- 你看后觉得 OK,说「可以送审了」
+
+**A 执行正式送审流程**:commit + tag `audit/v2.1-v21-bookkeeping-r01` + 写 A1 + 更新 INDEX/state + 双推
+**A 报告**:A1 路径 + git tag + commit hash + 5 层自检摘要 + 下一步调度建议(→ B 审计)
+
+### Step 2:B 审计 r1
+
+**你下指令**(开新会话 B):
+```
+调度角色=B, slug=v21-bookkeeping
+```
+
+**B 工作**:读 A1 → 独立读代码(用 git show 或直接读文件)→ 自己跑 5 层自检复核(不轻信 A)→ 写 B1
+- 若 verdict=APPROVED:更新 INDEX/state + 双推 + 报告(→ C 归档)
+- 若 verdict=NEEDS_REVISION:列 Issue 清单 + 更新 INDEX/state + 双推 + 报告(→ A-fix)
+- 若 verdict=REJECTED:标 self_review_dishonest + 报告(slug 终止)
+
+### Step 3(条件):A 修复 r2(若 B verdict=NEEDS_REVISION)
+
+**你下指令**(开新会话 A,不能复用 Step 1):
+```
+调度角色=A-fix, slug=v21-bookkeeping
+```
+
+**A 进入打磨期**(读 B1 → 理解复述 → 改代码 → 跑 5 层自检 → 报告,但不送审):
+- A 读 B1,复述对每个 Issue 的理解
+- A 改代码 → 跑 5 层自检 → 报告:改了什么 + 已修复 Issue(声称,未经验证)
+- 你看后觉得某个 Issue 修复方式不对,说「Issue xxx 用 wontfix,理由是 ...」
+- A 调整 → 报告
+- 你满意,说「可以送审了」
+
+**A 执行正式送审流程**:commit + tag r02 + 写 A2(addressed_issues 逐条对应 B1) + 更新 INDEX/state + 双推
+**A 报告**:A2 路径 + git tag + 修复 Issue 列表 + 下一步调度建议(→ B 复审)
+
+### Step 4(条件):B 复审 r2
+
+**你下指令**(开新会话 B):
+```
+调度角色=B, slug=v21-bookkeeping
+```
+
+**B 工作**:读 A2 → 验证 B1 的 Issue 是否真修复(verified_issues)→ 写 B2(verdict=APPROVED)→ 更新 INDEX/state + 双推
+**B 报告**:B2 路径 + verdict=APPROVED + 下一步调度建议(→ C 归档)
+
+### Step 5:C 归档
+
+**你下指令**(开新会话 C):
+```
+调度角色=C, slug=v21-bookkeeping
+```
+
+**C 工作**:通读全部 A/B 文件 → 检查逃逸风险(延期/验证链断裂/superseded) → 写 C1 → 更新 INDEX/state(COMPLETED) + 双推
+**C 报告**:C1 路径 + final_verdict=APPROVED + 总轮次 + 下一个 slug 建议
+
+### 全局规则
+
+- 每步完成后,agent 自己更新 INDEX.md 和 state.json(prompt 里已要求),并报告下一步调度建议
+- 用户只需看 agent 报告的下一步调度建议,据此决定开新会话调度谁(A/B/C),无需自己改 INDEX/state
+- 打磨期内 agent 不会更新 audit/INDEX.md 和 state.json,只跑 5 层自检
+- 若用户想复检,可自行读 audit/state.json 确认当前状态
+
+---
+
+## 用户复检机制
+
+ABS工具箱暂无脚本化(无 refresh_audit_index.py),用户复检靠手动改 state.json + INDEX.md。
+
+### 1. 叫停某 submission
+
+场景:B1 verdict=APPROVED,但你 review 时发现 B 漏审,想叫停让 A 再修一轮。
+
+**手动操作**:
+1. 编辑 `audit/state.json`,把对应 slug 的 `status` 改为 `NEEDS_REVISION`,`next_action` 改为 `agent_a_fix`
+2. 在 `notes` 里写:"用户叫停 B1,要求 A 修复 Issue XXX"
+3. 编辑 `audit/INDEX.md`,把对应 B 文件 status 改为 `VETOED`
+4. 开新会话:`调度角色=A-fix, slug={SLUG}`
+
+### 2. C 否决归档
+
+场景:C 归档时发现验证链断裂(A 声称 fixed 但 B 未 verified),C 应在归档报告 frontmatter 里写:
+
+```yaml
+final_verdict: NEEDS_MORE_ROUNDS
+all_issues_resolved: false
+```
+
+C 完成后:
+1. 编辑 `audit/state.json`,把 slug 的 `status` 改为 `NEEDS_REVISION`,`next_action` 改为 `agent_a_fix`,`closed` 字段保持 null
+2. 开新会话:`调度角色=A-fix, slug={SLUG}`
+
+### 3. 标记 A 的 self_review 不诚实
+
+场景:你复检 A1 时发现 self_review.function_equivalence_verified=true 是假的(A 没跑 5 层自检就填了 true)。
+
+**手动操作**:
+1. 编辑 `audit/state.json`,把 slug 的 `status` 改为 `NEEDS_REVISION`,`next_action` 改为 `agent_a_fix`
+2. 在 `notes` 里写:"A1 self_review 不诚实,标记 function_equivalence_verified 虚报,A 必须重新送审"
+3. 开新会话:`调度角色=A-fix, slug={SLUG}`(A 必须重新跑 5 层自检,真实填 self_review)
+
+### 4. A 反问 B(disputed)
+
+场景:A-fix 时 B1 提的某个 Issue A 认为是误判,A 在 addressed_issues 里标 resolution=disputed + 反问理由。
+
+A 在 A2 送审报告 frontmatter 里写:
+```yaml
+addressed_issues:
+  - id: REV-v2.1-v21-bookkeeping-r01-1
+    resolution: disputed
+    evidence: "scripts/increment_merge.py:142, B 误判空指针风险——该变量在 line 138 已初始化"
+```
+
+B 下一轮(B2)必须先回答 disputed Issue:
+- **维持原判**:verified=false + 说明为什么 A 的反问不成立
+- **撤销 Issue**:issues[] 不再列该 Issue + verified_issues 标 verified=true(A 反问成立)
+- **修改 severity**:降级或升级
+
+然后再审其他 Issue。
+
+### 5. 用户何时介入复核
+
+| 时机 | 用户动作 | 触发条件 |
+|---|---|---|
+| A 送审后 | 看 A 报告的 5 层自检摘要,决定是否调度 B | A 报告完成 |
+| B 审计后 | 看 B 报告的 verdict + Issue 列表,决定调度 A-fix 还是 C | B 报告完成 |
+| C 归档前 | 通读 A/B/C 全部文件,确认无逃逸风险 | C 报告完成前 |
+| 任何时候 | 读 audit/state.json 确认当前状态 | 想复检时 |
+
+**关键原则**:用户不需跑任何脚本,只读 agent 报告 + audit/INDEX.md 即可决策。agent 自己更新 state.json,用户只在异常时手动干预。
+
