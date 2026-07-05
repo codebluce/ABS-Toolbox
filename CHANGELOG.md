@@ -12,6 +12,53 @@
 
 ---
 
+## v2.4.0 — 2026-07-05 第五轮
+
+### 新增
+
+- **5 层自检脚本化**(CHANGELOG 待办"5 层自检脚本化 (用 6 个月)"兑现):
+  - `scripts/self_check.py` (642 行): 配置驱动 + 降级接口的 5 层自检工具
+  - 5 层 = 字节对比 / 端到端穿行 / 逐 cell diff / 原 skill smoke / 回归测试
+  - `--mode auto|full|degraded` 自动检测原 skill 是否存在, 删除后切 degraded (只跑层 2+5)
+  - JSON + MD 双输出到 `audit/self_check/{slug}_r{R}_{timestamp}.{json,md}`
+  - cell 计数口径声明 (避免 v21 那种 A/B 分歧)
+
+### 验证 (4 slug 全部 PASS)
+
+| slug | 层 1 | 层 2 | 层 3 | 层 4 | 层 5 | 总评 |
+|---|---|---|---|---|---|---|
+| v20-institution-stats | INFO | PASS | SKIP | PASS | PASS | PASS |
+| v21-bookkeeping | PASS | PASS | PASS (13753 cell 0 差异) | PASS | PASS | PASS |
+| v22-pricing | INFO | PASS | SKIP | PASS | PASS | PASS |
+| v23-internal-merge-unify | INFO | PASS | PASS (13753 cell 0 差异) | PASS | PASS | PASS |
+
+降级模式 (v21 --mode degraded): 层 1/3/4 SKIP, 层 2/5 PASS。
+
+### 关键设计决策
+
+- **QC FAIL 不阻断**: 层 2/4/5 仅判 `returncode=0`, QC FAIL 仅记录 (0626 数据本身存在已知 QC FAIL, 真正的回归闸门是层 3 逐 cell diff)
+- **降级接口**: 原 skill 删除后, auto 模式自动切 degraded, 保留层 2+5 (不依赖原 skill)
+- **配置驱动**: SLUG_CONFIG dict 抽 4 个 slug 差异 (是否需 details, downstream, 原 skill 路径)
+- **cell 计数口径**: 默认走全 sheet × 6 列 (P/U/V/W/X/Y) × max_row, 在 details.cell_count_caliber 字段写明
+
+### 关闭的待办
+
+- [x] 5 层自检脚本化 (用 6 个月) — v2.4.0 完成
+- [x] 设计时预留"删除原 skill 后降级为 2 层"的接口 — v2.4.0 完成 (`--mode degraded`)
+
+### 待办(后续)
+
+- [ ] 04_archive/ 19 份历史台账按月压缩
+- [ ] 2026-12-31 评估删除原 3 skill (6 个月观察期结束) → 实测 degraded 模式
+- [ ] 后续 v25+ 写基线快照对比 (当前 v24 仅跑出基线, 不对比)
+
+### 已知遗留
+
+- 降级模式仅模拟测试 (--mode degraded), 未实际删除原 skill 验证; 留 2026-12-31 删除原 skill 后实测
+- SLUG_CONFIG 硬编码 4 个 slug 配置, 后续新增 slug 需手动加 (未自动扫描 state.json)
+
+---
+
 ## v2.3.0 — 2026-07-05 第四轮
 
 ### 新增
@@ -94,9 +141,11 @@
 
 - [x] 原 3 skill(发行定价/机构统计/簿记录入)标 `deprecated`(保留 6 个月观察期) — 2026-07-05 完成
 - [x] 设计 internal_merge 封装层(技术债 #ABS-002) — v2.3.0 已闭环
+- [x] 5 层自检脚本化(用 6 个月) — v2.4.0 完成 (`scripts/self_check.py`)
+- [x] 设计时预留"删除原 skill 后降级为 2 层"的接口 — v2.4.0 完成 (`--mode degraded`)
 - [ ] 04_archive/ 19 份历史台账按月压缩
-- [ ] 2026-12-31 评估删除原 3 skill(6 个月观察期结束)
-- [ ] 删除原 skill 后写"版本回归 + 基线快照"脚本(替代 5 层自检,永久有效)
+- [ ] 2026-12-31 评估删除原 3 skill(6 个月观察期结束) → 实测 degraded 模式
+- [ ] 后续 v25+ 写基线快照对比(当前 v24 仅跑出基线,不对比)
 
 ### 已知遗留
 

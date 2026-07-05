@@ -1,16 +1,17 @@
 ---
 name: "ABS工具箱"
-version: "2.3.0"
+version: "2.4.0"
 description: >
   ABS业务多功能工具箱。整合发行定价、机构统计、簿记录入三大业务模块,提供从台账录入到机构统计到发行定价分析的端到端工作流。
   第一轮(v2.0.0)激活:机构统计 + 产出归档。
   第二轮(v2.1.0)激活:簿记录入(原样迁入,0 改动,5 层自检通过)。
   第三轮(v2.2.0)激活:发行定价(3 个 gen 脚本,4 处路径改造,6 层自检通过)。
   第四轮(v2.3.0)激活:internal_merge 翻译官改造(消除代码重复,自动继承 17 项 QC)。
+  第五轮(v2.4.0)激活:5 层自检脚本化(self_check.py,配置驱动+降级接口,原 skill 删除后自动切 2 层)。
   全流程编排:录入→统计→定价 三步串行已激活。
   触发词包括:ABS工具箱、ABS机构统计、ABS归档、台账归档、看板归档、
   机构统计看板、管理人统计、销售机构统计、托管行统计、机构排名、
-  申万宏源合并、机构合并统计、ABS发行台账、ABS产出索引。
+  申万宏源合并、机构合并统计、ABS发行台账、ABS产出索引、ABS自检、5层自检。
 ---
 
 # ABS工具箱 Skill
@@ -19,6 +20,7 @@ description: >
 > **v2.1.0 第二轮(2026-07-05)**:迁入簿记录入 v2.1(原样,0 改动,5 层自检通过,已归档 APPROVED)。
 > **v2.2.0 第三轮(2026-07-05)**:迁入发行定价 v1.5.0(3 个 gen 脚本,4 处路径改造,6 层自检通过)。
 > **v2.3.0 第四轮(2026-07-05)**:internal_merge 翻译官改造(消除代码重复,自动继承 17 项 QC,6 层自检通过)。
+> **v2.4.0 第五轮(2026-07-05)**:5 层自检脚本化(self_check.py,配置驱动+降级接口)。
 > **全流程编排**:录入→统计→定价 三步串行已激活。
 > **回滚备份**:原 `skills/发行定价/` `skills/机构统计/` `skills/簿记录入/` 保留不动,新 skill 出问题随时回滚。
 
@@ -237,6 +239,58 @@ slug 带版本前缀:`v{XX}-{主题}`(如 `v20-institution-stats`、`v21-bookkee
 | 3 | 逐 cell diff | 产出 xlsx 逐 cell 一致 |
 | 4 | 原 skill smoke | 原 skill 同输入 QC 一致 |
 | 5 | 回归测试 | 其他 skill 不受影响 |
+
+## 5 层自检脚本 (v2.4.0 新增)
+
+`scripts/self_check.py` 是 ABS工具箱 的自动化回归验证工具, 每次 skill 改动后跑一遍验证无回归。
+
+### 5 层内容
+
+| 层 | 名称 | 检查内容 | 依赖原 skill |
+|---|---|---|---|
+| 1 | 字节对比 | 新 skill 脚本 vs 原 skill 脚本 md5 一致 | 是 |
+| 2 | 端到端穿行 | 跑新 skill 核心入口, returncode=0 + 产出存在 | 否 |
+| 3 | 逐 cell diff | 新旧 skill 产出 xlsx 逐 cell 一致 (仅 increment_merge 类) | 是 |
+| 4 | 原 skill smoke | 跑原 skill 同输入, returncode=0 + 产出存在 | 是 |
+| 5 | 回归测试 | 跑下游脚本 (机构统计 + 3 看板), returncode=0 | 否 |
+
+**判定逻辑**: 层 2/4/5 仅判 `returncode=0`, QC FAIL 仅记录不阻断 (0626 数据本身存在已知 QC FAIL, 真正的回归闸门是层 3 逐 cell diff)。
+
+### 降级模式
+
+`--mode auto|full|degraded`:
+
+- **auto** (默认): 自动检测原 skill 是否存在, 任一缺失切 degraded
+- **full**: 强制 5 层, 缺原 skill 报错 (6 个月观察期内用)
+- **degraded**: 强制 2 层 (层 2 + 层 5), 跳过 1/3/4 (原 skill 删除后用)
+
+### 使用示例
+
+```bash
+# 全部 slug, auto 模式 (推荐)
+python scripts/self_check.py
+
+# 指定单 slug
+python scripts/self_check.py --slug v21-bookkeeping
+
+# 强制 full 模式 (原 skill 删除前)
+python scripts/self_check.py --mode full
+
+# 强制 degraded 模式 (原 skill 删除后)
+python scripts/self_check.py --mode degraded
+
+# 列出所有 slug 配置
+python scripts/self_check.py --list
+```
+
+### 输出
+
+- JSON: `audit/self_check/{slug}_r{R}_{timestamp}.json`
+- Markdown: `audit/self_check/{slug}_r{R}_{timestamp}.md`
+
+### cell 计数口径
+
+为避免 v21 那种 A/B 分歧 (单 sheet vs 全 sheet), 本脚本默认走**全 sheet**对比 (所有 sheet × 6 列 P/U/V/W/X/Y × max_row 行), 在层 3 details.cell_count_caliber 字段写明实际口径。
 
 ## 审计与回滚
 
