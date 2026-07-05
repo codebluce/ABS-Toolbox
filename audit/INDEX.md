@@ -5,11 +5,12 @@
 
 ## 统计概览
 
-- 送审轮次(submissions):5
+- 送审轮次(submissions):6
 - 复审轮次(reviews):4(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档;v24-self-check r1 APPROVED_WITH_CONDITIONS 已归档)
 - 归档(closed):5(v20-institution-stats r1 + v21-bookkeeping r1 + v22-pricing r1 + v23-internal-merge-unify r1 + v24-self-check r1 均已归档)
 - 已验证 Issue:0
 - 待处理 Issue:0(v24-self-check r1 三项 WARNING + 一项 INFO 由 C1 留档关闭;技术债 #ABS-002 已在 v23 闭环;延期验证项:auto 自动降级分支留原 skill 退役时实测)
+- **进行中**:v25-match-rule-tune r1 PENDING_REVIEW(2026-07-05,等 Agent B 复审)
 
 ## Submissions
 
@@ -20,6 +21,7 @@
 | v22-pricing | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.2-v22-pricing-r01`(✅已双推) | `1e14550` | [A1-v22-pricing-r1.md](submissions/A1-v22-pricing-r1.md) |
 | v23-internal-merge-unify | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.3-v23-internal-merge-unify-r01`(✅已双推) | `1ef0612` | [A1-v23-internal-merge-unify-r1.md](submissions/A1-v23-internal-merge-unify-r1.md) |
 | v24-self-check | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.4-v24-self-check-r01`(✅已双推) | `31f716f` | [A1-v24-self-check-r1.md](submissions/A1-v24-self-check-r1.md) |
+| v25-match-rule-tune | r1 | PENDING_REVIEW(等 Agent B) | ✅ 4/4 | 2026-07-05 | `audit/v2.5-v25-match-rule-tune-r01`(✅已双推) | `ae1907e` | [A1-v25-match-rule-tune-r1.md](submissions/A1-v25-match-rule-tune-r1.md) |
 
 ## Reviews
 

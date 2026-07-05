@@ -72,6 +72,19 @@
       ],
       "closed": "C1-v24-self-check-r1",
       "notes": "v2.4.0 第五轮。已归档(C1-v24-self-check-r1)。新增 5 层自检工具脚本 scripts/self_check.py(git 实测 919 行,非 skill 迁入)。Agent B 独立复核完成:核心层 3 逐 cell diff 回归闸门 total_cells_compared=13753 diff_count=0 完全复现 A1 断言;降级模式 --mode degraded 已验。4 项 Issue(REV-01 行数失真/REV-02 .gitkeep 多声明/REV-03 pitfall_log.md 误报/REV-04 auto 自动降级分支延期)均 blocks_approval=false,由 C1 留档关闭。延期验证项:auto 自动降级分支留原 skill 退役时(约 6 个月后)做真实缺失场景实测。本轮亮点:commit_hash 一致(未重复 v22/v23 误填)、SKILL.md version 已升 v2.4.0(未重复 REV-03 类问题)。"
+    },
+    "v25-match-rule-tune": {
+      "skill_version": "v2.5.0",
+      "current_round": 1,
+      "status": "PENDING_REVIEW",
+      "verdict": null,
+      "next_action": "review_by_agent_b",
+      "submissions": [
+        "A1-v25-match-rule-tune-r1"
+      ],
+      "reviews": [],
+      "closed": null,
+      "notes": "v2.5.0 第六轮。基于 0703 台账实测发现 2 个匹配失败 case(利曦基金 vs 利曦私募基金 / 中信建投-衍生品 vs 中信建投衍生品)。4 处改造:normalize 去 - //／ + 修复全角空格 bug + 新增 core_name() 函数 + 新增 MATCH_HARD_MAP 显式映射 + Pass 1-4 优先级链 + rebook 设为默认模式。6 层自检全部通过,2 个原失败 case 验证匹配成功(QC Fails=0)。本轮 commit 含污染文件说明:仅 v25 相关 3 文件(increment_merge.py + SKILL.md + CHANGELOG.md + 送审报告)进入 v25 commit,其他 modified 脚本(abs_common.py / entity_alias.py / 3 个 gen)和业务台账文件不在 v25 commit 内,留单独 commit 标'上次会话遗留'。"
     }
   },
   "issues": [
