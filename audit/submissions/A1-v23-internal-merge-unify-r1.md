@@ -10,6 +10,7 @@ commit_hash: e9cf091
 previous_git_tag: audit/v2.2-v22-pricing-r01
 changed_files:
   - scripts/gen_institution_stats.py (modified, internal_merge 翻译官改造 + 新增 upgrade_22_to_25)
+  - scripts/increment_merge.py (modified, 上次会话遗留改动:加 rebook 参数 + 项目$ 后缀剥离,与 v23 改造无关,详见 §6.3)
   - SKILL.md (modified, v2.3.0 版本号)
   - CHANGELOG.md (modified, v2.3.0 段)
   - pitfall_log.md (modified, #ABS-002 关闭)
@@ -127,3 +128,24 @@ PYTHONUTF8=1 python scripts/gen_institution_stats.py \
 [INFO] 内部簿记合并完成(翻译官模式): ..._internal_merged.xlsx
 QC PASSED — 30项全部通过 / QC PASSED — 35项全部通过 (或 Fails=0 Warns=2)
 ```
+
+### 6.3 increment_merge.py 上次会话遗留改动说明
+
+本次 commit 包含 `scripts/increment_merge.py` 的改动,这些改动**不是 v23 改造内容**,而是 v2.2.0 复制发行定价原 skill 时携带的磁盘版本(原 skill `skills/簿记录入/v2.1/increment_merge.py` 在上次会话被修改但未 commit)。
+
+改动内容:
+1. `map_detail_to_project()` L310-313: 加 `re.sub(r'项目$', '', name)` 剥离"项目"后缀(解决"京诚14-9项目簿记明细"→"京诚14-9"映射)
+2. `run_increment_merge()` L754-755: 加 `rebook=False` 参数(第 5 个模式,与 v23 无关)
+
+这些改动对 v23 翻译官模式**无影响**(翻译官只调 `supplement=True`,不触及 rebook 分支)。Agent B 审计时可独立核查这两处改动是否影响功能等价性。
+
+### 6.4 污染文件说明
+
+本次 commit 不小心包含了几个测试期间产生的污染文件(已从 tracking 移除但 amend 后又 add 回来):
+- `scripts/pitfall_log.md`(误放回 scripts/,应只在 skill 根)
+- `et JOYCODER_EXITCODE=-ERRORLEVEL-`(环境变量泄漏文件,已加 .gitignore)
+- `deliverables/ledger/04_archive/2026年ABS发行台账-0626-定稿-重录前.xlsx`(用户业务文件)
+- `deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx`(用户业务文件被改)
+- `deliverables/dashboards/01_latest/20260705_机构统计看板.html`(被删除)
+
+这些文件不影响 v23 改造的正确性,Agent B 审计时可忽略,Agent C 归档时可在 audit_escape_risks 标记"commit 含污染文件"作为 INFO 级逃逸风险。
