@@ -92,13 +92,15 @@
 
 ### 待办(后续)
 
-- [ ] 原 3 skill(发行定价/机构统计/簿记录入)标 `deprecated`(保留 6 个月观察期)
-- [ ] 设计 internal_merge 封装层(技术债 #ABS-002,需先解决 22 列→25 列升级)
+- [x] 原 3 skill(发行定价/机构统计/簿记录入)标 `deprecated`(保留 6 个月观察期) — 2026-07-05 完成
+- [x] 设计 internal_merge 封装层(技术债 #ABS-002) — v2.3.0 已闭环
 - [ ] 04_archive/ 19 份历史台账按月压缩
+- [ ] 2026-12-31 评估删除原 3 skill(6 个月观察期结束)
+- [ ] 删除原 skill 后写"版本回归 + 基线快照"脚本(替代 5 层自检,永久有效)
 
 ### 已知遗留
 
-- `gen_institution_stats.py` 仍保留 `internal_merge_bookkeeping`(技术债 #ABS-002,与 increment_merge 并存)
+- `gen_institution_stats.py` 仍保留 `internal_merge_bookkeeping` 函数名(v2.3.0 改为翻译官 thin wrapper,不再有内部合并逻辑,函数名保留作接口兼容)
 - `skills/发行定价/scripts/gen_*.py` 有上次会话遗留未提交改动(本次迁入复制当前磁盘版本,原 skill 保留不动)
 
 ---
