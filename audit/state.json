@@ -48,15 +48,15 @@
     "v23-internal-merge-unify": {
       "skill_version": "v2.3.0",
       "current_round": 1,
-      "status": "REVIEWED",
+      "status": "COMPLETED",
       "verdict": "APPROVED_WITH_CONDITIONS",
-      "next_action": "archive_by_agent_c",
+      "next_action": null,
       "submissions": [
         "A1-v23-internal-merge-unify-r1"
       ],
       "reviews": ["B1-v23-internal-merge-unify-r1"],
-      "closed": null,
-      "notes": "v2.3.0 第四轮。internal_merge 翻译官改造,闭环技术债 #ABS-002。Agent B 独立复核完成:6 层自检全部重跑通过,功能等价性完整无回归。4 项 DOC_CONSISTENCY 瑕疵(REV-01 commit_hash 误填 e9cf091 实际 tag→1ef0612 / REV-02 changed_files 遗漏 increment_merge.py + .gitignore + 污染文件,§1 与 §6.3 矛盾 / REV-03 SKILL.md version 2.2.0 未升 2.3.0 / REV-04 22列实际24列口径模糊)均无害不阻断,verdict=APPROVED_WITH_CONDITIONS,待 Agent C 归档留档。技术债 #ABS-002 已闭环,三个 C1(v20/v21/v22)的 deferred_critical 全部解除。"
+      "closed": "C1-v23-internal-merge-unify-r1",
+      "notes": "v2.3.0 第四轮。已归档(C1-v23-internal-merge-unify-r1)。internal_merge 翻译官改造(88 行→15 行+upgrade_22_to_25 40 行),闭环技术债 #ABS-002,解除三个 C1(v20/v21/v22)的 deferred_critical。Agent B 独立复核完成:6 层自检全部重跑通过,功能等价性完整无回归。4 项瑕疵 REV-03(SKILL.md version)由 C 顺手升至 2.3.0 resolved;REV-01(commit_hash 以 tag→1ef0612 为准)/REV-02(补记完整 13 文件 changed_files 清单,§1§6.3 矛盾留档)/REV-04(22列实际24列口径确认)由 C1 归档留档关闭。verdict=APPROVED_WITH_CONDITIONS。"
     }
   },
   "issues": [
@@ -120,8 +120,8 @@
       "severity": "WARNING",
       "category": "DOC_CONSISTENCY",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "A1 frontmatter commit_hash 误填 e9cf091(真实中间 commit);tag audit/v2.3-v23-internal-merge-unify-r01 实际指向 1ef0612,state/INDEX/调度指令已用正确值。待 Agent C 归档留档"
+      "status": "resolved",
+      "desc": "A1 frontmatter commit_hash 误填 e9cf091(真实中间 commit);tag audit/v2.3-v23-internal-merge-unify-r01 实际指向 1ef0612,state/INDEX/调度指令已用正确值。C1 归档留档,以 tag→1ef0612 为准"
     },
     {
       "id": "REV-v2.3-v23-internal-merge-unify-r01-02",
@@ -129,8 +129,8 @@
       "severity": "WARNING",
       "category": "DOC_CONSISTENCY",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "A1 changed_files 声明 5 文件,git show 1ef0612 --stat 实际 13 文件,遗漏 increment_merge.py(99行遗留改动)+ .gitignore(+3)+ audit 元数据 + 污染文件(scripts/pitfall_log.md/台账/看板);A1 §1 改造范围声明与 §6.3 遗留说明自相矛盾。待 Agent C 补记完整改动清单"
+      "status": "resolved",
+      "desc": "A1 changed_files 声明 5 文件,git show 1ef0612 --stat 实际 13 文件,遗漏 increment_merge.py(99行遗留改动)+ .gitignore(+3)+ audit 元数据 + 污染文件(scripts/pitfall_log.md/台账/看板);A1 §1 改造范围声明与 §6.3 遗留说明自相矛盾。C1 §6 补记完整 13 文件改动清单,§1§6.3 矛盾留档"
     },
     {
       "id": "REV-v2.3-v23-internal-merge-unify-r01-03",
@@ -138,8 +138,8 @@
       "severity": "WARNING",
       "category": "DOC_CONSISTENCY",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "SKILL.md frontmatter version 仍 2.2.0 未升至 2.3.0(description 已写第四轮 v2.3.0);建议 C 归档时顺手升至 2.3.0(类比 v22 REV-03 由 B/C 顺手修复)"
+      "status": "resolved",
+      "desc": "SKILL.md frontmatter version 仍 2.2.0 未升至 2.3.0(description 已写第四轮 v2.3.0);已由 Agent C 归档时顺手升至 2.3.0,resolved"
     },
     {
       "id": "REV-v2.3-v23-internal-merge-unify-r01-04",
@@ -147,8 +147,8 @@
       "severity": "INFO",
       "category": "FUNCTION_EQUIVALENCE",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "A1 §4.2 自检层 2 称'22 列台账',实际 0626 源 openpyxl max_column=24(W/X 列格式残留),真实数据列 22。upgrade_22_to_25 对 24 列仍执行升级,功能正确,但口径说明模糊。不影响等价性,C 归档时确认即可"
+      "status": "resolved",
+      "desc": "A1 §4.2 自检层 2 称'22 列台账',实际 0626 源 openpyxl max_column=24(W/X 列格式残留),真实数据列 22。upgrade_22_to_25 对 24 列仍执行升级,功能正确,口径说明模糊。不影响等价性,C1 归档确认留档"
     }
   ],
   "counters": {
@@ -171,7 +171,8 @@
     "v23-internal-merge-unify": {
       "max_round": 1,
       "rebase_count": 0,
-      "blocked_count": 0
+      "blocked_count": 0,
+      "closed_at": "2026-07-05"
     }
   }
 }
