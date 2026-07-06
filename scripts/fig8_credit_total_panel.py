@@ -208,7 +208,8 @@ CREDIT_TOTAL_CSS = """
 }
 .credit-total-table tbody td.num {
     font-variant-numeric: tabular-nums;
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-weight: 600;
+    white-space: nowrap;
 }
 .credit-total-table tbody td.num.neg {
     color: #c0392b;

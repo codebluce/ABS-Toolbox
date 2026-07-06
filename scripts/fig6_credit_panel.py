@@ -210,7 +210,8 @@ CREDIT_CSS = """
 }
 .credit-table tbody td.num {
     font-variant-numeric: tabular-nums;
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-weight: 600;
+    white-space: nowrap;
 }
 .credit-table tbody td.num.neg {
     color: #c0392b;
