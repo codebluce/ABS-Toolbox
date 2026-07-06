@@ -40,7 +40,7 @@ OUTPUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 
 def load_all_rows():
-    """加载全行数据(不只WXY),含发行场所/资产类型/认购机构/认购份额"""
+    """加载全行数据(不只WXY),含发行场所/资产类型/认购机构/认购份额 + 月份"""
     tmp = preprocess_xlsx_for_pandas(LEDGER)
     raw = pd.read_excel(tmp, header=None)
     headers = raw.iloc[0].tolist()
@@ -53,7 +53,10 @@ def load_all_rows():
     df = df[df['发行场所'].notna() & df['资产类型'].notna() & df['认购机构'].notna()].copy()
     df = df[df['认购份额'].notna() & (df['认购份额'] > 0) & (df['认购份额'] < 100)].copy()
 
-    return df[['发行场所', '资产类型', '认购机构', '认购份额']].reset_index(drop=True)
+    # 月份:从 B 列 "月份" 提取数字(如 "1月" → 1)
+    df['month'] = df['月份'].astype(str).str.extract(r'(\d+)').astype(float)
+
+    return df[['发行场所', '资产类型', '认购机构', '认购份额', 'month']].reset_index(drop=True)
 
 
 def classify_asset(asset_name):
@@ -124,7 +127,7 @@ def main():
     print(pivot)
 
     # 绘图:单栏全宽主图(无 sidebar)
-    fig, ax = plt.subplots(figsize=(11, max(7, len(pivot) * 0.45 + 2)),
+    fig, ax = plt.subplots(figsize=(9, max(7, len(pivot) * 0.45 + 2)),
                            facecolor=HBR_CREAM)
 
     data = pivot.values
@@ -152,8 +155,8 @@ def main():
     # 轴
     ax.set_xticks(np.arange(len(asset_order)))
     ax.set_yticks(np.arange(len(pivot.index)))
-    ax.set_xticklabels(asset_order, fontsize=10, color=HBR_CHARCOAL, rotation=0)
-    ax.set_yticklabels(pivot.index, fontsize=9, color=HBR_CHARCOAL)
+    ax.set_xticklabels(asset_order, fontsize=11, color=HBR_CHARCOAL, rotation=0)
+    ax.set_yticklabels(pivot.index, fontsize=11, color=HBR_CHARCOAL)
     ax.tick_params(axis='both', length=0)
 
     for spine in ax.spines.values():
@@ -166,8 +169,8 @@ def main():
 
     # colorbar
     cbar = plt.colorbar(im, ax=ax, shrink=0.7, pad=0.02)
-    cbar.set_label('认购份额合计 (亿元)', fontsize=9, color=HBR_GRAY)
-    cbar.ax.tick_params(labelsize=8, colors=HBR_GRAY, length=0)
+    cbar.set_label('认购份额合计 (亿元)', fontsize=11, color=HBR_GRAY)
+    cbar.ax.tick_params(labelsize=10, colors=HBR_GRAY, length=0)
     cbar.outline.set_visible(False)
 
     # 底部备注(发行场所 + 数据来源)

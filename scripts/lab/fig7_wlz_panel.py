@@ -31,36 +31,28 @@ def png_to_base64(png_path):
 
 
 def render_wlz_panel(regenerate=True):
-    """生成理财子分析 panel HTML body
+    """生成理财子分析 panel HTML body(交互版)
 
-    regenerate=True 时,先重跑 fig4_new + fig5 同步最新台账数据
+    交互版:fig4 矩阵 + fig5 画像,各出 ECharts + Plotly 两版,上下排列
+    每个图含月份滑块(0=全部,1-8=具体月),默认显示全部月份
+    regenerate 参数保留兼容性(交互版直接从台账读数据,无需重跑 PNG)
     """
-    if regenerate:
-        print('[fig7] 重跑 fig4_new_welizhi_matrix 同步最新台账...')
-        import fig4_new_welizhi_matrix
-        fig4_new_welizhi_matrix.main()
-        print('[fig7] 重跑 fig5_hbr_composite 同步最新台账...')
-        import fig5_hbr_composite
-        fig5_hbr_composite.main()
+    import fig4_interactive
+    import fig5_interactive
 
-    fig4_b64 = png_to_base64(FIG4_PATH)
-    fig5_b64 = png_to_base64(FIG5_PATH)
+    fig4_html = fig4_interactive.render_fig4_interactive()
+    fig5_html = fig5_interactive.render_fig5_interactive()
 
     html_body = f'''
 <div class="section">
   <div class="section-header" style="background:linear-gradient(135deg,#1a3a5c,#0d1b2e)">
-    <span class="section-title">理财子投资分析(并排视图)</span>
-    <span class="section-sub">21家理财子 · 左:资产类型矩阵 · 右:申购规模×平均利率 · 0703定稿台账</span>
+    <span class="section-title">理财子投资分析(交互版 · 月份滑块)</span>
+    <span class="section-sub">21家理财子 · Plotly 交互图 · 0703定稿台账</span>
   </div>
-  <div style="display:flex;gap:12px;padding:16px;background:#FDFBF7;align-items:flex-start">
-    <div style="flex:1;min-width:0">
-      <div style="font-size:12px;color:#666;margin-bottom:6px;font-weight:600">理财子×资产类型投资规模矩阵</div>
-      <img src="{fig4_b64}" alt="fig4 理财子矩阵" style="width:100%;display:block"/>
-    </div>
-    <div style="flex:1;min-width:0">
-      <div style="font-size:12px;color:#666;margin-bottom:6px;font-weight:600">理财子投资画像:申购规模 × 平均申购利率</div>
-      <img src="{fig5_b64}" alt="fig5 理财子投资画像" style="width:100%;display:block"/>
-    </div>
+  <div style="padding:16px;background:#FDFBF7">
+    {fig4_html}
+    <hr style="border:none;border-top:2px dashed #e0e0e0;margin:24px 0"/>
+    {fig5_html}
   </div>
 </div>
 '''

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>fig5 交互版 - 独立预览</title>
+<style>
+  body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; background:#f4f5f7; margin:0; padding:20px; }
+  .container { max-width:1200px; margin:0 auto; background:#fff; padding:24px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.07); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div style="margin-bottom:32px">
+  <div style="font-size:14px;font-weight:600;color:#0d1b2e;margin-bottom:8px">
+    ECharts 版 — 理财子投资画像(申购规模 × 平均申购利率)
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:8px 12px;background:#f8f9fa;border-radius:6px">
+    <span style="font-size:12px;color:#666">月份:</span>
+    <input type="range" min="0" max="8" value="0" id="fig5_echarts_slider" style="flex:1;max-width:400px">
+    <span id="fig5_echarts_label" style="font-size:13px;font-weight:600;color:#0d1b2e;min-width:80px">全部</span>
+  </div>
+  <div id="fig5_echarts" style="width:100%;height:700px"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+const fig5Data = {"all": {"institutions": ["北银理财", "苏银理财", "青银理财", "南银理财", "杭银理财", "信银理财", "兴银理财", "上银理财", "光大理财", "浦银理财", "广银理财", "渝农商理财", "中银理财", "平安理财", "招银理财", "建信理财", "工银理财", "华夏理财", "民生理财", "交银理财", "中邮理财"], "points": [{"inst": "北银理财", "rate": 1.5, "size": 0.1, "n": 1}, {"inst": "苏银理财", "rate": 1.68, "size": 0.6, "n": 1}, {"inst": "青银理财", "rate": 1.7999999999999998, "size": 0.6, "n": 1}, {"inst": "南银理财", "rate": 1.6500000000000001, "size": 1.0, "n": 1}, {"inst": "杭银理财", "rate": 1.5733333333333333, "size": 1.89, "n": 3}, {"inst": "信银理财", "rate": 1.54, "size": 5.94, "n": 3}, {"inst": "兴银理财", "rate": 1.5775000000000001, "size": 7.470000000000001, "n": 4}, {"inst": "上银理财", "rate": 1.6114285714285717, "size": 7.84, "n": 14}, {"inst": "光大理财", "rate": 1.5275, "size": 12.35, "n": 12}, {"inst": "浦银理财", "rate": 1.55625, "size": 13.799999999999999, "n": 8}, {"inst": "广银理财", "rate": 1.6775000000000002, "size": 14.4, "n": 12}, {"inst": "渝农商理财", "rate": 1.6838636363636363, "size": 20.97, "n": 44}, {"inst": "中银理财", "rate": 1.57, "size": 21.8, "n": 16}, {"inst": "平安理财", "rate": 1.5841176470588234, "size": 22.315, "n": 17}, {"inst": "招银理财", "rate": 1.62, "size": 31.900000000000002, "n": 26}, {"inst": "建信理财", "rate": 1.6158333333333335, "size": 32.25, "n": 24}, {"inst": "工银理财", "rate": 1.5696153846153846, "size": 32.89, "n": 26}, {"inst": "华夏理财", "rate": 1.6605263157894736, "size": 32.980000000000004, "n": 19}, {"inst": "民生理财", "rate": 1.6032432432432433, "size": 40.25, "n": 37}, {"inst": "交银理财", "rate": 1.6272727272727272, "size": 82.29, "n": 110}, {"inst": "中邮理财", "rate": 1.6292857142857144, "size": 100.398, "n": 56}]}, "1": {"institutions": [], "points": []}, "2": {"institutions": [], "points": []}, "3": {"institutions": [], "points": []}, "4": {"institutions": ["杭银理财", "苏银理财", "南银理财", "工银理财", "渝农商理财", "上银理财", "浦银理财", "中银理财", "光大理财", "建信理财", "平安理财", "广银理财", "招银理财", "民生理财", "交银理财", "中邮理财"], "points": [{"inst": "杭银理财", "rate": 1.5599999999999998, "size": 0.45, "n": 1}, {"inst": "苏银理财", "rate": 1.68, "size": 0.6, "n": 1}, {"inst": "南银理财", "rate": 1.6500000000000001, "size": 1.0, "n": 1}, {"inst": "工银理财", "rate": 1.545, "size": 2.0, "n": 2}, {"inst": "渝农商理财", "rate": 1.6460000000000001, "size": 2.23, "n": 5}, {"inst": "上银理财", "rate": 1.62, "size": 2.44, "n": 3}, {"inst": "浦银理财", "rate": 1.5750000000000002, "size": 2.76, "n": 2}, {"inst": "中银理财", "rate": 1.59, "size": 2.9, "n": 2}, {"inst": "光大理财", "rate": 1.5150000000000001, "size": 2.97, "n": 2}, {"inst": "建信理财", "rate": 1.5825, "size": 5.4, "n": 4}, {"inst": "平安理财", "rate": 1.586, "size": 6.46, "n": 5}, {"inst": "广银理财", "rate": 1.6920000000000002, "size": 7.4, "n": 5}, {"inst": "招银理财", "rate": 1.6355555555555557, "size": 11.22, "n": 9}, {"inst": "民生理财", "rate": 1.623888888888889, "size": 13.89, "n": 18}, {"inst": "交银理财", "rate": 1.636756756756757, "size": 20.63, "n": 37}, {"inst": "中邮理财", "rate": 1.6364285714285713, "size": 20.64, "n": 14}]}, "5": {"institutions": ["北银理财", "青银理财", "上银理财", "光大理财", "浦银理财", "广银理财", "渝农商理财", "平安理财", "中银理财", "招银理财", "建信理财", "民生理财", "工银理财", "华夏理财", "交银理财", "中邮理财"], "points": [{"inst": "北银理财", "rate": 1.5, "size": 0.1, "n": 1}, {"inst": "青银理财", "rate": 1.7999999999999998, "size": 0.6, "n": 1}, {"inst": "上银理财", "rate": 1.572, "size": 2.97, "n": 5}, {"inst": "光大理财", "rate": 1.51, "size": 5.43, "n": 6}, {"inst": "浦银理财", "rate": 1.5, "size": 5.52, "n": 2}, {"inst": "广银理财", "rate": 1.6671428571428575, "size": 7.0, "n": 7}, {"inst": "渝农商理财", "rate": 1.7051851851851851, "size": 10.84, "n": 27}, {"inst": "平安理财", "rate": 1.565, "size": 11.91, "n": 8}, {"inst": "中银理财", "rate": 1.557, "size": 12.6, "n": 10}, {"inst": "招银理财", "rate": 1.608, "size": 17.89, "n": 15}, {"inst": "建信理财", "rate": 1.63, "size": 20.25, "n": 15}, {"inst": "民生理财", "rate": 1.5905882352941176, "size": 20.69, "n": 17}, {"inst": "工银理财", "rate": 1.5741176470588236, "size": 23.39, "n": 17}, {"inst": "华夏理财", "rate": 1.6706666666666667, "size": 25.09, "n": 15}, {"inst": "交银理财", "rate": 1.6228846153846155, "size": 47.83, "n": 52}, {"inst": "中邮理财", "rate": 1.624814814814815, "size": 60.035000000000004, "n": 27}]}, "6": {"institutions": ["杭银理财", "上银理财", "招银理财", "平安理财", "光大理财", "浦银理财", "民生理财", "信银理财", "中银理财", "建信理财", "兴银理财", "工银理财", "华夏理财", "渝农商理财", "交银理财", "中邮理财"], "points": [{"inst": "杭银理财", "rate": 1.58, "size": 1.44, "n": 2}, {"inst": "上银理财", "rate": 1.64, "size": 2.43, "n": 6}, {"inst": "招银理财", "rate": 1.6400000000000001, "size": 2.79, "n": 2}, {"inst": "平安理财", "rate": 1.62, "size": 3.9450000000000003, "n": 4}, {"inst": "光大理财", "rate": 1.56, "size": 3.95, "n": 4}, {"inst": "浦银理财", "rate": 1.575, "size": 5.52, "n": 4}, {"inst": "民生理财", "rate": 1.525, "size": 5.67, "n": 2}, {"inst": "信银理财", "rate": 1.54, "size": 5.94, "n": 3}, {"inst": "中银理财", "rate": 1.5925, "size": 6.3, "n": 4}, {"inst": "建信理财", "rate": 1.6, "size": 6.6, "n": 5}, {"inst": "兴银理财", "rate": 1.5775000000000001, "size": 7.470000000000001, "n": 4}, {"inst": "工银理财", "rate": 1.5657142857142858, "size": 7.5, "n": 7}, {"inst": "华夏理财", "rate": 1.6225, "size": 7.890000000000001, "n": 4}, {"inst": "渝农商理财", "rate": 1.6516666666666666, "size": 7.9, "n": 12}, {"inst": "交银理财", "rate": 1.6214285714285717, "size": 13.83, "n": 21}, {"inst": "中邮理财", "rate": 1.6306666666666667, "size": 19.723, "n": 15}]}, "7": {"institutions": [], "points": []}, "8": {"institutions": [], "points": []}};
+const fig5MonthLabels = {0: '全部', 1: '1月', 2: '2月', 3: '3月', 4: '4月', 5: '5月', 6: '6月', 7: '7月', 8: '8月'};
+
+function renderFig5ECharts(monthKey) {
+  const d = fig5Data[monthKey];
+  const chart = echarts.init(document.getElementById('fig5_echarts'));
+  if (!d || !d.points || d.points.length === 0) {
+    chart.setOption({
+      title: { text: '无数据', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 16 } }
+    });
+    return;
+  }
+  // 点大小:总规模映射到 80-800
+  const maxSize = Math.max(...d.points.map(p => p.size), 1);
+  const scatterData = d.points.map(p => ({
+    value: [p.rate, d.institutions.indexOf(p.inst), p.size, p.inst, p.n],
+    symbolSize: 80 + (p.size / maxSize) * 720
+  }));
+  const medianRate = d.points.reduce((s, p) => s + p.rate, 0) / d.points.length;
+  chart.setOption({
+    tooltip: {
+      formatter: p => `${p.value[3]}<br/>平均利率: ${p.value[0].toFixed(3)}%<br/>总规模: ${p.value[2].toFixed(2)} 亿<br/>笔数: ${p.value[4]}`
+    },
+    grid: { left: 140, right: 80, top: 40, bottom: 60 },
+    xAxis: {
+      type: 'value', name: '平均申购利率 (%)', nameLocation: 'middle', nameGap: 30,
+      nameTextStyle: { fontSize: 12, color: '#333' },
+      axisLabel: { fontSize: 11, color: '#333', formatter: '{value}%' },
+      splitLine: { lineStyle: { type: 'dashed', color: '#D9D9D9' } }
+    },
+    yAxis: {
+      type: 'category', data: d.institutions,
+      axisLabel: { fontSize: 11, color: '#333' },
+      splitLine: { lineStyle: { type: 'dashed', color: '#D9D9D9' } }
+    },
+    series: [{
+      type: 'scatter', data: scatterData,
+      itemStyle: {
+        color: function(p) {
+          const v = p.value;
+          // 量大价低=红,量小价高=浅灰,均衡=深灰
+          const medianSize = maxSize / 2;
+          if (v[2] >= medianSize && v[0] <= medianRate) return '#A6192E';
+          if (v[2] < medianSize && v[0] > medianRate) return '#D9D9D9';
+          return '#666';
+        },
+        opacity: 0.75,
+        borderColor: '#333', borderWidth: 0.8
+      },
+      markLine: {
+        symbol: 'none', silent: true,
+        data: [{ xAxis: medianRate, lineStyle: { type: 'dashed', color: '#A6192E', width: 1 } }]],
+        label: { formatter: '中位数 ' + medianRate.toFixed(2) + '%', color: '#A6192E', fontSize: 10 }
+      }
+    }]
+  });
+}
+
+document.getElementById('fig5_echarts_slider').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  document.getElementById('fig5_echarts_label').textContent = fig5MonthLabels[v];
+  renderFig5ECharts(v === 0 ? 'all' : String(v));
+});
+
+renderFig5ECharts('all');
+</script>
+
+<div style="margin-bottom:32px">
+  <div style="font-size:14px;font-weight:600;color:#0d1b2e;margin-bottom:8px">
+    Plotly 版 — 理财子投资画像(申购规模 × 平均申购利率)
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:8px 12px;background:#f8f9fa;border-radius:6px">
+    <span style="font-size:12px;color:#666">月份:</span>
+    <input type="range" min="0" max="8" value="0" id="fig5_plotly_slider" style="flex:1;max-width:400px">
+    <span id="fig5_plotly_label" style="font-size:13px;font-weight:600;color:#0d1b2e;min-width:80px">全部</span>
+  </div>
+  <div id="fig5_plotly" style="width:100%;height:700px"></div>
+</div>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script>
+const fig5DataPlotly = {"all": {"institutions": ["北银理财", "苏银理财", "青银理财", "南银理财", "杭银理财", "信银理财", "兴银理财", "上银理财", "光大理财", "浦银理财", "广银理财", "渝农商理财", "中银理财", "平安理财", "招银理财", "建信理财", "工银理财", "华夏理财", "民生理财", "交银理财", "中邮理财"], "points": [{"inst": "北银理财", "rate": 1.5, "size": 0.1, "n": 1}, {"inst": "苏银理财", "rate": 1.68, "size": 0.6, "n": 1}, {"inst": "青银理财", "rate": 1.7999999999999998, "size": 0.6, "n": 1}, {"inst": "南银理财", "rate": 1.6500000000000001, "size": 1.0, "n": 1}, {"inst": "杭银理财", "rate": 1.5733333333333333, "size": 1.89, "n": 3}, {"inst": "信银理财", "rate": 1.54, "size": 5.94, "n": 3}, {"inst": "兴银理财", "rate": 1.5775000000000001, "size": 7.470000000000001, "n": 4}, {"inst": "上银理财", "rate": 1.6114285714285717, "size": 7.84, "n": 14}, {"inst": "光大理财", "rate": 1.5275, "size": 12.35, "n": 12}, {"inst": "浦银理财", "rate": 1.55625, "size": 13.799999999999999, "n": 8}, {"inst": "广银理财", "rate": 1.6775000000000002, "size": 14.4, "n": 12}, {"inst": "渝农商理财", "rate": 1.6838636363636363, "size": 20.97, "n": 44}, {"inst": "中银理财", "rate": 1.57, "size": 21.8, "n": 16}, {"inst": "平安理财", "rate": 1.5841176470588234, "size": 22.315, "n": 17}, {"inst": "招银理财", "rate": 1.62, "size": 31.900000000000002, "n": 26}, {"inst": "建信理财", "rate": 1.6158333333333335, "size": 32.25, "n": 24}, {"inst": "工银理财", "rate": 1.5696153846153846, "size": 32.89, "n": 26}, {"inst": "华夏理财", "rate": 1.6605263157894736, "size": 32.980000000000004, "n": 19}, {"inst": "民生理财", "rate": 1.6032432432432433, "size": 40.25, "n": 37}, {"inst": "交银理财", "rate": 1.6272727272727272, "size": 82.29, "n": 110}, {"inst": "中邮理财", "rate": 1.6292857142857144, "size": 100.398, "n": 56}]}, "1": {"institutions": [], "points": []}, "2": {"institutions": [], "points": []}, "3": {"institutions": [], "points": []}, "4": {"institutions": ["杭银理财", "苏银理财", "南银理财", "工银理财", "渝农商理财", "上银理财", "浦银理财", "中银理财", "光大理财", "建信理财", "平安理财", "广银理财", "招银理财", "民生理财", "交银理财", "中邮理财"], "points": [{"inst": "杭银理财", "rate": 1.5599999999999998, "size": 0.45, "n": 1}, {"inst": "苏银理财", "rate": 1.68, "size": 0.6, "n": 1}, {"inst": "南银理财", "rate": 1.6500000000000001, "size": 1.0, "n": 1}, {"inst": "工银理财", "rate": 1.545, "size": 2.0, "n": 2}, {"inst": "渝农商理财", "rate": 1.6460000000000001, "size": 2.23, "n": 5}, {"inst": "上银理财", "rate": 1.62, "size": 2.44, "n": 3}, {"inst": "浦银理财", "rate": 1.5750000000000002, "size": 2.76, "n": 2}, {"inst": "中银理财", "rate": 1.59, "size": 2.9, "n": 2}, {"inst": "光大理财", "rate": 1.5150000000000001, "size": 2.97, "n": 2}, {"inst": "建信理财", "rate": 1.5825, "size": 5.4, "n": 4}, {"inst": "平安理财", "rate": 1.586, "size": 6.46, "n": 5}, {"inst": "广银理财", "rate": 1.6920000000000002, "size": 7.4, "n": 5}, {"inst": "招银理财", "rate": 1.6355555555555557, "size": 11.22, "n": 9}, {"inst": "民生理财", "rate": 1.623888888888889, "size": 13.89, "n": 18}, {"inst": "交银理财", "rate": 1.636756756756757, "size": 20.63, "n": 37}, {"inst": "中邮理财", "rate": 1.6364285714285713, "size": 20.64, "n": 14}]}, "5": {"institutions": ["北银理财", "青银理财", "上银理财", "光大理财", "浦银理财", "广银理财", "渝农商理财", "平安理财", "中银理财", "招银理财", "建信理财", "民生理财", "工银理财", "华夏理财", "交银理财", "中邮理财"], "points": [{"inst": "北银理财", "rate": 1.5, "size": 0.1, "n": 1}, {"inst": "青银理财", "rate": 1.7999999999999998, "size": 0.6, "n": 1}, {"inst": "上银理财", "rate": 1.572, "size": 2.97, "n": 5}, {"inst": "光大理财", "rate": 1.51, "size": 5.43, "n": 6}, {"inst": "浦银理财", "rate": 1.5, "size": 5.52, "n": 2}, {"inst": "广银理财", "rate": 1.6671428571428575, "size": 7.0, "n": 7}, {"inst": "渝农商理财", "rate": 1.7051851851851851, "size": 10.84, "n": 27}, {"inst": "平安理财", "rate": 1.565, "size": 11.91, "n": 8}, {"inst": "中银理财", "rate": 1.557, "size": 12.6, "n": 10}, {"inst": "招银理财", "rate": 1.608, "size": 17.89, "n": 15}, {"inst": "建信理财", "rate": 1.63, "size": 20.25, "n": 15}, {"inst": "民生理财", "rate": 1.5905882352941176, "size": 20.69, "n": 17}, {"inst": "工银理财", "rate": 1.5741176470588236, "size": 23.39, "n": 17}, {"inst": "华夏理财", "rate": 1.6706666666666667, "size": 25.09, "n": 15}, {"inst": "交银理财", "rate": 1.6228846153846155, "size": 47.83, "n": 52}, {"inst": "中邮理财", "rate": 1.624814814814815, "size": 60.035000000000004, "n": 27}]}, "6": {"institutions": ["杭银理财", "上银理财", "招银理财", "平安理财", "光大理财", "浦银理财", "民生理财", "信银理财", "中银理财", "建信理财", "兴银理财", "工银理财", "华夏理财", "渝农商理财", "交银理财", "中邮理财"], "points": [{"inst": "杭银理财", "rate": 1.58, "size": 1.44, "n": 2}, {"inst": "上银理财", "rate": 1.64, "size": 2.43, "n": 6}, {"inst": "招银理财", "rate": 1.6400000000000001, "size": 2.79, "n": 2}, {"inst": "平安理财", "rate": 1.62, "size": 3.9450000000000003, "n": 4}, {"inst": "光大理财", "rate": 1.56, "size": 3.95, "n": 4}, {"inst": "浦银理财", "rate": 1.575, "size": 5.52, "n": 4}, {"inst": "民生理财", "rate": 1.525, "size": 5.67, "n": 2}, {"inst": "信银理财", "rate": 1.54, "size": 5.94, "n": 3}, {"inst": "中银理财", "rate": 1.5925, "size": 6.3, "n": 4}, {"inst": "建信理财", "rate": 1.6, "size": 6.6, "n": 5}, {"inst": "兴银理财", "rate": 1.5775000000000001, "size": 7.470000000000001, "n": 4}, {"inst": "工银理财", "rate": 1.5657142857142858, "size": 7.5, "n": 7}, {"inst": "华夏理财", "rate": 1.6225, "size": 7.890000000000001, "n": 4}, {"inst": "渝农商理财", "rate": 1.6516666666666666, "size": 7.9, "n": 12}, {"inst": "交银理财", "rate": 1.6214285714285717, "size": 13.83, "n": 21}, {"inst": "中邮理财", "rate": 1.6306666666666667, "size": 19.723, "n": 15}]}, "7": {"institutions": [], "points": []}, "8": {"institutions": [], "points": []}};
+const fig5MonthLabelsPlotly = {0: '全部', 1: '1月', 2: '2月', 3: '3月', 4: '4月', 5: '5月', 6: '6月', 7: '7月', 8: '8月'};
+
+function renderFig5Plotly(monthKey) {
+  const d = fig5DataPlotly[monthKey];
+  const div = document.getElementById('fig5_plotly');
+  if (!d || !d.points || d.points.length === 0) {
+    Plotly.purge(div);
+    div.innerHTML = '<div style="text-align:center;padding-top:200px;color:#999;font-size:16px">无数据</div>';
+    return;
+  }
+  const maxSize = Math.max(...d.points.map(p => p.size), 1);
+  const medianRate = d.points.reduce((s, p) => s + p.rate, 0) / d.points.length;
+  const medianSize = maxSize / 2;
+  // 点颜色:量大价低=红,量小价高=浅灰,均衡=深灰
+  const colors = d.points.map(p => {
+    if (p.size >= medianSize && p.rate <= medianRate) return '#A6192E';
+    if (p.size < medianSize && p.rate > medianRate) return '#D9D9D9';
+    return '#666';
+  });
+  const trace = {
+    x: d.points.map(p => p.rate),
+    y: d.points.map(p => p.inst),
+    mode: 'markers+text',
+    text: d.points.map(p => p.size.toFixed(1) + '亿'),
+    textposition: 'right',
+    textfont: { size: 9, color: '#333' },
+    marker: {
+      size: d.points.map(p => 80 + (p.size / maxSize) * 720) / 8,
+      color: colors,
+      opacity: 0.75,
+      line: { color: '#333', width: 0.8 }
+    },
+    hovertemplate: '<b>%{y}</b><br>平均利率: %{x:.3f}%<br>总规模: %{customdata}亿<extra></extra>',
+    customdata: d.points.map(p => p.size.toFixed(2)),
+    type: 'scatter'
+  };
+  const layout = {
+    margin: { l: 140, r: 80, t: 20, b: 60 },
+    xaxis: {
+      title: '平均申购利率 (%)',
+      tickfont: { size: 11, color: '#333' },
+      gridcolor: '#D9D9D9', griddash: 'dash',
+      zeroline: false
+    },
+    yaxis: {
+      tickfont: { size: 11, color: '#333' },
+      autorange: 'reversed',
+      gridcolor: '#D9D9D9', griddash: 'dash'
+    },
+    paper_bgcolor: '#FDFBF7',
+    plot_bgcolor: '#FDFBF7',
+    showlegend: false,
+    shapes: [{
+      type: 'line', xref: 'x', yref: 'paper',
+      x0: medianRate, x1: medianRate, y0: 0, y1: 1,
+      line: { color: '#A6192E', width: 1, dash: 'dash' }
+    }]
+  };
+  Plotly.react(div, [trace], layout, { responsive: true, displayModeBar: false });
+}
+
+document.getElementById('fig5_plotly_slider').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  document.getElementById('fig5_plotly_label').textContent = fig5MonthLabelsPlotly[v];
+  renderFig5Plotly(v === 0 ? 'all' : String(v));
+});
+
+renderFig5Plotly('all');
+</script>
+
+</div>
+</body>
+</html>

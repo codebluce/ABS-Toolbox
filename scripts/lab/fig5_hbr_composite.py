@@ -38,7 +38,10 @@ def main():
     ).reset_index()
     summary = summary.sort_values('total_size', ascending=True)
 
-    fig = plt.figure(figsize=(11, 7), facecolor=HBR_CREAM)
+    # 高度与 fig4 矩阵实际产出对齐(21 家机构 → ~13 英寸,fig4 实际高度)
+    # 宽度 9 英寸(并排时缩小,留间距)
+    fig_height = max(7, len(summary) * 0.62 + 1)
+    fig = plt.figure(figsize=(9, fig_height), facecolor=HBR_CREAM)
     ax = fig.add_subplot(111)
 
     # 散点:横轴=平均利率,纵轴=机构(按规模升序),点大小=总规模
@@ -73,10 +76,10 @@ def main():
 
     ax.set_yticks(range(len(summary)))
     ax.set_yticklabels(summary['institution'].values,
-                       fontsize=9, color=HBR_CHARCOAL)
-    ax.set_xlabel('平均申购利率 (%)', fontsize=10, color=HBR_CHARCOAL)
+                       fontsize=11, color=HBR_CHARCOAL)
+    ax.set_xlabel('平均申购利率 (%)', fontsize=12, color=HBR_CHARCOAL)
     ax.set_title('理财子投资画像:申购规模 × 平均申购利率',
-                 fontsize=13, color=HBR_CHARCOAL, fontweight='bold',
+                 fontsize=14, color=HBR_CHARCOAL, fontweight='bold',
                  pad=12, loc='left')
 
     # 虚线网格(主+次,加密)
@@ -92,7 +95,7 @@ def main():
         ax.spines[spine_name].set_visible(False)
     ax.spines['left'].set_color(HBR_GRAY)
     ax.spines['bottom'].set_color(HBR_GRAY)
-    ax.tick_params(direction='in', colors=HBR_GRAY, labelsize=9, length=3)
+    ax.tick_params(direction='in', colors=HBR_GRAY, labelsize=11, length=3)
 
     # range frame + 横轴步长 0.05
     import matplotlib.ticker as mticker
