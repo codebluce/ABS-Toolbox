@@ -17,16 +17,16 @@ import pandas as pd
 # 非保理类资产的成本下限由 COST_BIN_LOWER_NON_PREF 控制（1.50%），QC 时单独校验
 COST_BIN_LOWER = 1.30              # bin 起始下限
 COST_BIN_LOWER_NON_PREF = 1.50     # 非保理类资产的成本下限（QC 校验用）
-COST_BIN_UPPER = 2.50
+COST_BIN_UPPER = 3.00
 COST_BIN_STEP = 0.05
 COST_BINS = [round(COST_BIN_LOWER + i * COST_BIN_STEP, 4)
-             for i in range(int(round((COST_BIN_UPPER - COST_BIN_LOWER) / COST_BIN_STEP)) + 1)] + [2.55]
+             for i in range(int(round((COST_BIN_UPPER - COST_BIN_LOWER) / COST_BIN_STEP)) + 1)] + [3.05]
 COST_LABELS = [f"{COST_BINS[i]:.2f}%~{COST_BINS[i+1]:.2f}%"
                for i in range(len(COST_BINS) - 1)]
 
 # ── 利差区间配置（工具三使用）──────────────────────────────────────
 # 下限 0.00%：覆盖接近零利差的非保理类资产（如金采 0.02%）；负利差仍落入 NaN
-SPREAD_BINS   = [round(0.00 + i * 0.05, 4) for i in range(23)] + [1.15]
+SPREAD_BINS   = [round(0.00 + i * 0.05, 4) for i in range(33)] + [1.65]
 SPREAD_LABELS = [f"+{SPREAD_BINS[i]:.2f}%~+{SPREAD_BINS[i+1]:.2f}%"
                  for i in range(len(SPREAD_BINS) - 1)]
 
@@ -60,7 +60,7 @@ PRODUCT_ORDER_TEMPLATE = [
 ]
 
 # ── 优先分层过滤条件 ──────────────────────────────────────────
-PRIORITY_LAYERS = ['优先A', '优先级']
+PRIORITY_LAYERS = ['优先A', '优先级', '优先A1', '优先A2']
 
 # ── 机构黑名单（生成看板时全角色剔除）─────────────────────────
 # 子串包含匹配：机构名任一字段包含关键词即剔除整行

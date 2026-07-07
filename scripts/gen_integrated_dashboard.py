@@ -22,6 +22,7 @@ import gen_institution_stats
 import gen_abs_cost_report
 import gen_spread_report
 import gen_compare_tool
+import gen_pricing_insight
 
 # 投资人分析模块(lab 实验转正:fig7_wlz_panel 调 fig4_new + fig5 同步台账)
 LAB_DIR = SCRIPT_DIR / 'lab'
@@ -248,6 +249,20 @@ def main():
     print('\n[1/4] 计算数据...')
     try:
         cmp_data = gen_compare_tool.compute_data(xlsx_path)
+        # Inject proj_sizes_js for insight panel
+        if 'proj_sizes_js' not in cmp_data:
+            proj_sizes = {}
+            import pandas as pd
+            for _, r in cmp_data['dfa'].iterrows():
+                proj = str(r['项目名称']) if pd.notna(r.get('项目名称')) else ''
+                amt = r.get('对应金额（亿）')
+                if proj and pd.notna(amt):
+                    try:
+                        proj_sizes[proj] = float(amt)
+                    except:
+                        pass
+            import json
+            cmp_data['proj_sizes_js'] = json.dumps(proj_sizes, ensure_ascii=False)
         cost_data = gen_abs_cost_report.compute_data(xlsx_path)
         spread_data = gen_spread_report.compute_data(xlsx_path)
         inst_data = gen_institution_stats.compute_data(xlsx_path)
@@ -259,7 +274,7 @@ def main():
     # 2. 各 render_body（institution 3 次调用，传 section_key）
     print('\n[2/4] 渲染 body...')
     panels = [
-        ('pricing',     'compare',    gen_compare_tool.render_body_pricing(cmp_data)),
+        ('pricing',     'compare',    gen_pricing_insight.render_pricing_panel(cmp_data)),
         ('pricing',     'invest',     gen_compare_tool.render_body_invest(cmp_data)),
         ('pricing',     'cost',       gen_abs_cost_report.render_body(cost_data)),
         ('pricing',     'spread',     gen_spread_report.render_body(spread_data)),
@@ -275,8 +290,12 @@ def main():
 
     # 投资人分析模块:非标额度 panel
     print('\n[3.5/4] 生成投资人分析 > 非标额度 panel...')
-    credit_body = fig6_credit_panel.render_credit_panel(ledger_path=xlsx_path)
-    panels.append(('investor', 'credit', credit_body))
+    try:
+        credit_body = fig6_credit_panel.render_credit_panel(ledger_path=xlsx_path)
+        panels.append(('investor', 'credit', credit_body))
+    except Exception as e:
+        print(f'[WARN] 非标额度面板跳过: {e}')
+        panels.append(('investor', 'credit', '<div style="padding:40px;text-align:center;color:#9aa5b5;">非标额度数据暂不可用</div>'))
 
     # 投资人分析模块:总授信额度 panel
     print('\n[3.6/4] 生成投资人分析 > 授信总额度 panel...')
@@ -290,7 +309,7 @@ def main():
         gen_abs_cost_report.CSS,
         gen_spread_report.CSS,
         gen_compare_tool.CSS,
-        gen_compare_tool.PRICING_CSS,
+        gen_pricing_insight.PRICING_INSIGHT_CSS,
         gen_compare_tool.INVEST_CSS,
         fig6_credit_panel.CREDIT_CSS,
         fig8_credit_total_panel.CREDIT_TOTAL_CSS,

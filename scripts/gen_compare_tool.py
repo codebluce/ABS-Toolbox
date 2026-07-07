@@ -39,6 +39,11 @@ def load_data(xlsx_path):
             lambda r: classify_tenor(r[tenor_col], r['资产类型']), axis=1
         )
         dfa['产品类型'] = dfa['期限分类'] + dfa['资产类型']
+        # Preserve columns for insight panel
+        if '分层情况' not in dfa.columns:
+            dfa['分层情况'] = '优先A'
+        if '对应金额（亿）' not in dfa.columns:
+            dfa['对应金额（亿）'] = None
         return df, dfa
     finally:
         try:
@@ -75,7 +80,9 @@ def build_js_data(dfa, products):
                 'cost': round(float(r['成本pct']), 4),
                 'spread': round(float(r['基准利差']), 4),
                 'inst': r['实际机构'],
-                'share': round(float(r['实际份额']), 4)
+                'share': round(float(r['实际份额']), 4),
+                'layer': str(r['分层情况']) if pd.notna(r.get('分层情况')) else '优先A',
+                'total_size': round(float(r['对应金额（亿）']), 4) if pd.notna(r.get('对应金额（亿）')) else None
             })
     return rows
 
@@ -203,6 +210,18 @@ def compute_data(xlsx_path):
     if not qc_passed:
         raise RuntimeError(f'[QC] 机构比对工具预检未通过')
 
+    # Build PROJECT_SIZES mapping for insight panel
+    proj_sizes = {}
+    for _, r in dfa.iterrows():
+        proj = str(r['项目名称']) if pd.notna(r.get('项目名称')) else ''
+        amt = r.get('对应金额（亿）')
+        if proj and pd.notna(amt):
+            try:
+                proj_sizes[proj] = float(amt)
+            except:
+                pass
+    proj_sizes_js = json.dumps(proj_sizes, ensure_ascii=False)
+
     return {
         'df': df,
         'dfa': dfa,
@@ -210,6 +229,7 @@ def compute_data(xlsx_path):
         'rows': rows,
         'products_js': products_js,
         'data_js': data_js,
+        'proj_sizes_js': proj_sizes_js,
         'xlsx_basename': os.path.basename(xlsx_path),
         'xlsx_path': xlsx_path,
     }

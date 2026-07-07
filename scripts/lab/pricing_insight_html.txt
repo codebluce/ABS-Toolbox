@@ -1,0 +1,100 @@
+<div class="tool-banner">
+  <div class="banner-tag">ABS Investor Intelligence Tool <span class="lab-badge">LAB v5</span></div>
+  <div class="banner-title">发行定价测试</div>
+  <div class="banner-sub">筛选贯穿顶部 → 洞察（左）｜ 明细（右）对齐排列</div>
+</div>
+
+<!-- === Top Controls: full-width === -->
+<div class="ctrl-row-wrap">
+  <div class="ctrl-panel">
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <div class="ctrl-label">期限</div>
+        <select id="tenorSelect" onchange="onTenorChange()">
+          <option value="">全部</option>
+          <option value="1年期">1年期</option>
+          <option value="超1年期">超1年期</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">产品类型</div>
+        <select id="productSelect">
+          <option value="">—— 选择 ——</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">投标利率上限（%）</div>
+        <div class="cost-ctrl">
+          <button class="cost-btn" onclick="adjCost(-0.01)">&#8722;</button>
+          <input type="number" id="costInput" class="cost-input" min="1.50" max="2.50" step="0.01" value="1.80" onclick="this.select()">
+          <button class="cost-btn" onclick="adjCost(0.01)">+</button>
+        </div>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">&nbsp;</div>
+        <button class="btn" onclick="doSearch()">查询</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- === Main: Insight LEFT, Detail RIGHT === -->
+<div class="main-layout">
+  <!-- LEFT: Insight -->
+  <div class="left-panel">
+    <div class="insight-panel" id="insightPanelWrapper" style="display:none;">
+      <div class="insight-header">
+        <div class="ih-title">投资动态洞察</div>
+        <div class="ih-sub">仅统计分层为「优先A / 优先级 / 优先A1 / 优先A2」的机构</div>
+      </div>
+      <div class="insight-tabs" id="insightTabs" style="display:none;">
+        <div class="insight-tab active" onclick="switchTab('week')">前一周</div>
+        <div class="insight-tab" onclick="switchTab('month')">前一个月</div>
+      </div>
+      <div class="insight-body" id="insightBody">
+        <div class="no-insight">点击"查询"后自动生成</div>
+      </div>
+    </div>
+    <div style="text-align:center;padding:60px 0;color:#9aa5b5;font-size:14px;" id="insightEmpty">
+      选择产品类型和利率上限，点击查询
+    </div>
+  </div>
+
+  <!-- RIGHT: Detail -->
+  <div class="right-panel">
+    <div class="result-area" id="resultArea">
+      <div class="detail-header" id="detailHeader">
+        <div class="dh-title" id="dhTitle">定价明细</div>
+        <div class="dh-sub" id="dhSub">——</div>
+      </div>
+      <div class="hint-bar">
+        <span id="hintText"></span>
+        <span id="metaTag" style="font-size:12px;color:#5a7aa8"></span>
+      </div>
+      <div class="res-table-wrap">
+        <table class="res-table">
+          <thead>
+            <tr>
+              <th style="width:32px">#</th>
+              <th style="text-align:left">穿透机构</th>
+              <th style="text-align:left">项目名称</th>
+              <th>簿记日期</th>
+              <th>投标利率</th>
+              <th>基准利差</th>
+              <th>申购规模（亿）</th>
+              <th style="width:80px">单期比例</th>
+            </tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="empty-state" id="detailEmpty">
+      选择产品类型和利率上限，点击查询
+    </div>
+  </div>
+</div>
+
+<div class="lab-global-note">
+  Lab v5：筛选框贯穿顶部全宽，与洞察/明细解耦。洞察摘要横向排列。机构卡片数字字号统一，列均匀分布占满宽度。洞察与明细同一水平线。
+</div>
