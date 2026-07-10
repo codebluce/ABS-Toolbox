@@ -2,10 +2,10 @@
 
 读取 20260630额度盘点.xlsx:
 - 非标授信 sheet: A基石投资人 / B非标剩余额度 / C非标授信总额 / D-I为7-12月摊还(待填)
-- 历史发行 sheet: U认购机构 / V认购份额 / X循环期结束日
+- 非标历史发行 sheet: U认购机构 / V认购份额 / X循环期结束日
 
 算法:
-  对非标授信每个机构,从历史发行 sheet 找 U列近似匹配 + X列在2026年N月的行,
+  对非标授信每个机构,从非标历史发行 sheet 找 U列近似匹配 + X列在2026年N月的行,
   V列(认购份额)合计 = 该机构N月摊还到期额度
 
 输出: 投资人分析看板 HTML(风格与综合看板一致)
@@ -87,8 +87,8 @@ def compute_maturity_amounts(ledger_path=None):
             })
     print(f'非标授信机构数: {len(institutions)}')
 
-    # 2. 读历史发行 sheet,按月聚合每个机构的认购份额(用于7-12月摊还)
-    ws_hist = wb['历史发行']
+    # 2. 读非标历史发行 sheet,按月聚合每个机构的认购份额(用于7-12月摊还)
+    ws_hist = wb['非标历史发行']
     hist_records = []
     for r in range(2, ws_hist.max_row + 1):
         u = ws_hist.cell(row=r, column=21).value  # U认购机构
@@ -322,7 +322,7 @@ def render_credit_panel(ledger_path=None):
             • <strong>非标授信总额</strong>:来自 20260630额度盘点.xlsx「非标授信」sheet C 列<br/>
             • <strong>新增认购规模</strong>:最新发行台账中,F列含"非标"或"保登"关键词,且 L列(簿记时间)≥ 2026-07-01 的同机构 V列(认购份额)合计<br/>
             • <strong>非标剩余额度(实时)</strong>= 表格原始剩余值 - 新增认购规模(红色表示已超额度)<br/>
-            • <strong>7-12月摊还</strong>:该机构在「历史发行」sheet 中,U列同机构(近似匹配)且 X列(循环期结束日)在 2026 年对应月份的认购份额合计<br/>
+            • <strong>7-12月摊还</strong>:该机构在「非标历史发行」sheet 中,U列同机构(近似匹配)且 X列(循环期结束日)在 2026 年对应月份的认购份额合计<br/>
             • <strong>近似匹配规则</strong>:机构名归一化(去空格/括号统一/去"理财/资管"等后缀)后相等,或一方包含另一方(len≥3)<br/>
             • <strong>"-"</strong>:该机构当月无到期项目或无新增认购
         </div>
