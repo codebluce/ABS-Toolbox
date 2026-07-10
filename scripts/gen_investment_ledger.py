@@ -2,12 +2,13 @@
 
 数据驱动：复用 abs_common.load_and_filter 取得穿透优先口径的逐条投资记录
 （已剔除自持 / 黑名单机构、已做机构名归并、已纠正 2025→2026 簿记年份），
-序列化为 JSON 内嵌进面板，配 itl_panel.js（vanilla）实现前端多维筛选统计。
+序列化为 JSON 内嵌进面板，配 itl_panel.js（vanilla）实现前端多维筛选统计，
+并配 itl_chat.js 提供右下角「智能问答」悬浮球（本地语义解析·离线·数据不出内网·联动面板）。
 
 对外接口（与其它 gen_* 模块一致）：
   compute_data(xlsx_path)  -> dict{records, xlsx_basename, count}
-  render_body(data)        -> str（面板 body HTML，含内嵌数据 + JS）
-  LEDGER_CSS               -> str（面板样式，供 gen_integrated_dashboard 拼接）
+  render_body(data)        -> str（面板 body HTML + 智能问答 Chatbox，含内嵌数据 + JS）
+  LEDGER_CSS               -> str（面板 + Chatbox 样式，供 gen_integrated_dashboard 拼接）
 
 筛选字段：D资产类型 / P分层 / S评级（多选）· G管理人 / H承销商 / I托管行 / U认购机构（关键词联想多选）
           · L簿记时间（区间）· V认购份额（区间）
@@ -34,6 +35,13 @@ with open(os.path.join(_DIR, 'itl_panel.css'), encoding='utf-8') as _f:
     LEDGER_CSS = _f.read()
 with open(os.path.join(_DIR, 'itl_panel.js'), encoding='utf-8') as _f:
     LEDGER_JS = _f.read()
+with open(os.path.join(_DIR, 'itl_chat.css'), encoding='utf-8') as _f:
+    CHAT_CSS = _f.read()
+with open(os.path.join(_DIR, 'itl_chat.js'), encoding='utf-8') as _f:
+    CHAT_JS = _f.read()
+
+# 综合看板拼接时用：面板样式 + Chatbox 样式一起进全局 <style>
+LEDGER_CSS = LEDGER_CSS + '\n' + CHAT_CSS
 
 
 def _s(v):
@@ -108,7 +116,8 @@ def render_body(data):
         '<div id="itl-root"></div>\n'
         f'<script>window.ITL_DATA={payload};window.ITL_SOURCE={source};</script>\n'
         f'<script>{LEDGER_JS}</script>\n'
-        '<script>ITL.build(document.getElementById("itl-root"));</script>'
+        '<script>ITL.build(document.getElementById("itl-root"));</script>\n'
+        f'<script>{CHAT_JS}</script>'
     )
 
 

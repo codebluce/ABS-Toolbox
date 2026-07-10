@@ -1,17 +1,16 @@
 /* ═══ 投资台账面板逻辑（vanilla JS · 命名空间 ITL · 读 window.ITL_DATA）═══ */
 (function () {
   var DATA = window.ITL_DATA || [];
-  var CHIP = [
-    { key: 'asset', label: '资产类型', col: 'D' },
-    { key: 'layer', label: '分层情况', col: 'P' },
-    { key: 'rating', label: '评级', col: 'S' }
-  ];
-  var KW = [
+  // 六个筛选字段统一为下拉选框：pick=true 的点击即展开全量选项，其余支持关键词联想
+  var SEL = [
+    { key: 'asset', label: '资产类型', col: 'D', pick: true },
+    { key: 'layer', label: '分层情况', col: 'P', pick: true },
     { key: 'mgr', label: '计划管理人', col: 'G' },
     { key: 'underwriter', label: '联席承销商', col: 'H' },
     { key: 'custodian', label: '托管行', col: 'I' },
     { key: 'inst', label: '认购机构', col: 'U' }
   ];
+  // 评级 rating 无筛选 UI，但保留在状态里：仍是分组/透视维度，智能问答可通过 applySpec 按评级过滤
   var DIMS = [
     { key: 'inst', label: '认购机构' },
     { key: 'mgr', label: '计划管理人' },
@@ -23,8 +22,7 @@
   ];
 
   var st = {
-    selChips: { asset: [], layer: [], rating: [] },
-    selKw: { mgr: [], underwriter: [], custodian: [], inst: [] },
+    selKw: { asset: [], layer: [], rating: [], mgr: [], underwriter: [], custodian: [], inst: [] },
     activeKw: null,
     dateFrom: '', dateTo: '', shareMin: '', shareMax: '',
     view: 'group', groupDim: 'inst', sortKey: 'share', sortDir: 'desc',
@@ -41,8 +39,7 @@
 
   function filtered() {
     return DATA.filter(function (r) {
-      for (var i = 0; i < CHIP.length; i++) { var s = st.selChips[CHIP[i].key]; if (s.length && s.indexOf(r[CHIP[i].key]) < 0) return false; }
-      for (var j = 0; j < KW.length; j++) { var k = st.selKw[KW[j].key]; if (k.length && k.indexOf(r[KW[j].key]) < 0) return false; }
+      for (var k in st.selKw) { var s = st.selKw[k]; if (s.length && s.indexOf(r[k]) < 0) return false; }
       if (st.dateFrom) { if (!r.date || r.date < st.dateFrom) return false; }
       if (st.dateTo) { if (!r.date || r.date > st.dateTo) return false; }
       if (st.shareMin !== '') { if (r.share == null || r.share < +st.shareMin) return false; }
@@ -52,9 +49,8 @@
   }
 
   function activeCount() {
-    var n = 0, i;
-    for (i = 0; i < CHIP.length; i++) n += st.selChips[CHIP[i].key].length ? 1 : 0;
-    for (i = 0; i < KW.length; i++) n += st.selKw[KW[i].key].length ? 1 : 0;
+    var n = 0;
+    for (var k in st.selKw) n += st.selKw[k].length ? 1 : 0;
     if (st.dateFrom || st.dateTo) n += 1;
     if (st.shareMin !== '' || st.shareMax !== '') n += 1;
     return n;
@@ -67,7 +63,7 @@
     var arr = [];
     counts.forEach(function (c, v) { if (sel.indexOf(v) < 0 && (!q || v.indexOf(q) >= 0)) arr.push([v, c]); });
     arr.sort(function (a, b) { return b[1] - a[1]; });
-    return arr.slice(0, 14);
+    return arr.slice(0, 20);
   }
 
   function groupData() {
@@ -122,20 +118,6 @@
   var root, inputs = {};
   function getInput(f) { return inputs[f]; }
 
-  function chipBtns(field) {
-    var counts = distinctCounts(field), arr = [];
-    counts.forEach(function (c, v) { arr.push([v, c]); });
-    arr.sort(function (a, b) { return b[1] - a[1]; });
-    return arr.map(function (e) {
-      var on = st.selChips[field].indexOf(e[0]) >= 0;
-      return '<button class="itl-chip' + (on ? ' on' : '') + '" data-act="chip" data-field="' + field + '" data-val="' + esc(e[0]) + '">' + esc(e[0]) + '<span class="cnt">' + e[1] + '</span></button>';
-    }).join('');
-  }
-
-  function renderChips() {
-    CHIP.forEach(function (f) { document.getElementById('itl-chips-' + f.key).innerHTML = chipBtns(f.key); });
-  }
-
   function renderKw(field) {
     // dropdown
     var drop = document.getElementById('itl-drop-' + field);
@@ -151,7 +133,7 @@
       return '<span class="itl-selchip">' + esc(v) + '<span class="x" data-act="rmkw" data-field="' + field + '" data-val="' + esc(v) + '">×</span></span>';
     }).join('');
   }
-  function renderAllKw() { KW.forEach(function (f) { renderKw(f.key); }); }
+  function renderAllKw() { SEL.forEach(function (f) { renderKw(f.key); }); }
 
   function renderBadge() { document.getElementById('itl-badge').textContent = activeCount() + ' 项生效'; }
 
@@ -262,24 +244,23 @@
   }
 
   function reset() {
-    st.selChips = { asset: [], layer: [], rating: [] };
-    st.selKw = { mgr: [], underwriter: [], custodian: [], inst: [] };
+    st.selKw = { asset: [], layer: [], rating: [], mgr: [], underwriter: [], custodian: [], inst: [] };
     st.dateFrom = ''; st.dateTo = ''; st.shareMin = ''; st.shareMax = '';
-    KW.forEach(function (f) { inputs[f.key].value = ''; });
-    inputs.dateFrom.value = ''; inputs.dateTo.value = ''; inputs.shareMin.value = ''; inputs.shareMax.value = '';
-    renderChips(); renderAllKw(); renderBadge(); renderCards(); renderResult();
+    SEL.forEach(function (f) { inputs[f.key].value = ''; });
+    inputs.dateFrom.value = ''; inputs.dateTo.value = '';
+    renderAllKw(); renderBadge(); renderCards(); renderResult();
   }
 
   function build(container) {
     root = container;
-    var kwHtml = KW.map(function (f) {
-      return '<div class="itl-kwfield"><div class="itl-kwlab">' + f.label + '<span class="col"> ' + f.col + '</span><span class="hint">（共 ' + distinctCounts(f.key).size + ' 家）</span></div>'
-        + '<input class="itl-kwinput" type="text" id="itl-in-' + f.key + '" placeholder="输入关键词联想…" autocomplete="off">'
+    var kwHtml = SEL.map(function (f) {
+      var n = distinctCounts(f.key).size;
+      var hint = f.pick ? '（' + n + ' 类）' : '（' + n + ' 家）';
+      var ph = f.pick ? '点击选择…' : '输入联想…';
+      return '<div class="itl-kwfield"><div class="itl-kwlab">' + f.label + '<span class="col"> ' + f.col + '</span><span class="hint">' + hint + '</span></div>'
+        + '<input class="itl-kwinput" type="text" id="itl-in-' + f.key + '" placeholder="' + ph + '" autocomplete="off">'
         + '<div class="itl-drop" id="itl-drop-' + f.key + '"></div>'
         + '<div class="itl-selchips" id="itl-chips-sel-' + f.key + '"></div></div>';
-    }).join('');
-    var chipHtml = CHIP.map(function (f) {
-      return '<div class="itl-chiprow"><div class="lab">' + f.label + '<span class="col"> ' + f.col + '</span></div><div class="itl-chips" id="itl-chips-' + f.key + '"></div></div>';
     }).join('');
 
     root.className = 'itl-wrap';
@@ -288,11 +269,9 @@
       + '<div class="itl-banner-sub">勾选 / 检索任意字段组合 → 实时统计认购份额、成本与利差 · 字段内多选取「或」，跨字段取「且」</div></div>'
       + '<div class="itl-body">'
       + '<div class="itl-card-box itl-filter"><div class="itl-filter-head"><div class="itl-filter-title"><span class="itl-tick"></span>筛选条件<span class="itl-badge" id="itl-badge">0 项生效</span></div><button class="itl-reset" id="itl-reset">清空全部</button></div>'
-      + '<div class="itl-filter-body"><div class="itl-grouplabel">快速多选</div>' + chipHtml
-      + '<div class="itl-grouplabel" style="margin-top:16px">关键词检索 · 支持联想多选</div><div class="itl-kwgrid">' + kwHtml + '</div>'
-      + '<div class="itl-grouplabel" style="margin-top:16px">区间筛选</div><div class="itl-ranges">'
+      + '<div class="itl-filter-body"><div class="itl-kwgrid">' + kwHtml + '</div>'
+      + '<div class="itl-ranges" style="margin-top:12px">'
       + '<div class="itl-range"><span class="lab">簿记时间 <span class="col">L</span></span><input type="date" id="itl-date-from"><span class="itl-arrow">→</span><input type="date" id="itl-date-to"></div>'
-      + '<div class="itl-range"><span class="lab">认购份额 <span class="col">V（亿）</span></span><input type="number" step="0.1" id="itl-share-min" placeholder="最小"><span class="itl-arrow">→</span><input type="number" step="0.1" id="itl-share-max" placeholder="最大"></div>'
       + '</div></div></div>'
       + '<div class="itl-cards" id="itl-cards"></div>'
       + '<div class="itl-card-box itl-result"><div class="itl-result-head"><div class="itl-vtabs" id="itl-vtabs">'
@@ -302,14 +281,12 @@
       + '</div>';
 
     // persistent input refs
-    KW.forEach(function (f) { inputs[f.key] = document.getElementById('itl-in-' + f.key); });
+    SEL.forEach(function (f) { inputs[f.key] = document.getElementById('itl-in-' + f.key); });
     inputs.dateFrom = document.getElementById('itl-date-from');
     inputs.dateTo = document.getElementById('itl-date-to');
-    inputs.shareMin = document.getElementById('itl-share-min');
-    inputs.shareMax = document.getElementById('itl-share-max');
 
     // input listeners
-    KW.forEach(function (f) {
+    SEL.forEach(function (f) {
       var inp = inputs[f.key];
       inp.addEventListener('input', function () { st.activeKw = f.key; renderKw(f.key); });
       inp.addEventListener('focus', function () { st.activeKw = f.key; renderKw(f.key); });
@@ -317,8 +294,6 @@
     });
     inputs.dateFrom.addEventListener('input', function () { st.dateFrom = this.value; onFilterChange(); });
     inputs.dateTo.addEventListener('input', function () { st.dateTo = this.value; onFilterChange(); });
-    inputs.shareMin.addEventListener('input', function () { st.shareMin = this.value; onFilterChange(); });
-    inputs.shareMax.addEventListener('input', function () { st.shareMax = this.value; onFilterChange(); });
     document.getElementById('itl-reset').addEventListener('click', reset);
     document.getElementById('itl-export').addEventListener('click', exportCSV);
 
@@ -331,8 +306,7 @@
     root.addEventListener('click', function (e) {
       var el = e.target.closest('[data-act]'); if (!el) return;
       var act = el.dataset.act;
-      if (act === 'chip') { var f = el.dataset.field, v = el.dataset.val, a = st.selChips[f], i = a.indexOf(v); if (i >= 0) a.splice(i, 1); else a.push(v); renderChips(); onFilterChange(); }
-      else if (act === 'rmkw') { var ff = el.dataset.field, vv = el.dataset.val, arr = st.selKw[ff], k = arr.indexOf(vv); if (k >= 0) arr.splice(k, 1); renderKw(ff); onFilterChange(); }
+      if (act === 'rmkw') { var ff = el.dataset.field, vv = el.dataset.val, arr = st.selKw[ff], k = arr.indexOf(vv); if (k >= 0) arr.splice(k, 1); renderKw(ff); onFilterChange(); }
       else if (act === 'gdim') { st.groupDim = el.dataset.key; renderResult(); }
       else if (act === 'prow') { st.pivotRow = el.dataset.key; renderResult(); }
       else if (act === 'pcol') { st.pivotCol = el.dataset.key; renderResult(); }
@@ -342,10 +316,38 @@
       var b = e.target.closest('.itl-vtab'); if (!b) return; st.view = b.dataset.view; renderResult();
     });
 
-    renderChips(); renderAllKw(); renderBadge(); renderCards(); renderResult();
+    renderAllKw(); renderBadge(); renderCards(); renderResult();
   }
 
   function onFilterChange() { renderBadge(); renderCards(); renderResult(); }
 
-  window.ITL = { build: build };
+  // ── 对外控制接口（供 Chatbox 联动）──────────────────────────────
+  // applySpec：把一段结构化筛选规格写进面板状态并重渲染
+  //   spec = { filters:{asset:[],layer:[],rating:[],mgr:[],underwriter:[],custodian:[],inst:[]},
+  //            dateFrom, dateTo, shareMin, view, groupBy }
+  function applySpec(spec) {
+    spec = spec || {};
+    var f = spec.filters || {};
+    st.selKw = { asset: [], layer: [], rating: [], mgr: [], underwriter: [], custodian: [], inst: [] };
+    st.dateFrom = spec.dateFrom || ''; st.dateTo = spec.dateTo || '';
+    st.shareMin = (spec.shareMin != null && spec.shareMin !== '') ? String(spec.shareMin) : '';
+    st.shareMax = '';
+    ['asset', 'layer', 'rating', 'mgr', 'underwriter', 'custodian', 'inst'].forEach(function (k) { if (f[k] && f[k].length) st.selKw[k] = f[k].slice(); });
+    if (spec.groupBy && DIMS.some(function (d) { return d.key === spec.groupBy; })) {
+      st.view = 'group'; st.groupDim = spec.groupBy; st.sortKey = 'share'; st.sortDir = 'desc';
+    } else if (spec.view) { st.view = spec.view; }
+    if (root) {
+      SEL.forEach(function (kf) { if (inputs[kf.key]) inputs[kf.key].value = ''; });
+      if (inputs.dateFrom) { inputs.dateFrom.value = st.dateFrom; inputs.dateTo.value = st.dateTo; }
+      renderAllKw(); renderBadge(); renderCards(); renderResult();
+    }
+  }
+
+  window.ITL = {
+    build: build,
+    applySpec: applySpec,
+    getData: function () { return DATA; },
+    fields: { sel: SEL, dims: DIMS },
+    distinctCounts: distinctCounts
+  };
 })();
