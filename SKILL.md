@@ -294,6 +294,59 @@ python scripts/self_check.py --list
 
 为避免 v21 那种 A/B 分歧 (单 sheet vs 全 sheet), 本脚本默认走**全 sheet**对比 (所有 sheet × 6 列 P/U/V/W/X/Y × max_row 行), 在层 3 details.cell_count_caliber 字段写明实际口径。
 
+## 版本管理规范(多 Agent 协作)
+
+本仓库常有多个 Agent(不同会话/不同任务)先后甚至并发修改。单分支直推 main + 双远程(Gitee+GitHub),已实际出现过"生成产出物撞名阻塞 pull""交接材料污染 git status"两类问题,故定下以下铁律,任何 Agent 操作本仓库前必须遵守:
+
+### 1. 改动前必须先同步基线
+
+```bash
+git fetch origin && git fetch github
+git log HEAD..origin/main --oneline   # 看 Gitee 是否领先
+git log HEAD..github/main --oneline   # 看 GitHub 是否领先
+```
+
+任一方领先,先 `git pull origin main`(fast-forward)同步到最新,再开始改动。**禁止在落后的基线上生成产出物或整文件覆盖脚本**——本地旧版本 diff 出来的"补丁"可能已经不是真实增量。
+
+### 2. 生成产出物(dashboards HTML / 台账 xlsx)不允许跨会话遗留为 untracked
+
+`deliverables/dashboards/01_latest/*.html` 和 `deliverables/ledger/03_final/*.xlsx` 属于要提交入库的产出物(供同事直接在 Gitee/GitHub 上查看,不是 build cache)。文件名按日期命名(`ABS综合看板_YYYYMMDD.html`),同一天两个 Agent 各跑一次会撞名。规则:
+
+- 生成后**当场**决定:要么立刻 `git add` + commit + 双推,要么用完即删,不允许放着不管、留到下个会话。
+- 跑生成脚本前先按第 1 条同步基线,若远程已有同名产出,pull 下来后本地重新生成会**直接覆盖**(确定性输出,内容应一致或本地更新即为最新),而不是拿本地 untracked 副本去和 pull 撞车。
+- 若 `git pull` 报 "untracked working tree files would be overwritten",说明第 1 条没做到位——先把本地文件移到临时目录(不要用 `git checkout --`/`rm` 直接丢弃,除非确认是本会话刚生成、可重新跑出来的产出物),pull 完再对比要不要保留。
+
+### 3. 一次性交接材料不进主仓库
+
+Agent 之间常通过"设计 zip 包 + 落地指令 prompt"移交任务(如 `ABS综合看板设计.zip`、`落地指令_*.md`、`集成说明.md`、`*_审计报告.md`)。这类文件是**给执行 Agent 看的一次性说明书**,不是给同事/未来 Agent 用的长期文档,落地完成后不提交:
+
+| 类型 | 示例 | 是否提交 |
+|---|---|---|
+| 源代码 | `*.py` `*.js` `*.css` | ✅ 提交 |
+| 长期参考文档 | `SKILL.md` `README.md` `CHANGELOG.md` `*_修改指南.md`(供后续 Agent 按配方改代码) | ✅ 提交 |
+| 产出物 | `deliverables/**/*.html` `deliverables/**/*.xlsx` | ✅ 提交(见第 2 条) |
+| 一次性交接材料 | `落地指令_*.md` `集成说明.md` `*_审计报告.md` `*.zip` | ❌ 不提交,落地后可删除或留在本地不 add |
+
+commit 时用 `git add <具体文件>` 精确加(**禁止 `git add -A` / `git add .`**),避免把交接材料和临时产出一起带进去。
+
+### 4. 覆盖式改动(整文件替换)前必须 diff 确认
+
+当交接材料要求"用 merge/ 里的某文件整体覆盖本地同名文件"时(常见于 `gen_integrated_dashboard.py` 这类多方共改的核心文件):
+
+```bash
+diff <merge包里的新文件> <本地当前文件>
+```
+
+- diff 出来的每一处差异都必须能对应上"落地指令里描述的补丁点"。
+- 如果出现**认不出来源**的差异(既不是待落地的补丁,也不是自己刚才的改动),说明基线之间有别的 Agent 插入的改动未被感知——停下来,不要盲目覆盖,向用户汇报差异内容。
+- 确认无误才整文件覆盖;否则退回手动打補丁,只改 diff 里明确的那几处。
+
+### 5. 双远程铁律
+
+- 本仓库固定双远程:`origin`(Gitee)+ `github`(GitHub),两边必须保持内容一致。
+- 仓库内已配置 `git pushall` alias(`git push origin main && git push github main`),**任何 commit 后一律用它推送,不允许只推一边**——历史上 obsidian-vault 仓库就因为单推导致过分叉。
+- 推送后逐仓库列出 `✅`/`❌` 状态确认,不要假设推送成功。
+
 ## 审计与回滚
 
 - 送审报告归档在 `audit/submissions/`(不再散落 Inbox)
