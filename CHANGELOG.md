@@ -12,6 +12,31 @@
 
 ---
 
+## v2.5.1 — 2026-07-13 UV 列值保护修复
+
+### 新增
+
+- **QC 7.20: UV column value preservation**（#ABS-003 修复）:
+  - 对比 processed 和 output 的 U/V 列（认购机构/认购份额）值
+  - 非目标项目的 U/V 值变化为 **FAIL**（不只是 WARN）
+  - 目标项目（supplement/rebook 的目标）的 U/V 允许变化
+
+### 修复
+
+- **QC FAIL 阻断执行**（#ABS-003 修复）:
+  - `run_enhanced_qc` 返回 `(qc_fails, qc_warns)` 后，`run_increment_merge` 检查 `qc_fails > 0`
+  - FAIL 时不保存输出文件，直接 return，打印 `[BLOCKED]` 提示
+  - 之前：QC FAIL 后仍保存文件（只打印警告不阻断）
+
+### 踩坑
+
+- **#ABS-003: 自定义脚本绕过 QC 体系导致 UV 列丢失**（★★★★★）
+  - 2026-07-12 用自定义 `_append_new_project.py` 追加新项目，列映射错误导致已有行 UV 数据被覆盖
+  - 根因：绕过 increment_merge.py 的 QC 体系 + QC 7.14 只检查格式不检查值 + QC FAIL 不阻断
+  - 已回滚至 0703 定稿，新增 QC 7.20 + FAIL 阻断
+
+---
+
 ## v2.5.0 — 2026-07-05 第六轮
 
 ### 新增

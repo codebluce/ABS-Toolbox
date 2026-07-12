@@ -83,6 +83,25 @@
 
 ---
 
+### #ABS-003 — 自定义脚本绕过 QC 体系导致 UV 列丢失
+
+- **日期**:2026-07-12
+- **严重度**:★★★★★（数据丢失）
+- **现象**:用自定义 `_append_new_project.py` 追加新项目"东裕4号仲裕（续发）"到 0703 定稿，列映射错误导致已有行的 U/V 列（认购机构/认购份额）原始数据被覆盖。用户发现后回滚。
+- **根因**:
+  1. 绕过 `increment_merge.py` 的 QC 体系，自定义脚本没有 UV 值保护
+  2. QC 7.14 只检查 V 列**格式**（number_format），不检查 V 列**值**是否被覆盖
+  3. QC FAIL 后不阻断执行（`run_enhanced_qc` 返回 `qc_fails` 但 `run_increment_merge` 未检查就保存文件）
+  4. supplement 模式被误用于"追加新项目"（设计用途是"对已有项目补充簿记明细"）
+- **修复**:
+  1. ✅ 新增 QC 7.20: UV column value preservation — 对比 processed 和 output 的 U/V 列值，非目标项目的 U/V 值变化为 FAIL
+  2. ✅ QC FAIL 阻断 — `qc_fails > 0` 时不保存输出文件，直接 return
+  3. ✅ pitfall_log 记录 #ABS-003
+- **约束**:录入新台账时，必须走 `--new-raw` 模式（增量合并），不能自己写脚本追加。如果原始台账是 21 列（无 WXY），由 increment_merge 自动处理列升级。
+- **追踪**:CHANGELOG v2.5.1 段
+
+---
+
 ## E. v2.0.0 第一轮已知风险
 
 1. **22 列原始台账兼容性**:删 `preprocess_unmerge_fill` 改用 abs_common 后,22 列台账(无 WXY 列)兼容性需端到端验证(Step 6)

@@ -760,6 +760,41 @@ def run_enhanced_qc(ws_out, ws_orig_protected, set_a, supplemented_keys,
     else:
         print("  PASS: All V values match Y sums")
 
+    # --- QC 7.20: UV column value preservation (#ABS-003) ---
+    # 对比 processed 和 output 的 U/V 列值，非目标项目的 U/V 值变化是 FAIL
+    # 目标项目（supplement/rebook 的目标）的 U/V 可能被 rebook 清空，这是允许的
+    print("\n=== QC 7.20: UV column value preservation ===")
+    uv_violations = []
+    if ws_orig_protected:
+        # 构建 target_project_rows 集合（目标项目的行号范围）
+        target_rows = set()
+        for key, pstart, pend in target_projects:
+            for r in range(pstart, pend + 1):
+                target_rows.add(r)
+
+        # 对比所有行的 U/V 值
+        max_r = max(ws_orig_protected.max_row, ws_out.max_row)
+        for r in range(2, max_r + 1):
+            if r in target_rows:
+                continue  # 目标项目的 U/V 允许变化
+            u_orig = ws_orig_protected.cell(row=r, column=21).value
+            v_orig = ws_orig_protected.cell(row=r, column=22).value
+            u_out = ws_out.cell(row=r, column=21).value
+            v_out = ws_out.cell(row=r, column=22).value
+            # 值变化检测（None vs 值 也算变化）
+            if u_orig != u_out or v_orig != v_out:
+                uv_violations.append((r, u_orig, v_orig, u_out, v_out))
+
+    if uv_violations:
+        qc_fails += 1
+        print(f"  FAIL: {len(uv_violations)} rows have UV column value changes (non-target projects)")
+        for r, uo, vo, un, vn in uv_violations[:10]:
+            print(f"    Row{r}: U '{uo}' -> '{un}', V '{vo}' -> '{vn}'")
+        if len(uv_violations) > 10:
+            print(f"    ... and {len(uv_violations) - 10} more")
+    else:
+        print("  PASS: All non-target UV columns preserved")
+
     # --- Summary ---
     print("\n=== Enhanced QC Summary ===")
     print(f"  Fails: {qc_fails}, Warns: {qc_warns}")
@@ -1317,10 +1352,18 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
         else:
             print(f"  {proj_name}: NOT FOUND [X]")
 
-    # QC 7.4-7.15: Enhanced QC checks
-    run_enhanced_qc(ws_out, ws_orig_protected, set_a, supplemented_keys,
+    # QC 7.4-7.20: Enhanced QC checks
+    qc_fails, qc_warns = run_enhanced_qc(ws_out, ws_orig_protected, set_a, supplemented_keys,
                     target_projects, dmap, detail_map_results,
                     detail_layers_available, detail_layers_used)
+
+    # v2.5.1: QC FAIL 阻断——不保存输出文件，直接退出
+    if qc_fails > 0:
+        print("\n" + "=" * 60)
+        print(f"[BLOCKED] {mode_label} aborted due to {qc_fails} QC FAIL(s).")
+        print(f"[BLOCKED] Output file NOT saved. Fix the issues above and re-run.")
+        print("=" * 60)
+        return
 
     print("\n" + "=" * 60)
     print(f"{mode_label} complete.")
