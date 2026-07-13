@@ -386,7 +386,25 @@ function doSearch() {
   buildInsight(filteredInsts, product, costLimit, latestDataDate);
 }
 
+// ====== DEFAULT VIEW ======
+// 页面首次加载时自动展示一个默认查询结果（1年期赊销白条 · ≤1.80%），
+// 让用户不做任何筛选也能了解这个面板展示什么信息；找不到该具体产品时
+// 退化为"1年期"下的第一个产品，避免因数据变化导致默认视图失效。
+function initDefaultView() {
+  const defaultTenor = '1年期';
+  const preferredProduct = ALL_PRODUCTS.find(p => p.startsWith(defaultTenor) && p.indexOf('赊销白条') >= 0)
+    || ALL_PRODUCTS.find(p => p.startsWith(defaultTenor))
+    || ALL_PRODUCTS[0];
+  if (!preferredProduct) return;
+  document.getElementById('tenorSelect').value = defaultTenor;
+  onTenorChange();
+  document.getElementById('productSelect').value = preferredProduct;
+  document.getElementById('costInput').value = '1.80';
+  doSearch();
+}
+
 populateProducts(ALL_PRODUCTS);
+initDefaultView();
 \
 """
 
