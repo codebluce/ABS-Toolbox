@@ -145,7 +145,8 @@ def build_integrated_html(panels, all_css):
 
     4 个 top tab: 发行定价 / 机构统计 / 投资人分析 / 投资台账
     投资人分析 > 理财子分析 (fig4 矩阵 + fig5 画像 并排)
-    投资台账 > 筛选统计 (多维筛选 + 分组/透视/明细 + 导出 CSV)
+    投资台账 > 2026年/2025年/2024年 三个年份子 Tab (各自独立筛选状态，多维筛选 + 分组/透视/明细 + 导出 CSV)
+              智能问答悬浮球语料覆盖全部年份，不受当前激活子 Tab 限制
     """
     MODULES = [('pricing', '发行定价'), ('institution', '机构统计'),
                ('investor', '投资人分析'), ('ledger', '投资台账')]
@@ -177,7 +178,8 @@ def build_integrated_html(panels, all_css):
                 sub_label_map = {'wlz': '理财子分析', 'credit': '非标额度', 'credit_total': '授信总额度'}
                 sub_label = sub_label_map.get(sub, sub)
             elif module == 'ledger':
-                sub_label = '筛选统计'
+                sub_label_map = {'query_2026': '2026年', 'query_2025': '2025年', 'query_2024': '2024年'}
+                sub_label = sub_label_map.get(sub, sub)
             else:
                 # 发行定价的子 Tab 名固定
                 sub_label_map = {'compare': '定价测试', 'invest': '投资明细', 'cost': '成本分布', 'spread': '利差分析'}
@@ -272,7 +274,14 @@ def main():
         cost_data = gen_abs_cost_report.compute_data(xlsx_path)
         spread_data = gen_spread_report.compute_data(xlsx_path)
         inst_data = gen_institution_stats.compute_data(xlsx_path)
-        led_data = gen_investment_ledger.compute_data(xlsx_path)
+        # 投资台账：2026 用当前入参台账，2025/2024 走固定的历史台账路径（缺失则该年份跳过，不报错）
+        source_dir = SCRIPT_DIR.parent / 'deliverables' / 'ledger' / '01_source'
+        ledger_year_paths = {
+            '2026': xlsx_path,
+            '2025': str(source_dir / '2025年ABS发行台账.xlsx'),
+            '2024': str(source_dir / '2024年ABS发行台账.xlsx'),
+        }
+        led_data = gen_investment_ledger.compute_data_multi_year(ledger_year_paths)
     except RuntimeError as e:
         print(f'\n[ERROR] {e}')
         print('[ERROR] 请修正数据或逻辑后重试')
@@ -309,9 +318,11 @@ def main():
     credit_total_body = fig8_credit_total_panel.render_credit_total_panel(ledger_path=xlsx_path)
     panels.append(('investor', 'credit_total', credit_total_body))
 
-    # 投资台账模块：多维筛选统计 panel
-    print('\n[3.7/4] 生成投资台账 > 筛选统计 panel...')
-    panels.append(('ledger', 'query', gen_investment_ledger.render_body(led_data)))
+    # 投资台账模块：按年份拆分的多维筛选统计 panel（2026/2025/2024 各一个子 Tab，
+    # 智能问答悬浮球随第一个年份 panel 一起挂载，语料覆盖全部年份，不受当前子 Tab 限制）
+    print('\n[3.7/4] 生成投资台账 > 分年份筛选统计 panel...')
+    for year, body in gen_investment_ledger.render_body_multi_year(led_data):
+        panels.append(('ledger', f'query_{year}', body))
 
     # 4. CSS 拼接 + 套 Tab 框架 + 写文件
     print('\n[4/4] 拼接 HTML...')
@@ -339,12 +350,14 @@ def main():
     with open(out_path, 'r', encoding='utf-8') as f:
         content = f.read()
     panel_count = content.count('<div class="panel"')
+    expected_panel_count = 10 + len(led_data['by_year'])  # 7 主 + 理财子/非标额度/授信总额度 3 个 + 各年份投资台账
     has_select_module = 'function selectModule' in content
     has_select_sub = 'function selectSub' in content
-    if panel_count == 11 and has_select_module and has_select_sub:
-        print(f'[QC] 综合看板结构检查通过：11 个 panel(7 主 + 理财子分析 + 非标额度 + 授信总额度 + 投资台账) + Tab 切换 JS 齐全')
+    ledger_years_str = '+'.join(sorted(led_data['by_year'].keys(), reverse=True))
+    if panel_count == expected_panel_count and has_select_module and has_select_sub:
+        print(f'[QC] 综合看板结构检查通过：{panel_count} 个 panel(7 主 + 理财子分析 + 非标额度 + 授信总额度 + 投资台账[{ledger_years_str}]) + Tab 切换 JS 齐全')
     else:
-        print(f'[QC WARN] 结构异常：panel={panel_count}, selectModule={has_select_module}, selectSub={has_select_sub}')
+        print(f'[QC WARN] 结构异常：panel={panel_count}(预期{expected_panel_count}), selectModule={has_select_module}, selectSub={has_select_sub}')
 
 
 if __name__ == '__main__':

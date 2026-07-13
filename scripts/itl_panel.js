@@ -115,12 +115,17 @@
   }
 
   // ── DOM refs ──
+  // 多年份场景下同一页面存在多个本模块实例（各年份一个 root 容器），内部元素 id 在各自子树内
+  // 重复出现（如 id="itl-cards"）。document.getElementById 只会拿到文档中第一个匹配，必须限定在
+  // 当前实例的 root 子树内查找，否则多个年份实例会互相覆写彼此的渲染结果。
   var root, inputs = {};
+  function $id(id) { return root.querySelector('#' + id); }
+  function $all(sel) { return root.querySelectorAll(sel); }
   function getInput(f) { return inputs[f]; }
 
   function renderKw(field) {
     // dropdown
-    var drop = document.getElementById('itl-drop-' + field);
+    var drop = $id('itl-drop-' + field);
     if (st.activeKw === field) {
       var sug = suggestions(field);
       drop.innerHTML = sug.length
@@ -129,13 +134,13 @@
       drop.classList.add('show');
     } else { drop.classList.remove('show'); }
     // selected chips
-    document.getElementById('itl-chips-sel-' + field).innerHTML = st.selKw[field].map(function (v) {
+    $id('itl-chips-sel-' + field).innerHTML = st.selKw[field].map(function (v) {
       return '<span class="itl-selchip">' + esc(v) + '<span class="x" data-act="rmkw" data-field="' + field + '" data-val="' + esc(v) + '">×</span></span>';
     }).join('');
   }
   function renderAllKw() { SEL.forEach(function (f) { renderKw(f.key); }); }
 
-  function renderBadge() { document.getElementById('itl-badge').textContent = activeCount() + ' 项生效'; }
+  function renderBadge() { $id('itl-badge').textContent = activeCount() + ' 项生效'; }
 
   function renderCards() {
     var recs = filtered();
@@ -151,7 +156,7 @@
       { l: '平均成本', v: fmtPct(avgCost), u: '', s: ca.length + ' 条含成本', c: '#0d1b2e' },
       { l: '平均利差', v: fmtPct(avgSpread), u: '', s: '成本 − 国股CD', c: '#0d1b2e' }
     ];
-    document.getElementById('itl-cards').innerHTML = cards.map(function (c) {
+    $id('itl-cards').innerHTML = cards.map(function (c) {
       return '<div class="itl-card-box itl-metric"><div class="m-label">' + c.l + '</div><div class="m-value" style="color:' + c.c + '">' + c.v + '<span class="u">' + c.u + '</span></div><div class="m-sub">' + c.s + '</div></div>';
     }).join('');
   }
@@ -160,8 +165,8 @@
 
   function renderResult() {
     // view tabs
-    document.querySelectorAll('#itl-vtabs .itl-vtab').forEach(function (b) { b.classList.toggle('on', b.dataset.view === st.view); });
-    var pane = document.getElementById('itl-pane');
+    $all('#itl-vtabs .itl-vtab').forEach(function (b) { b.classList.toggle('on', b.dataset.view === st.view); });
+    var pane = $id('itl-pane');
     if (st.view === 'group') pane.innerHTML = renderGroup();
     else if (st.view === 'pivot') pane.innerHTML = renderPivot();
     else pane.innerHTML = renderDetail();
@@ -281,9 +286,9 @@
       + '</div>';
 
     // persistent input refs
-    SEL.forEach(function (f) { inputs[f.key] = document.getElementById('itl-in-' + f.key); });
-    inputs.dateFrom = document.getElementById('itl-date-from');
-    inputs.dateTo = document.getElementById('itl-date-to');
+    SEL.forEach(function (f) { inputs[f.key] = $id('itl-in-' + f.key); });
+    inputs.dateFrom = $id('itl-date-from');
+    inputs.dateTo = $id('itl-date-to');
 
     // input listeners
     SEL.forEach(function (f) {
@@ -294,8 +299,8 @@
     });
     inputs.dateFrom.addEventListener('input', function () { st.dateFrom = this.value; onFilterChange(); });
     inputs.dateTo.addEventListener('input', function () { st.dateTo = this.value; onFilterChange(); });
-    document.getElementById('itl-reset').addEventListener('click', reset);
-    document.getElementById('itl-export').addEventListener('click', exportCSV);
+    $id('itl-reset').addEventListener('click', reset);
+    $id('itl-export').addEventListener('click', exportCSV);
 
     // delegated clicks
     root.addEventListener('mousedown', function (e) {
@@ -312,7 +317,7 @@
       else if (act === 'pcol') { st.pivotCol = el.dataset.key; renderResult(); }
       else if (act === 'sort') { var kk = el.dataset.key; if (st.sortKey === kk) st.sortDir = st.sortDir === 'desc' ? 'asc' : 'desc'; else { st.sortKey = kk; st.sortDir = 'desc'; } renderResult(); }
     });
-    document.getElementById('itl-vtabs').addEventListener('click', function (e) {
+    $id('itl-vtabs').addEventListener('click', function (e) {
       var b = e.target.closest('.itl-vtab'); if (!b) return; st.view = b.dataset.view; renderResult();
     });
 

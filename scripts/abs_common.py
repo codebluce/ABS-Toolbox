@@ -476,13 +476,16 @@ def filter_excluded_institutions(df, role_cols=None, label='数据加载'):
     return df[~mask].copy()
 
 
-def load_and_filter(xlsx_path, need_tenor=False, extra_required=None):
+def load_and_filter(xlsx_path, need_tenor=False, extra_required=None, fix_year=True):
     """统一的数据读取与预处理入口
 
     Args:
         xlsx_path: 台账Excel路径
         need_tenor: 是否需要期限分类（工具二/三需要）
         extra_required: 额外必需列
+        fix_year: 是否执行"2025→2026簿记日期纠错"（默认True，兼容现有调用）。
+                  该纠错逻辑假设台账业务年份为2026，若传入的是2025年历史台账本身
+                  （而非当前年台账），必须传 False，否则2025年的真实日期会被误改成2026年。
 
     Returns:
         df: 全量数据DataFrame（过滤自持后）
@@ -522,8 +525,9 @@ def load_and_filter(xlsx_path, need_tenor=False, extra_required=None):
         )
     df['簿记时间'] = pd.to_datetime(df['簿记时间'], errors='coerce')
 
-    # 簿记日期纠错：2025 年 → 2026 年（仅项目名唯一时自动改）
-    df = fix_bookkeeping_year(df, label='load_and_filter')
+    # 簿记日期纠错：2025 年 → 2026 年（仅项目名唯一时自动改；历史年份台账需关闭）
+    if fix_year:
+        df = fix_bookkeeping_year(df, label='load_and_filter')
 
     df = resolve_columns(df)
     dfa = df[df['分层情况'].isin(PRIORITY_LAYERS)].copy()

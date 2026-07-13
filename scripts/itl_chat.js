@@ -2,7 +2,7 @@
    把自然语言解析成结构化筛选规格 spec，本地精确计算，联动 window.ITL 面板。
    不联网、不外发数据。词表来自内嵌的 window.ITL_DATA。 */
 (function () {
-  var FIELD_LABEL = { asset: '资产类型', proj: '项目', mgr: '计划管理人', underwriter: '联席承销商', custodian: '托管行', inst: '认购机构', rating: '评级', layer: '分层' };
+  var FIELD_LABEL = { asset: '资产类型', proj: '项目', mgr: '计划管理人', underwriter: '联席承销商', custodian: '托管行', inst: '认购机构', rating: '评级', layer: '分层', year: '年份' };
   var CHIP_FIELDS = ['asset', 'layer', 'rating'];
   var KW_FIELDS = ['mgr', 'underwriter', 'custodian', 'inst'];
   var ENTITY_FIELDS = ['inst', 'mgr', 'underwriter', 'custodian', 'asset', 'rating', 'layer'];
@@ -22,15 +22,18 @@
   var lastSpec = null;
 
   // ── init vocab ──
+  // 数据源优先级：ITL_ALL_DATA（多年份合并语料，跨 Tab 问答用）
+  //             → window.ITL.getData()（旧版单年份独立预览，向后兼容）
+  //             → window.ITL_DATA（更早版本兜底）
   function initVocab() {
-    DATA = (window.ITL && window.ITL.getData) ? window.ITL.getData() : (window.ITL_DATA || []);
-    var years = {};
+    DATA = window.ITL_ALL_DATA || ((window.ITL && window.ITL.getData) ? window.ITL.getData() : (window.ITL_DATA || []));
     ENTITY_FIELDS.forEach(function (f) { COUNTS[f] = new Map(); VOCAB_BY_FIELD[f] = new Map(); });
     DATA.forEach(function (r) {
       ENTITY_FIELDS.forEach(function (f) { var v = r[f]; if (v != null && v !== '') COUNTS[f].set(v, (COUNTS[f].get(v) || 0) + 1); });
-      if (r.date) { var y = r.date.slice(0, 4); years[y] = (years[y] || 0) + 1; }
     });
-    var ymax = 0; for (var y in years) { if (years[y] > ymax) { ymax = years[y]; DATA_YEAR = +y; } }
+    // 业务当前年固定 2026（与 abs_common.py 的 2025→2026 纠错假设一致），"今年/去年"等相对时间词据此解析；
+    // 不再用众数年份猜测——多年份合并后众数未必是 2026，猜测会导致"今年"语义漂移。
+    DATA_YEAR = 2026;
     // candidate strings: full values + 括号去尾 base
     var seen = {};
     ENTITY_FIELDS.forEach(function (f) {
@@ -51,6 +54,12 @@
   }
 
   function countFor(field, values) { var n = 0; values.forEach(function (v) { n += (COUNTS[field].get(v) || 0); }); return n; }
+
+  // ── year parsing（独立于 parseTime 的月份区间逻辑；台账目前覆盖 2024-2026）──
+  function parseYear(q) {
+    var m = q.match(/20(2[4-6])\s*年/);
+    return m ? ('20' + m[1]) : null;
+  }
 
   // ── time parsing ──
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -182,6 +191,8 @@
     var metricExplicit = parseMetric(q);
     var metric = metricExplicit || 'share';
     var filters = matchEntities(q, metric, role);
+    var yearExplicit = parseYear(q);
+    if (yearExplicit) filters.year = [yearExplicit];
     var time = parseTime(q);
     var groupBy = parseGroupBy(q);
     var trend = /增速|趋势|变化|走势|逐月|月度|每月|环比|同比|增长|逐月/.test(q);
@@ -256,6 +267,9 @@
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function condChips(spec) {
     var chips = [];
+    if (spec.filters.year && spec.filters.year.length) {
+      chips.push('<span class="c"><span class="k">年份</span>' + spec.filters.year.join('/') + '年</span>');
+    }
     ENTITY_FIELDS.forEach(function (f) {
       if (spec.filters[f] && spec.filters[f].length) {
         var vals = spec.filters[f]; var show = vals.slice(0, 3).join(' / ') + (vals.length > 3 ? ' 等' + vals.length + '项' : '');
@@ -271,9 +285,10 @@
   }
   function subjectLabel(spec) {
     var parts = [];
+    if (spec.filters.year && spec.filters.year.length) parts.push(spec.filters.year.join('/') + '年');
     ENTITY_FIELDS.forEach(function (f) { if (spec.filters[f] && spec.filters[f].length) parts.push(spec.filters[f].slice(0, 2).join('/')); });
     var subj = parts.join('·');
-    return (subj ? subj : '全部记录') + (spec.timeLabel ? ' ' + spec.timeLabel : '');
+    return (subj ? subj : '全部年份·全部记录') + (spec.timeLabel ? ' ' + spec.timeLabel : '');
   }
 
   function answer(spec) {
@@ -334,15 +349,35 @@
   }
 
   // ── apply to panel ──
+  // 多年份模式下面板按年份拆成独立子 Tab（window.ITL_REG = {2026:inst,2025:inst,2024:inst}）。
+  // 问答语料本身跨年份合并、不受当前 Tab 限制；但"联动面板"这个动作必须落到具体某一年的实例上：
+  //   - 问句里显式指定了唯一年份 → 联动并切换到那一年的子 Tab
+  //   - 未指定年份（跨年汇总问题）→ 联动到当前正打开的那个年份子 Tab，不强行切换
+  function currentActiveYear() {
+    var btn = document.querySelector('.sub-tab-button.active[data-sub^="query_"]');
+    if (btn) return btn.dataset.sub.replace('query_', '');
+    return '2026';
+  }
   function applyToPanel(spec) {
-    if (!window.ITL || !window.ITL.applySpec) return;
     var panelSpec = { filters: {}, dateFrom: spec.dateFrom, dateTo: spec.dateTo, shareMin: spec.shareMin };
     ENTITY_FIELDS.forEach(function (f) { if (spec.filters[f] && spec.filters[f].length && (CHIP_FIELDS.indexOf(f) >= 0 || KW_FIELDS.indexOf(f) >= 0)) panelSpec.filters[f] = spec.filters[f]; });
     if (spec.trend) panelSpec.view = 'detail';
     else if (spec.groupBy && PANEL_DIMS.indexOf(spec.groupBy) >= 0) panelSpec.groupBy = spec.groupBy;
     else panelSpec.view = 'detail';
-    window.ITL.applySpec(panelSpec);
-    if (window.selectModule) { try { window.selectModule('ledger'); } catch (e) { } }
+
+    if (window.ITL_REG) {
+      // 多年份模式
+      var targetYear = (spec.filters.year && spec.filters.year.length === 1) ? spec.filters.year[0] : currentActiveYear();
+      var inst = window.ITL_REG[targetYear];
+      if (!inst) return;
+      inst.applySpec(panelSpec);
+      if (window.selectModule) { try { window.selectModule('ledger'); } catch (e) { } }
+      if (window.selectSub) { try { window.selectSub('query_' + targetYear); } catch (e) { } }
+    } else if (window.ITL && window.ITL.applySpec) {
+      // 单年份独立预览模式（向后兼容）
+      window.ITL.applySpec(panelSpec);
+      if (window.selectModule) { try { window.selectModule('ledger'); } catch (e) { } }
+    }
   }
 
   // ── UI ──
@@ -351,7 +386,8 @@
     '中信证券今年管理规模多少？',
     '交银理财2月份投资多少，都投了什么资产？',
     '平安理财的投资增速变化情况如何？',
-    '按认购机构看今年份额排名前10'
+    '按认购机构看今年份额排名前10',
+    '2024年赊销白条投了多少？'
   ];
 
   function addMsg(role, html) {
@@ -400,7 +436,7 @@
       + '<div class="itlc-body"></div>'
       + '<div class="itlc-foot"><textarea class="itlc-ta" rows="1" placeholder="用大白话问，例如：交银理财今年投了多少？"></textarea>'
       + '<button class="itlc-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button></div>'
-      + '<div class="itlc-hint">支持：机构/管理人/承销商/托管行/资产/评级/分层 · 份额·规模·成本·利差 · 月份/季度 · 排名·分组·增速</div>';
+      + '<div class="itlc-hint">支持：机构/管理人/承销商/托管行/资产/评级/分层/年份(2024-2026) · 份额·规模·成本·利差 · 月份/季度 · 排名·分组·增速 · 跨年份问答不受当前 Tab 限制</div>';
     document.body.appendChild(elPanel);
 
     elBody = elPanel.querySelector('.itlc-body');
@@ -415,7 +451,12 @@
     elTa.addEventListener('input', function () { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 90) + 'px'; });
     elBody.addEventListener('click', function (e) {
       var qb = e.target.closest('[data-itlc-q]'); if (qb) { handle(qb.getAttribute('data-itlc-q')); return; }
-      var lk = e.target.closest('[data-itlc]'); if (lk && lk.getAttribute('data-itlc') === 'clear' && window.ITL && window.ITL.applySpec) { window.ITL.applySpec({ filters: {} }); addMsg('bot', '已清空面板筛选。'); }
+      var lk = e.target.closest('[data-itlc]');
+      if (lk && lk.getAttribute('data-itlc') === 'clear') {
+        if (window.ITL_REG) { var inst = window.ITL_REG[currentActiveYear()]; if (inst) inst.applySpec({ filters: {} }); }
+        else if (window.ITL && window.ITL.applySpec) { window.ITL.applySpec({ filters: {} }); }
+        addMsg('bot', '已清空面板筛选。');
+      }
     });
   }
 
