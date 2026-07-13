@@ -56,9 +56,21 @@
   function countFor(field, values) { var n = 0; values.forEach(function (v) { n += (COUNTS[field].get(v) || 0); }); return n; }
 
   // ── year parsing（独立于 parseTime 的月份区间逻辑；台账目前覆盖 2024-2026）──
-  function parseYear(q) {
-    var m = q.match(/20(2[4-6])\s*年/);
-    return m ? ('20' + m[1]) : null;
+  // 支持单年("2024年")、范围("2024-2026年"/"2024到2026年"/"2024至2026年"/"2024~2026年")、
+  // 列举("2024年和2026年"/"2024年、2025年")，统一返回年份字符串数组（升序去重）。
+  function parseYears(q) {
+    var range = q.match(/20(2[4-6])\s*(?:-|~|－|到|至)\s*20(2[4-6])\s*年/);
+    if (range) {
+      var y1 = 2000 + (+range[1]), y2 = 2000 + (+range[2]);
+      if (y1 > y2) { var t = y1; y1 = y2; y2 = t; }
+      var out = [];
+      for (var y = y1; y <= y2; y++) out.push(String(y));
+      return out;
+    }
+    var re = /20(2[4-6])\s*年/g, m, years = [];
+    while ((m = re.exec(q))) { var yy = '20' + m[1]; if (years.indexOf(yy) < 0) years.push(yy); }
+    years.sort();
+    return years;
   }
 
   // ── time parsing ──
@@ -191,10 +203,13 @@
     var metricExplicit = parseMetric(q);
     var metric = metricExplicit || 'share';
     var filters = matchEntities(q, metric, role);
-    var yearExplicit = parseYear(q);
-    if (yearExplicit) filters.year = [yearExplicit];
+    var yearsExplicit = parseYears(q);
+    if (yearsExplicit.length) filters.year = yearsExplicit;
     var time = parseTime(q);
     var groupBy = parseGroupBy(q);
+    // 句中提到 2 个及以上年份（"2024-2026年"/"2024年和2026年"等）→ 默认按年份分组对比，
+    // 不要求必须出现"分别"二字；若已显式识别出其它分组维度(如"按资产类型")则以那个为准。
+    if (!groupBy && filters.year && filters.year.length >= 2) groupBy = 'year';
     var trend = /增速|趋势|变化|走势|逐月|月度|每月|环比|同比|增长|逐月/.test(q);
     var topM = q.match(/前\s*(\d+)|top\s*(\d+)/i);
     var topN = topM ? (+(topM[1] || topM[2])) : (/最多|排名|排行/.test(q) ? 10 : null);
@@ -326,7 +341,21 @@
     html = '<div style="margin-bottom:2px">' + lead + '</div>' + html + '<div style="font-size:11px;color:#96a1b0;margin-top:2px">' + extra + '</div>';
     html += condChips(spec);
 
-    if (spec.groupBy) {
+    if (spec.groupBy === 'year') {
+      // 跨年份对比：按年份升序展示（不按数值排序），附同比增长，呼应"分别/对比"的提问意图
+      var gm2 = spec.metric;
+      var ga2 = groupAgg(recs, 'year', gm2).sort(function (a, b) { return a.key.localeCompare(b.key); });
+      var maxv3 = Math.max.apply(null, ga2.map(function (g) { return g.val || 0; }).concat([0.0001]));
+      html += '<table class="itlc-tbl"><thead><tr><th>年份</th><th class="r">' + METRIC_LABEL[gm2] + (METRIC_UNIT[gm2] ? '(' + METRIC_UNIT[gm2] + ')' : '') + '</th><th></th><th class="r">同比</th></tr></thead><tbody>';
+      ga2.forEach(function (g, i) {
+        var yoy = '—', cls = 'flat';
+        if (i > 0 && ga2[i - 1].val) { var gr = (g.val - ga2[i - 1].val) / ga2[i - 1].val; yoy = (gr >= 0 ? '+' : '') + (gr * 100).toFixed(1) + '%'; cls = gr > 0.001 ? 'up' : (gr < -0.001 ? 'down' : 'flat'); }
+        html += '<tr><td class="name">' + esc(g.key) + '年</td><td class="r v">' + fmt(g.val, gm2) + '</td>'
+          + '<td class="itlc-bar-cell"><div class="itlc-mini-bar"><i style="width:' + ((g.val || 0) / maxv3 * 100).toFixed(0) + '%"></i></div></td>'
+          + '<td class="r ' + cls + '">' + yoy + '</td></tr>';
+      });
+      html += '</tbody></table>';
+    } else if (spec.groupBy) {
       var dim = spec.groupBy;
       var gm = spec.metric;   // 分组聚合直接用所问指标（项目数/笔数/成本…都按组内算，不再偷换成份额）
       var ga = groupAgg(recs, dim, gm);
@@ -387,7 +416,7 @@
     '交银理财2月份投资多少，都投了什么资产？',
     '平安理财的投资增速变化情况如何？',
     '按认购机构看今年份额排名前10',
-    '2024年赊销白条投了多少？'
+    '交银理财2024-2026年分别投资规模多少？'
   ];
 
   function addMsg(role, html) {
@@ -436,7 +465,7 @@
       + '<div class="itlc-body"></div>'
       + '<div class="itlc-foot"><textarea class="itlc-ta" rows="1" placeholder="用大白话问，例如：交银理财今年投了多少？"></textarea>'
       + '<button class="itlc-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button></div>'
-      + '<div class="itlc-hint">支持：机构/管理人/承销商/托管行/资产/评级/分层/年份(2024-2026) · 份额·规模·成本·利差 · 月份/季度 · 排名·分组·增速 · 跨年份问答不受当前 Tab 限制</div>';
+      + '<div class="itlc-hint">支持：机构/管理人/承销商/托管行/资产/评级/分层/年份(2024-2026，支持范围与对比) · 份额·规模·成本·利差 · 月份/季度 · 排名·分组·增速 · 跨年份问答不受当前 Tab 限制</div>';
     document.body.appendChild(elPanel);
 
     elBody = elPanel.querySelector('.itlc-body');
