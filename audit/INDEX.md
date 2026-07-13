@@ -5,11 +5,11 @@
 
 ## 统计概览
 
-- 送审轮次(submissions):6
-- 复审轮次(reviews):5(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档;v24-self-check r1 APPROVED_WITH_CONDITIONS 已归档;v25-match-rule-tune r1 APPROVED_WITH_CONDITIONS 已归档)
+- 送审轮次(submissions):7
+- 复审轮次(reviews):6(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档;v24-self-check r1 APPROVED_WITH_CONDITIONS 已归档;v25-match-rule-tune r1 APPROVED_WITH_CONDITIONS 已归档;v26-uv-protection r1 NEEDS_REVISION)
 - 归档(closed):6(v20-institution-stats r1 + v21-bookkeeping r1 + v22-pricing r1 + v23-internal-merge-unify r1 + v24-self-check r1 + v25-match-rule-tune r1 均已归档)
 - 已验证 Issue:0
-- 待处理 Issue:0(v25-match-rule-tune r1 一项 WARNING + 一项 INFO 由 C1 留档关闭;技术债 #ABS-002 已在 v23 闭环;延期验证项:auto 自动降级分支留原 skill 退役时实测 + Pass4 阈值/hard_map 业务观察 1-2 周)
+- 待处理 Issue:3(v26-uv-protection r1:1 CRITICAL FAIL阻断无效 + 1 WARNING changed_files遗漏 + 1 WARNING rebook行号对齐)
 
 ## Submissions
 
@@ -21,6 +21,7 @@
 | v23-internal-merge-unify | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.3-v23-internal-merge-unify-r01`(✅已双推) | `1ef0612` | [A1-v23-internal-merge-unify-r1.md](submissions/A1-v23-internal-merge-unify-r1.md) |
 | v24-self-check | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.4-v24-self-check-r01`(✅已双推) | `31f716f` | [A1-v24-self-check-r1.md](submissions/A1-v24-self-check-r1.md) |
 | v25-match-rule-tune | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.5-v25-match-rule-tune-r01`(✅已双推) | `ae1907e` | [A1-v25-match-rule-tune-r1.md](submissions/A1-v25-match-rule-tune-r1.md) |
+| v26-uv-protection | r1 | NEEDS_REVISION | ✅ 4/4 | 2026-07-13 | `audit/v2.5.1-v26-uv-protection-r01`(✅已双推) | `1ad1a89` | [A1-v26-uv-protection-r1.md](submissions/A1-v26-uv-protection-r1.md) |
 
 ## Reviews
 
@@ -31,6 +32,7 @@
 | v23-internal-merge-unify | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 4(3 WARNING + 1 INFO,全部 DOC_CONSISTENCY/FUNCTION_EQUIVALENCE,均无害不阻断,待 C 留档) | 2026-07-05 | [B1-v23-internal-merge-unify-r1.md](reviews/B1-v23-internal-merge-unify-r1.md) |
 | v24-self-check | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 4(3 WARNING + 1 INFO,全部 DOC_CONSISTENCY/MAINTAINABILITY,均无害不阻断,待 C 留档) | 2026-07-05 | [B1-v24-self-check-r1.md](reviews/B1-v24-self-check-r1.md) |
 | v25-match-rule-tune | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 2(1 WARNING DOC_CONSISTENCY + 1 INFO FUNCTION_EQUIVALENCE,均无害不阻断,待 C 留档) | 2026-07-05 | [B1-v25-match-rule-tune-r1.md](reviews/B1-v25-match-rule-tune-r1.md) |
+| v26-uv-protection | r1 | REVIEWED / NEEDS_REVISION | 3(1 CRITICAL FAIL阻断无效 blocks_approval + 1 WARNING changed_files遗漏 + 1 WARNING rebook行号对齐) | 2026-07-13 | [B1-v26-uv-protection-r1.md](reviews/B1-v26-uv-protection-r1.md) |
 
 > 注:v20 r1 已通过用户委托的独立审计(4 瑕疵已修正),审计意见未走正式 B 流程,直接待 Agent C 归档。
 

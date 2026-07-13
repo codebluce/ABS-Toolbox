@@ -87,6 +87,21 @@
       ],
       "closed": "C1-v25-match-rule-tune-r1",
       "notes": "v2.5.0 第六轮。已归档(C1-v25-match-rule-tune-r1)。基于 0703 台账实测发现 2 个匹配失败 case,5 处改造:normalize 去 -//／ + 修复全角空格 bug + 新增 core_name() + 新增 MATCH_HARD_MAP + Pass 1-4 优先级链 + rebook 默认模式。Agent B 独立复核完成:5 处改动经 git show ae1907e 逐行核查全部真实,优先级链守卫顺序正确,rebook 向后兼容;6 层自检层1/6 读代码确认、层2-5 采信 A 输出(v20-v24 惯例);§5 污染文件声明与实际一致(commit 仅 4 文件,较 v22/v23/v24 洁净性显著改善)。2 项 Issue(REV-01 changed_files 口径 + REV-02 阈值观察)均 blocks_approval=false,由 C1 留档关闭。延期观察:Pass4 len>=3 阈值与 MATCH_HARD_MAP 业务观察 1-2 周,发现新难匹配 case 再扩展。"
+    },
+    "v26-uv-protection": {
+      "skill_version": "v2.5.1",
+      "current_round": 1,
+      "status": "NEEDS_REVISION",
+      "verdict": "NEEDS_REVISION",
+      "next_action": "agent_a_fix",
+      "submissions": [
+        "A1-v26-uv-protection-r1"
+      ],
+      "reviews": [
+        "B1-v26-uv-protection-r1"
+      ],
+      "closed": null,
+      "notes": "v2.5.1 第七轮。B 审计完成:QC 7.20 UV 列值保护逻辑正确+端到端 PASS,但 QC FAIL 阻断无效(wb_a.save 在 QC 之前执行,FAIL 时文件已保存)。1 CRITICAL REV-01(FAIL阻断无效 blocks_approval=true)+ 2 WARNING(REV-02 changed_files遗漏 + REV-03 rebook行号对齐风险)。需 A 修复:把 save 移到 QC 之后。"
     }
   },
   "issues": [
