@@ -57,7 +57,9 @@
 
   // ── year parsing（独立于 parseTime 的月份区间逻辑；台账目前覆盖 2024-2026）──
   // 支持单年("2024年")、范围("2024-2026年"/"2024到2026年"/"2024至2026年"/"2024~2026年")、
-  // 列举("2024年和2026年"/"2024年、2025年")，统一返回年份字符串数组（升序去重）。
+  // 列举("2024年和2026年"/"2024年、2025年")、相对年份("去年"/"前年")，
+  // 统一返回年份字符串数组（升序去重）。这是年份解析的唯一入口——parseTime 不再自行判断
+  // "去年"，一律吃这里解析好的结果，避免两处逻辑各自为政、口径漂移。
   function parseYears(q) {
     var range = q.match(/20(2[4-6])\s*(?:-|~|－|到|至)\s*20(2[4-6])\s*年/);
     if (range) {
@@ -67,7 +69,10 @@
       for (var y = y1; y <= y2; y++) out.push(String(y));
       return out;
     }
-    var re = /20(2[4-6])\s*年/g, m, years = [];
+    var years = [];
+    if (/前年/.test(q)) years.push(String(DATA_YEAR - 2));
+    if (/去年/.test(q)) years.push(String(DATA_YEAR - 1));
+    var re = /20(2[4-6])\s*年/g, m;
     while ((m = re.exec(q))) { var yy = '20' + m[1]; if (years.indexOf(yy) < 0) years.push(yy); }
     years.sort();
     return years;
@@ -82,27 +87,49 @@
     var cm = q.match(/([一二两三四五六七八九十]+)\s*月/); if (cm && CN_NUM[cm[1]]) return CN_NUM[cm[1]];
     return null;
   }
-  function parseTime(q) {
-    var y = DATA_YEAR;
-    if (/去年/.test(q)) y = DATA_YEAR - 1;
+  // years: parseYears(q) 的结果（可能为空数组）。年份的唯一权威来源是 parseYears——
+  // 这里不再自行判断"去年"等相对年份，只负责"给定年份语境下，句中月份/季度等区间怎么解"。
+  //   - years.length === 1：月份/季度/半年区间锚定在这一年（而不是硬编码当前业务年），
+  //     修复"2025年3月"这类年月组合被强行拼成 2026-03 导致查询恒为空的问题。
+  //   - years.length >= 2：句中若只带了裸月份（如"3月"，无法归到某一个具体年份），
+  //     退化为按"月份分量"过滤（monthOnly），不生成单一日期区间——否则会被强行摊到
+  //     某一年而丢失另外几年的数据。
+  function parseTime(q, years) {
+    var y = (years && years.length === 1) ? +years[0] : DATA_YEAR;
+    var yLabel = (y !== DATA_YEAR) ? (y + '年') : '';
+    var multiYear = years && years.length >= 2;
     var rng = q.match(/(\d{1,2})\s*月.*?(?:到|至|-|~|—)\s*(\d{1,2})\s*月/);
     if (rng) {
       var m1 = +rng[1], m2 = +rng[2];
       if (m1 > m2) { var tmp = m1; m1 = m2; m2 = tmp; }   // 反序区间自动交换
-      var r = monthRange(y, m1, m2); r.label = m1 + '–' + m2 + '月'; return r;
+      if (multiYear) return { monthFrom: pad(m1), monthTo: pad(m2), label: m1 + '–' + m2 + '月（各年）' };
+      var r = monthRange(y, m1, m2); r.label = yLabel + m1 + '–' + m2 + '月'; return r;
     }
     var qtr = q.match(/(?:第)?\s*([一二三四1-4])\s*季度/) || (/(Q[1-4])/i.test(q) ? [null, q.match(/Q([1-4])/i)[1]] : null);
-    if (qtr) { var qn = CN_NUM[qtr[1]] || +qtr[1]; var r2 = monthRange(y, qn * 3 - 2, qn * 3); r2.label = qn + '季度'; return r2; }
-    if (/上半年/.test(q)) { var a = monthRange(y, 1, 6); a.label = '上半年'; return a; }
-    if (/下半年/.test(q)) { var b = monthRange(y, 7, 12); b.label = '下半年'; return b; }
+    if (qtr) {
+      var qn = CN_NUM[qtr[1]] || +qtr[1];
+      if (multiYear) return { monthFrom: pad(qn * 3 - 2), monthTo: pad(qn * 3), label: qn + '季度（各年）' };
+      var r2 = monthRange(y, qn * 3 - 2, qn * 3); r2.label = yLabel + qn + '季度'; return r2;
+    }
+    if (/上半年/.test(q)) {
+      if (multiYear) return { monthFrom: '01', monthTo: '06', label: '上半年（各年）' };
+      var a = monthRange(y, 1, 6); a.label = yLabel + '上半年'; return a;
+    }
+    if (/下半年/.test(q)) {
+      if (multiYear) return { monthFrom: '07', monthTo: '12', label: '下半年（各年）' };
+      var b = monthRange(y, 7, 12); b.label = yLabel + '下半年'; return b;
+    }
     var rec = q.match(/(?:最近|近)\s*(\d+)\s*个?月/);
     if (rec) {
       var maxd = DATA.reduce(function (mx, r) { return (r.date && r.date > mx) ? r.date : mx; }, '');
       if (maxd) { var d = new Date(maxd); var from = new Date(d.getFullYear(), d.getMonth() - (+rec[1]) + 1, 1); return { from: from.getFullYear() + '-' + pad(from.getMonth() + 1) + '-01', to: maxd, label: '近' + rec[1] + '个月' }; }
     }
     var mo = parseMonthToken(q);
-    if (mo) { var r3 = monthRange(y, mo, mo); r3.label = (y !== DATA_YEAR ? '去年' : '') + mo + '月'; return r3; }
-    if (/今年|本年|全年/.test(q)) { return { from: y + '-01-01', to: y + '-12-31', label: '今年' }; }
+    if (mo) {
+      if (multiYear) return { monthOnly: pad(mo), label: mo + '月（各年）' };
+      var r3 = monthRange(y, mo, mo); r3.label = yLabel + mo + '月'; return r3;
+    }
+    if (/今年|本年|全年/.test(q)) { return { from: y + '-01-01', to: y + '-12-31', label: yLabel || '今年' }; }
     return null;
   }
 
@@ -111,11 +138,13 @@
   var UNSUPPORTED_METRIC = /倍数|收益率|久期|余额|净值|回报/;
 
   function parseMetric(q) {
+    // 计数类问法（多少笔/几笔/多少个项目…）优先于成本/利差——避免"成本高于2%的有多少笔"
+    // 这类"筛选条件里带成本词、但真正问的是计数"的句子被 cost 抢先命中、答非所问。
+    if (/笔数|多少笔|几笔|记录数|多少条|几条/.test(q)) return 'count';
+    if (/项目数|几个项目|多少个项目|多少只|几只|多少个产品/.test(q)) return 'proj';
     if (/利差/.test(q)) return 'spread';
     if (/成本|利率|定价|价格/.test(q)) return 'cost';
     if (/规模|存量/.test(q)) return 'share';   // 规模类提问统一按认购份额V口径回答（见顶部注释）
-    if (/笔数|多少笔|几笔|记录数|多少条|几条/.test(q)) return 'count';
-    if (/项目数|几个项目|多少个项目|多少只|几只|多少个产品/.test(q)) return 'proj';
     if (/份额|投资|认购|申购|买了|买入|持有|投了|投多少|参与/.test(q)) return 'share';
     return null;
   }
@@ -198,6 +227,10 @@
   }
 
   // ── build spec ──
+  function hasEntityFilters(filters) {
+    return ENTITY_FIELDS.some(function (f) { return filters[f] && filters[f].length; });
+  }
+
   function parse(q) {
     var role = roleHint(q);
     var metricExplicit = parseMetric(q);
@@ -205,35 +238,48 @@
     var filters = matchEntities(q, metric, role);
     var yearsExplicit = parseYears(q);
     if (yearsExplicit.length) filters.year = yearsExplicit;
-    var time = parseTime(q);
-    var groupBy = parseGroupBy(q);
-    // 句中提到 2 个及以上年份（"2024-2026年"/"2024年和2026年"等）→ 默认按年份分组对比，
-    // 不要求必须出现"分别"二字；若已显式识别出其它分组维度(如"按资产类型")则以那个为准。
-    if (!groupBy && filters.year && filters.year.length >= 2) groupBy = 'year';
+    var time = parseTime(q, yearsExplicit);
+    var explicitGroupBy = parseGroupBy(q);
+    var groupBy = explicitGroupBy;
     var trend = /增速|趋势|变化|走势|逐月|月度|每月|环比|同比|增长|逐月/.test(q);
     var topM = q.match(/前\s*(\d+)|top\s*(\d+)/i);
     var topN = topM ? (+(topM[1] || topM[2])) : (/最多|排名|排行/.test(q) ? 10 : null);
     var threshM = q.match(/(?:超过|大于|高于|>=?)\s*(\d+(?:\.\d+)?)\s*亿/);
 
-    var hasFilter = Object.keys(filters).length > 0;
-    // 只有出现「显式追问线索」才继承上一次筛选：那…呢 / 再看 / 换成 / 接着 / 呢结尾 等。
+    // 继承判定只看"是否有实体条件"（机构/管理人/资产…），不把"年份"算作实体——
+    // 否则"那2024年呢"这类只换年份的追问，会因为自带 filters.year 被误判成"已有完整条件"，
+    // 不触发继承，白白丢失上一句的机构/资产等条件，答成了"2024年全库"这种确定但错误的数字。
+    var hasEntity = hasEntityFilters(filters);
+    var hasYear = !!(filters.year && filters.year.length);
+    var hasFilter = hasEntity || hasYear;
+    // 只有出现「显式追问线索」才继承：那…呢 / 再看 / 换成 / 接着 / 呢结尾 等。
     // 不靠「有指标/时间」推断继承——否则「今年一共认购了多少」这类独立总量问句会误继承上一句实体。
     var followupCue = /(那|再[看算查]|换成|改成|接着|同样|刚才|上面)/.test(q) || /呢[？?]*$/.test(q);
-    var lastHas = lastSpec && Object.keys(lastSpec.filters).length > 0;
+    var lastHasEntity = lastSpec && hasEntityFilters(lastSpec.filters);
     var inherited = false;
-    if (!hasFilter && lastHas && followupCue) {
-      filters = JSON.parse(JSON.stringify(lastSpec.filters));
+    if (!hasEntity && lastHasEntity && followupCue) {
+      var mergedFilters = JSON.parse(JSON.stringify(lastSpec.filters));
+      if (hasYear) mergedFilters.year = filters.year;   // 本句若带了新年份，年份以本句为准（替换而非合并）
+      filters = mergedFilters;
       if (!time) time = lastSpec.time || null;
       if (!metricExplicit) metric = lastSpec.metric;
       inherited = true;
     }
-    // 完全无法识别（无实体/指标/时间/意图，且未继承）→ 交给上层给出「没听懂」提示，不硬算数字
+    // 句中提到 2 个及以上年份（"2024-2026年"/"2024年和2026年"/继承来的多年份等）
+    // → 默认按年份分组对比，不要求必须出现"分别"二字；若句中已显式给出其它分组维度
+    // （如"按资产类型"）则以那个为准。放在继承之后判断，确保"继承来的多年份"也能触发。
+    if (!groupBy && filters.year && filters.year.length >= 2) groupBy = 'year';
+
+    // 完全无法识别（无实体/年份/指标/时间/意图，且未继承）→ 交给上层给出「没听懂」提示，不硬算数字
     var recognized = hasFilter || inherited || !!groupBy || !!topN || !!metricExplicit || !!time || trend;
 
     var spec = {
       raw: q, filters: filters, metric: metric, recognized: recognized, inherited: inherited,
       unsupported: (UNSUPPORTED_METRIC.test(q) ? q.match(UNSUPPORTED_METRIC)[0] : null),
-      dateFrom: time ? time.from : '', dateTo: time ? time.to : '',
+      dateFrom: time ? (time.from || '') : '', dateTo: time ? (time.to || '') : '',
+      monthOnly: time ? (time.monthOnly || null) : null,
+      monthFrom: time ? (time.monthFrom || null) : null,
+      monthTo: time ? (time.monthTo || null) : null,
       time: time, timeLabel: time ? time.label : '',
       groupBy: groupBy, trend: trend, topN: topN,
       shareMin: threshM ? +threshM[1] : null
@@ -248,6 +294,9 @@
       for (var k in f) { if (f[k] && f[k].length && f[k].indexOf(r[k]) < 0) return false; }
       if (spec.dateFrom && (!r.date || r.date < spec.dateFrom)) return false;
       if (spec.dateTo && (!r.date || r.date > spec.dateTo)) return false;
+      // 多年份+裸月份/季度场景：按"月份分量"过滤（不区分年份），见 parseTime 的 multiYear 分支
+      if (spec.monthOnly) { if (!r.date || r.date.slice(5, 7) !== spec.monthOnly) return false; }
+      if (spec.monthFrom && spec.monthTo) { var mm = r.date ? r.date.slice(5, 7) : null; if (!mm || mm < spec.monthFrom || mm > spec.monthTo) return false; }
       if (spec.shareMin != null && (r.share == null || r.share < spec.shareMin)) return false;
       return true;
     });
