@@ -23,10 +23,15 @@
 
 ### 修复
 
-- **QC FAIL 阻断执行**（#ABS-003 修复）:
+- **QC FAIL 阻断执行**（#ABS-003 修复 + REV-01 r1 修复）:
   - `run_enhanced_qc` 返回 `(qc_fails, qc_warns)` 后，`run_increment_merge` 检查 `qc_fails > 0`
-  - FAIL 时不保存输出文件，直接 return，打印 `[BLOCKED]` 提示
-  - 之前：QC FAIL 后仍保存文件（只打印警告不阻断）
+  - FAIL 时删除临时文件，不生成 output，直接 return，打印 `[BLOCKED]` 提示
+  - r1 修复: save 从 QC 前移到临时文件，QC PASS 后 rename 到 output_path，FAIL 时删除临时文件
+  - 之前：QC FAIL 后仍保存文件（save 在 QC 前，return 只跳过打印）
+
+- **QC 7.20 行号对齐**（REV-03 r1 修复）:
+  - rebook 模式删除行后 ws_orig_protected 和 ws_out 行号不对齐
+  - 改用 (项目名, 分层, 机构) 做匹配键，不再用行号直接对比
 
 ### 踩坑
 

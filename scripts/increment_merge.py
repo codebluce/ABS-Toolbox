@@ -763,33 +763,58 @@ def run_enhanced_qc(ws_out, ws_orig_protected, set_a, supplemented_keys,
     # --- QC 7.20: UV column value preservation (#ABS-003) ---
     # 对比 processed 和 output 的 U/V 列值，非目标项目的 U/V 值变化是 FAIL
     # 目标项目（supplement/rebook 的目标）的 U/V 可能被 rebook 清空，这是允许的
+    # v2.5.1 REV-03 修复: rebook 删除行后行号不对齐，改用 (项目名+分层+机构) 做匹配键
     print("\n=== QC 7.20: UV column value preservation ===")
     uv_violations = []
     if ws_orig_protected:
-        # 构建 target_project_rows 集合（目标项目的行号范围）
-        target_rows = set()
-        for key, pstart, pend in target_projects:
-            for r in range(pstart, pend + 1):
-                target_rows.add(r)
+        # 构建目标项目名称集合（用项目名做豁免，不用行号）
+        target_project_names = set(key for key, _, _ in target_projects)
 
-        # 对比所有行的 U/V 值
-        max_r = max(ws_orig_protected.max_row, ws_out.max_row)
-        for r in range(2, max_r + 1):
-            if r in target_rows:
-                continue  # 目标项目的 U/V 允许变化
-            u_orig = ws_orig_protected.cell(row=r, column=21).value
-            v_orig = ws_orig_protected.cell(row=r, column=22).value
-            u_out = ws_out.cell(row=r, column=21).value
-            v_out = ws_out.cell(row=r, column=22).value
-            # 值变化检测（None vs 值 也算变化）
-            if u_orig != u_out or v_orig != v_out:
-                uv_violations.append((r, u_orig, v_orig, u_out, v_out))
+        # 从 processed 台账提取所有非目标项目的 (项目名, 分层, 机构) -> (U, V) 映射
+        orig_uv_map = {}  # key: (项目名, 分层, 机构) -> (U, V)
+        orig_projects = get_all_projects(ws_orig_protected)
+        for proj_name, pstart, pend in orig_projects:
+            if proj_name in target_project_names:
+                continue  # 目标项目豁免
+            for r in range(pstart, pend + 1):
+                u = ws_orig_protected.cell(row=r, column=21).value
+                v = ws_orig_protected.cell(row=r, column=22).value
+                layer = ws_orig_protected.cell(row=r, column=16).value
+                if u is not None:
+                    key = (proj_name, str(layer) if layer else '', str(u).strip())
+                    orig_uv_map[key] = (u, v)
+
+        # 从 output 台账提取同样的映射，对比
+        out_projects = get_all_projects(ws_out)
+        out_uv_keys = set()
+        for proj_name, pstart, pend in out_projects:
+            if proj_name in target_project_names:
+                continue  # 目标项目豁免
+            for r in range(pstart, pend + 1):
+                u = ws_out.cell(row=r, column=21).value
+                v = ws_out.cell(row=r, column=22).value
+                layer = ws_out.cell(row=r, column=16).value
+                if u is not None:
+                    key = (proj_name, str(layer) if layer else '', str(u).strip())
+                    out_uv_keys.add(key)
+                    # 检查 V 值是否变化
+                    if key in orig_uv_map:
+                        orig_v = orig_uv_map[key][1]
+                        if v != orig_v:
+                            uv_violations.append((proj_name, layer, u, orig_v, v))
+
+        # 检查 orig 中有但 output 中没有的 (U/V 丢失)
+        lost_keys = set(orig_uv_map.keys()) - out_uv_keys
+        for key in lost_keys:
+            proj, layer, inst = key
+            u, v = orig_uv_map[key]
+            uv_violations.append((proj, layer, inst, v, None))
 
     if uv_violations:
         qc_fails += 1
-        print(f"  FAIL: {len(uv_violations)} rows have UV column value changes (non-target projects)")
-        for r, uo, vo, un, vn in uv_violations[:10]:
-            print(f"    Row{r}: U '{uo}' -> '{un}', V '{vo}' -> '{vn}'")
+        print(f"  FAIL: {len(uv_violations)} UV mismatches (non-target projects)")
+        for proj, layer, inst, vo, vn in uv_violations[:10]:
+            print(f"    {proj}/{layer}/{inst}: V '{vo}' -> '{vn}'")
         if len(uv_violations) > 10:
             print(f"    ... and {len(uv_violations) - 10} more")
     else:
@@ -1269,11 +1294,16 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
             if cell.value is None:
                 cell.value = title
 
-    wb_a.save(output_path)
-    print(f"\nSaved: {output_path}")
+    # v2.5.1: 先保存到临时文件，QC PASS 后 rename 到 output_path
+    # 这样 QC FAIL 时不会留下错误文件（REV-01 修复）
+    import tempfile
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix='.xlsx', dir=os.path.dirname(output_path))
+    os.close(tmp_fd)
+    wb_a.save(tmp_path)
+    print(f"\nSaved (temp): {tmp_path}")
 
     # === QC ===
-    wb_out = openpyxl.load_workbook(output_path, data_only=False)
+    wb_out = openpyxl.load_workbook(tmp_path, data_only=False)
     ws_out = wb_out.active
 
     # QC 7.1: Target project bookkeeping completeness
@@ -1357,13 +1387,20 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
                     target_projects, dmap, detail_map_results,
                     detail_layers_available, detail_layers_used)
 
-    # v2.5.1: QC FAIL 阻断——不保存输出文件，直接退出
+    # v2.5.1: QC FAIL 阻断——删除临时文件，不生成 output，直接退出
     if qc_fails > 0:
+        os.remove(tmp_path)
         print("\n" + "=" * 60)
         print(f"[BLOCKED] {mode_label} aborted due to {qc_fails} QC FAIL(s).")
-        print(f"[BLOCKED] Output file NOT saved. Fix the issues above and re-run.")
+        print(f"[BLOCKED] Output file NOT saved. Temp file deleted. Fix the issues above and re-run.")
         print("=" * 60)
         return
+
+    # QC PASS: rename 临时文件到 output_path
+    if os.path.exists(output_path):
+        os.remove(output_path)
+    os.rename(tmp_path, output_path)
+    print(f"\nSaved: {output_path}")
 
     print("\n" + "=" * 60)
     print(f"{mode_label} complete.")

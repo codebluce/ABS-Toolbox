@@ -92,6 +92,7 @@ if qc_fails > 0:
 | `scripts/increment_merge.py` | +35 行（QC 7.20 + FAIL 阻断） |
 | `pitfall_log.md` | +18 行（#ABS-003） |
 | `CHANGELOG.md` | +25 行（v2.5.1 段） |
+| `audit/submissions/A1-v26-uv-protection-r1.md` | +127 行（送审报告自身，惯例入 commit） |
 
 ## 4. 自检
 
