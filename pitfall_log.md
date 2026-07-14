@@ -102,6 +102,23 @@
 
 ---
 
+### #ABS-004 — r1 修复引入回归（QC 7.20 崩溃 + 误报）
+
+- **日期**:2026-07-14
+- **严重度**:★★★（回归 bug，阻断正常录入）
+- **现象**:用 0706 台账走正规 `--new-raw` 模式录入东裕4号仲裕（续发）时，QC 7.20 崩溃 `ValueError: too many values to unpack (expected 3)`；修复崩溃后又误报 `东裕3-10/优先A/交银理财 V '0.25' -> '2.7'` FAIL，阻断 output 生成。
+- **根因**（v2.5.1 r1 修复 REV-03 引入两个 bug）:
+  1. **dict 遍历错误**:`get_all_projects()` 返回 dict `{name:{'start','end'}}`，但 r1 代码写成 `for proj_name, pstart, pend in orig_projects`（误以为是三元组列表）。遍历 dict 按字符拆解项目名 → unpack 错误。
+  2. **匹配键不唯一**:`(项目名,分层,机构)` 作为 dict key 时，同机构多笔认购（合法，如东裕3-10/优先A 交银理财有 V=2.7 和 V=0.25 两行）会 key 冲突，dict 只留最后一个 V。out 遍历时每行都和"最后 V"对比，非最后一行必然不等 → 误报 FAIL。
+- **修复**（v2.5.2 r2）:
+  1. ✅ dict 遍历改用 `.items()`，`pstart, pend = info['start'], info['end']`
+  2. ✅ 改用 `Counter` 多重集对比 `(项目名,分层,机构,V)`：同机构多笔认购在 multiset 里是不同元素各自计数，orig/out 一致即 PASS；真正的篡改/丢失才 FAIL
+- **验证**:0706 台账增量合并 + 东裕4号续发簿记录入，QC 7.1/7.2/7.3/7.20 全 PASS，Fails=0
+- **教训**:r1 修复必须用真实台账端到端跑通，不能只看代码逻辑。REV-03 改匹配键方案时未测试同机构多笔认购场景。
+- **追踪**:CHANGELOG v2.5.2 段
+
+---
+
 ## E. v2.0.0 第一轮已知风险
 
 1. **22 列原始台账兼容性**:删 `preprocess_unmerge_fill` 改用 abs_common 后,22 列台账(无 WXY 列)兼容性需端到端验证(Step 6)

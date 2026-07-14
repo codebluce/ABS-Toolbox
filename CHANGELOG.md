@@ -12,6 +12,46 @@
 
 ---
 
+## v2.5.2 — 2026-07-14 QC 7.20 r2 修复（r1 回归）
+
+### 修复
+
+- **QC 7.20 dict 遍历崩溃**（r1 回归 #ABS-004）:
+  - r1 修复 REV-03 改用 (项目名,分层,机构) 匹配键时,误写 `for proj_name, pstart, pend in orig_projects`
+  - 但 `get_all_projects()` 返回 dict `{name:{'start','end'}}`,不是三元组列表
+  - 遍历 dict 按字符拆解项目名 → `ValueError: too many values to unpack (expected 3)`
+  - 修复:改用 `.items()` 遍历,`pstart, pend = info['start'], info['end']`
+
+- **QC 7.20 匹配键不唯一导致误报**（r1 回归 #ABS-004）:
+  - (项目名,分层,机构) 作为 dict key 时,同机构多笔认购(合法)会 key 冲突
+  - 实测:东裕3-10/优先A 交银理财有 V=2.7 和 V=0.25 两行,dict 只留最后一个(0.25)
+  - out 遍历时每行都和"最后 V"对比,Row 的 V=2.7 ≠ 0.25 → 误报 FAIL,阻断正常录入
+  - 修复:改用 `Counter` 多重集对比 (项目名,分层,机构,V)
+  - 同机构多笔认购在 multiset 里是不同元素各自计数,orig/out 一致即 PASS
+  - 真正的篡改/丢失(如 #ABS-003 场景)才 FAIL
+
+### 验证（0706 台账增量合并 + 东裕4号仲裕续发簿记录入）
+
+| QC | 结果 |
+|---|---|
+| 7.1 目标金额 | WXY_Y=21.9 = detail 21.9, diff=0.000 PASS |
+| 7.2 非目标 WXY 保留 | 114 项目全保留 PASS |
+| 7.3 目标项目存在 | 东裕4号续发 rows 1900-1920 OK |
+| 7.20 非目标 UV 保留 | PASS（不再误报）|
+| Summary | Fails=0, Warns=3（已知数据问题）|
+
+### 踩坑
+
+- **#ABS-004: r1 修复引入回归**（★★★）
+  - v2.5.1 r1 修复 REV-03 未用真实台账端到端测试,rebook 行号对齐改匹配键方案有两个 bug
+  - 教训:r1 修复必须用真实台账跑通,不能只看代码逻辑
+
+### 追踪
+
+- slug: v26-uv-protection,本轮为 r2 修复（待 Agent B 复审）
+
+---
+
 ## v2.5.1 — 2026-07-13 UV 列值保护修复
 
 ### 新增

@@ -18,7 +18,7 @@
 6. 全表格式优化 + QC（含存量WXY保护验证）
 """
 import openpyxl, sys, os, argparse
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict, defaultdict, Counter
 from copy import copy
 
 # ============================================================
@@ -761,54 +761,48 @@ def run_enhanced_qc(ws_out, ws_orig_protected, set_a, supplemented_keys,
         print("  PASS: All V values match Y sums")
 
     # --- QC 7.20: UV column value preservation (#ABS-003) ---
-    # 对比 processed 和 output 的 U/V 列值，非目标项目的 U/V 值变化是 FAIL
-    # 目标项目（supplement/rebook 的目标）的 U/V 可能被 rebook 清空，这是允许的
-    # v2.5.1 REV-03 修复: rebook 删除行后行号不对齐，改用 (项目名+分层+机构) 做匹配键
+    # 对比 processed 和 output 的非目标项目 U/V 值,变化为 FAIL
+    # 目标项目(supplement/rebook 目标)的 U/V 允许变化,豁免
+    # v2.5.1 REV-03: rebook 删行后行号不对齐,改用 (项目名+分层+机构) 匹配键
+    # v2.5.2 r2 修复: (项目名,分层,机构) key 不唯一(同机构多笔认购合法,如东裕3-10/优先A
+    #   交银理财有 V=2.7 和 V=0.25 两行),dict 覆盖导致误报。改用 Counter 多重集对比
+    #   (项目名,分层,机构,V): orig/out 计数一致即 PASS,真正的篡改/丢失才 FAIL
     print("\n=== QC 7.20: UV column value preservation ===")
     uv_violations = []
     if ws_orig_protected:
         # 构建目标项目名称集合（用项目名做豁免，不用行号）
         target_project_names = set(key for key, _, _ in target_projects)
 
-        # 从 processed 台账提取所有非目标项目的 (项目名, 分层, 机构) -> (U, V) 映射
-        orig_uv_map = {}  # key: (项目名, 分层, 机构) -> (U, V)
-        orig_projects = get_all_projects(ws_orig_protected)
-        for proj_name, pstart, pend in orig_projects:
-            if proj_name in target_project_names:
-                continue  # 目标项目豁免
-            for r in range(pstart, pend + 1):
-                u = ws_orig_protected.cell(row=r, column=21).value
-                v = ws_orig_protected.cell(row=r, column=22).value
-                layer = ws_orig_protected.cell(row=r, column=16).value
-                if u is not None:
-                    key = (proj_name, str(layer) if layer else '', str(u).strip())
-                    orig_uv_map[key] = (u, v)
+        def collect_uv_multiset(ws):
+            """收集非目标项目所有 U 行的 (项目名,分层,机构,V) 多重集。
+            同机构多笔认购(同 key 不同 V)在 multiset 里是不同元素,各自计数。"""
+            ms = Counter()
+            projects = get_all_projects(ws)
+            for proj_name, info in projects.items():
+                if proj_name in target_project_names:
+                    continue  # 目标项目豁免
+                pstart, pend = info['start'], info['end']
+                for r in range(pstart, pend + 1):
+                    u = ws.cell(row=r, column=21).value
+                    v = ws.cell(row=r, column=22).value
+                    layer = ws.cell(row=r, column=16).value
+                    if u is not None:
+                        key = (proj_name, str(layer).strip() if layer else '', str(u).strip(), v)
+                        ms[key] += 1
+            return ms
 
-        # 从 output 台账提取同样的映射，对比
-        out_projects = get_all_projects(ws_out)
-        out_uv_keys = set()
-        for proj_name, pstart, pend in out_projects:
-            if proj_name in target_project_names:
-                continue  # 目标项目豁免
-            for r in range(pstart, pend + 1):
-                u = ws_out.cell(row=r, column=21).value
-                v = ws_out.cell(row=r, column=22).value
-                layer = ws_out.cell(row=r, column=16).value
-                if u is not None:
-                    key = (proj_name, str(layer) if layer else '', str(u).strip())
-                    out_uv_keys.add(key)
-                    # 检查 V 值是否变化
-                    if key in orig_uv_map:
-                        orig_v = orig_uv_map[key][1]
-                        if v != orig_v:
-                            uv_violations.append((proj_name, layer, u, orig_v, v))
+        orig_ms = collect_uv_multiset(ws_orig_protected)
+        out_ms = collect_uv_multiset(ws_out)
 
-        # 检查 orig 中有但 output 中没有的 (U/V 丢失)
-        lost_keys = set(orig_uv_map.keys()) - out_uv_keys
-        for key in lost_keys:
-            proj, layer, inst = key
-            u, v = orig_uv_map[key]
-            uv_violations.append((proj, layer, inst, v, None))
+        # 多重集差异: orig 独有 = 丢失或被篡改; out 独有 = 新增或被篡改
+        only_in_orig = orig_ms - out_ms
+        only_in_out = out_ms - orig_ms
+        for key in list(only_in_orig.keys()):
+            proj, layer, inst, v = key
+            uv_violations.append((proj, layer, inst, v, '(丢失或被篡改)'))
+        for key in list(only_in_out.keys()):
+            proj, layer, inst, v = key
+            uv_violations.append((proj, layer, inst, '(新增或被篡改)', v))
 
     if uv_violations:
         qc_fails += 1
