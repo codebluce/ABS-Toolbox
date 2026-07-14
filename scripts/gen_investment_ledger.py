@@ -139,8 +139,14 @@ def _compute_flat_year(xlsx_path, year_tag, mgr_col, has_underwriter, has_venue,
         has_underwriter/has_venue/has_cd: 该年份是否有联席承销商/发行场所/国股CD列
     """
     df = pd.read_excel(xlsx_path, engine='openpyxl', header=0)
-    # 簿记时间列存在个别脏值（非日期，如误录的数字），统一转 datetime，无法解析的归 NaT（date 记为 None）
-    df['簿记时间'] = pd.to_datetime(df['簿记时间'], errors='coerce')
+    # 簿记时间列存在个别单元格丢失日期格式、被读成裸数字（Excel 序列日期，如 45463）的情况；
+    # 若直接丢给 pd.to_datetime，裸整数会被当成"纳秒时间戳"误判为 1970-01-01，而非真实日期或 NaT。
+    # 按 Excel 1900 日期系统（起点 1899-12-30）解码这类数字，其余值仍走正常解析，无法解析的归 NaT（date 记为 None）
+    def _parse_booking_date(v):
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and pd.notna(v):
+            return pd.Timestamp('1899-12-30') + pd.Timedelta(days=v)
+        return pd.to_datetime(v, errors='coerce')
+    df['簿记时间'] = df['簿记时间'].apply(_parse_booking_date)
 
     role_cols = [c for c in [mgr_col, '联席承销商', '托管行', '认购机构'] if c in df.columns]
     df = filter_excluded_institutions(df, role_cols=role_cols, label=label)
