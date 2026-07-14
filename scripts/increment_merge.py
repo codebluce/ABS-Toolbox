@@ -287,8 +287,10 @@ def read_detail(path, expected_layer="auto"):
         if c1_str and ('申购利率' in c1_str or '投标利率' in c1_str):
             # Parse layer name from header, e.g. "优先A1级申购利率（%）" -> "优先A1"
             layer = c1_str.split('申购利率')[0].split('投标利率')[0].strip()
-            # Remove suffixes: 级, 级(%), （%） etc
-            layer = re.sub(r'级.*$', '', layer).strip()
+            # v2.5.3 修复 #ABS-005: 只删"级"字本身, 保留 A1/A2 档位标识
+            # 原 re.sub(r'级.*$', '', layer) 会把"优先级A1"削成"优先" (级.*$ 匹配"级A1")
+            # 导致 A1/A2 两档数据混进同一个"优先"层, A1 层金额虚高, A2 误判缺失
+            layer = layer.replace('级', '').strip()
             if layer:
                 current_layer = layer
             else:
