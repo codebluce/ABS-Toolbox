@@ -137,7 +137,13 @@
       if (multiYear) return { monthOnly: pad(mo), label: mo + '月（各年）' };
       var r3 = monthRange(y, mo, mo); r3.label = yLabel + mo + '月'; return r3;
     }
-    if (/今年|本年|全年/.test(q)) { return { from: y + '-01-01', to: y + '-12-31', label: yLabel || '今年' }; }
+    if (/今年|本年|全年/.test(q)) {
+      // 多年份语境下"今年"只是措辞习惯（如"今年同比增长多少"其实是"最新一年 vs 上一年"），
+      // 不能再生成"仅2026年"这样的单一日期区间——那会和 filters.year 的多年 OR 条件相与，
+      // 把其它年份的记录全部误伤过滤掉，年份范围应完全交由 filters.year 表达。
+      if (multiYear) return { label: '' };
+      return { from: y + '-01-01', to: y + '-12-31', label: yLabel || '今年' };
+    }
     return null;
   }
 
@@ -302,6 +308,17 @@
     var yearsExplicit = parseYears(q);
     if (yearsExplicit.length) filters.year = yearsExplicit;
 
+    // "同比"字面意思就是"与去年同期比"——若句中没有显式年份（没提"去年"/"2025年"
+    // 这类字样），自动补上[去年,今年]两年，不必依赖用户恰好打出"去年"两个字。
+    // 必须在 parseTime 调用之前做（而不是像早期版本放在继承逻辑之后）：否则
+    // "今年同比增长多少"这类问题里，parseTime 会先按"今年"生成仅 2026 年的日期
+    // 区间，与随后才补全的[2025,2026]年份条件相与，把 2025 年记录全部误伤过滤掉。
+    var yoyWord = /同比/.test(q);
+    if (yoyWord && !(filters.year && filters.year.length)) {
+      yearsExplicit = [String(DATA_YEAR - 1), String(DATA_YEAR)];
+      filters.year = yearsExplicit;
+    }
+
     // 否定意图("没投赊销白条的机构有哪些")：命中后转成"全量机构集合 减去 命中该条件的机构集合"，
     // 同样是名单类答案，不走聚合数字模型。年份等非实体条件保留在 baseFilters 里作为共同范围
     // （例如"2025年没投白条的机构"= 2025年有认购的机构 减去 2025年投过白条的机构）。
@@ -320,7 +337,16 @@
     var time = parseTime(q, yearsExplicit);
     var explicitGroupBy = parseGroupBy(q);
     var groupBy = explicitGroupBy;
-    var trend = /增速|趋势|变化|走势|逐月|月度|每月|环比|同比|增长|逐月/.test(q);
+    // "同比"（跨年同期比较）与"环比/逐月"（月度粒度趋势）是两条不同的比较轴，
+    // 此前混在一个正则里：句中一旦出现"同比"就会被强行渲染成逐月环比走势表，
+    // 抢在"按年份分组对比"（本就自带同比列）前面，答非所问。这里拆开单独处理。
+    // "逐月/月度/每月/环比"是明确要求月度颗粒度的强信号，不管是否同时出现"同比"
+    // 都应该走逐月展示；但"增速/趋势/变化/走势/增长"是笼统词，常和"同比"连用
+    // （"同比增长"是固定搭配），若两者都出现，以"同比"的年度对比语义为准，
+    // 否则"XX同比增长多少"这类问题会被"增长"抢先误判成逐月环比。
+    var strongMonthlyWord = /逐月|月度|每月|环比/.test(q);
+    var looseTrendWord = /增速|趋势|变化|走势|增长/.test(q);
+    var trend = strongMonthlyWord || (looseTrendWord && !yoyWord);
     var topM = q.match(/前\s*(\d+)|top\s*(\d+)/i);
     // 极值方向：分组问题里若出现"最低/最少"等词，取升序头名而非默认的降序头名；
     // "哪个月投得最多/最少"这类时间维度极值单独标记 timeExtreme，见 answer() 里的处理。
@@ -350,9 +376,10 @@
       if (!metricExplicit) metric = lastSpec.metric;
       inherited = true;
     }
-    // 句中提到 2 个及以上年份（"2024-2026年"/"2024年和2026年"/继承来的多年份等）
-    // → 默认按年份分组对比，不要求必须出现"分别"二字；若句中已显式给出其它分组维度
-    // （如"按资产类型"）则以那个为准。放在继承之后判断，确保"继承来的多年份"也能触发。
+    // 句中提到 2 个及以上年份（"2024-2026年"/"2024年和2026年"/继承来的多年份/
+    // "同比"自动补全的[去年,今年]等）→ 默认按年份分组对比，不要求必须出现"分别"
+    // 二字；若句中已显式给出其它分组维度（如"按资产类型"）则以那个为准。
+    // 放在继承之后判断，确保"继承来的多年份"也能触发。
     if (!groupBy && filters.year && filters.year.length >= 2) groupBy = 'year';
 
     // 完全无法识别（无实体/年份/指标/时间/意图，且未继承）→ 交给上层给出「没听懂」提示，不硬算数字
