@@ -10,3 +10,6 @@ Thumbs.db
 
 # 环境变量泄漏文件
 et JOYCODER*
+
+# 智能问答反馈收件箱（同事手动导出的本地反馈json，人工丢入后本地聚合，不进版本库）
+feedback_inbox/

@@ -98,6 +98,14 @@
     var y = (years && years.length === 1) ? +years[0] : DATA_YEAR;
     var yLabel = (y !== DATA_YEAR) ? (y + '年') : '';
     var multiYear = years && years.length >= 2;
+    // 具体日期("6月25日"/"6月25号")——必须放在裸月份分支之前判断，否则"6月25日"里的
+    // "6月"会先被 parseMonthToken 当成整月区间吃掉，丢失"25日"这个更精确的限定。
+    var dateM = q.match(/(\d{1,2})\s*月\s*(\d{1,2})\s*[日号]/);
+    if (dateM) {
+      var dmm = pad(+dateM[1]), ddd = pad(+dateM[2]);
+      var dateStr = y + '-' + dmm + '-' + ddd;
+      return { from: dateStr, to: dateStr, label: yLabel + dateM[1] + '月' + dateM[2] + '日' };
+    }
     var rng = q.match(/(\d{1,2})\s*月.*?(?:到|至|-|~|—)\s*(\d{1,2})\s*月/);
     if (rng) {
       var m1 = +rng[1], m2 = +rng[2];
@@ -140,7 +148,7 @@
   function parseMetric(q) {
     // 计数类问法（多少笔/几笔/多少个项目…）优先于成本/利差——避免"成本高于2%的有多少笔"
     // 这类"筛选条件里带成本词、但真正问的是计数"的句子被 cost 抢先命中、答非所问。
-    if (/笔数|多少笔|几笔|记录数|多少条|几条/.test(q)) return 'count';
+    if (/笔数|多少笔|几笔|记录数|多少条|几条|活跃|频繁|次数多/.test(q)) return 'count';
     if (/项目数|几个项目|多少个项目|多少只|几只|多少个产品/.test(q)) return 'proj';
     if (/利差/.test(q)) return 'spread';
     if (/成本|利率|定价|价格/.test(q)) return 'cost';
@@ -150,12 +158,17 @@
   }
   var NOUN_FIELD = [['资产', 'asset'], ['产品类型', 'asset'], ['认购机构', 'inst'], ['投资机构', 'inst'], ['投资人', 'inst'], ['机构', 'inst'], ['计划管理人', 'mgr'], ['管理人', 'mgr'], ['承销', 'underwriter'], ['托管', 'custodian'], ['评级', 'rating'], ['分层', 'layer'], ['层级', 'layer'], ['项目', 'proj']];
   function parseGroupBy(q) {
-    if (!/(按|各|分别|什么|哪些|哪几|哪个|每个|分布|排名|构成|都投|投了什么|投向)/.test(q)) return null;
+    if (!/(按|各|分别|什么|哪些|哪几|哪个|谁|哪家|每个|分布|排名|构成|都投|投了什么|投向)/.test(q)) return null;
     for (var i = 0; i < NOUN_FIELD.length; i++) { if (q.indexOf(NOUN_FIELD[i][0]) >= 0) return NOUN_FIELD[i][1]; }
+    // "谁"/"哪家"没有显式点名机构/管理人等名词时，默认按认购机构分组（本业务场景下最常见语义）
+    if (/谁|哪家/.test(q)) return 'inst';
     return null;
   }
   var ROLE_FIELD = [[/管理|管理人/, 'mgr'], [/承销/, 'underwriter'], [/托管/, 'custodian'], [/投资|认购|申购|买入|买了|持有|投了|投向/, 'inst']];
   function roleHint(q) { for (var i = 0; i < ROLE_FIELD.length; i++) if (ROLE_FIELD[i][0].test(q)) return ROLE_FIELD[i][1]; return null; }
+  // 极值方向：句中出现"最低/最少/最小/最差/垫底"→升序(asc)取头名；默认(未出现时)保持既有的降序("最多/最大"等)
+  var EXTREME_ASC_RE = /最低|最少|最小|最差|垫底/;
+  var EXTREME_CUE_RE = /最低|最少|最小|最差|垫底|最多|最大|最高|最好/;
 
   // ── entity matching ──
   function matchEntities(q, metric, role) {
@@ -183,32 +196,37 @@
     var out = {};
     // ── 子串兜底匹配(仅 asset/layer 这类少值结构化字段)──
     // 用户常用口语缩写:「白条」→ 赊销白条/白条取现/信托白条…(OR);「夹层」→ 含"夹层"的分层值。
-    // 仅在该字段没有精确命中时启用;取查询里最长的未消费子串(≥2字),命中的全部值纳入 OR。
+    // 仅在该字段没有精确命中时启用;循环取查询里最长的未消费子串(≥2字)，命中的全部值纳入 OR，
+    // 直到再找不到新的子串为止——支持"白条和金条一共投了多少"这类同字段多值 OR
+    // （此前只取一次最长子串，"金条"会被"白条"抢先消费后彻底丢弃）。
     ['asset', 'layer'].forEach(function (f) {
       if (byField[f]) return;
-      var best = null;
-      COUNTS[f].forEach(function (_c, v) {
-        for (var L = Math.min(v.length, q.length); L >= 2; L--) {
-          if (best && L < best.len) break;
-          var found = false;
-          for (var i2 = 0; i2 + L <= v.length; i2++) {
-            var sub = v.substr(i2, L); var idx = q.indexOf(sub);
-            if (idx < 0) continue;
-            var e2 = idx + L, ov = false;
-            for (var j2 = 0; j2 < consumed.length; j2++) { if (idx < consumed[j2][1] && e2 > consumed[j2][0]) { ov = true; break; } }
-            if (ov) continue;
-            if (!best || L > best.len) best = { len: L, span: sub, s: idx, e: e2 };
-            found = true; break;
+      var guard = 0;
+      while (guard++ < 6) {   // 安全上限，防止异常输入下的死循环
+        var best = null;
+        COUNTS[f].forEach(function (_c, v) {
+          for (var L = Math.min(v.length, q.length); L >= 2; L--) {
+            if (best && L < best.len) break;
+            var found = false;
+            for (var i2 = 0; i2 + L <= v.length; i2++) {
+              var sub = v.substr(i2, L); var idx = q.indexOf(sub);
+              if (idx < 0) continue;
+              var e2 = idx + L, ov = false;
+              for (var j2 = 0; j2 < consumed.length; j2++) { if (idx < consumed[j2][1] && e2 > consumed[j2][0]) { ov = true; break; } }
+              if (ov) continue;
+              if (!best || L > best.len) best = { len: L, span: sub, s: idx, e: e2 };
+              found = true; break;
+            }
+            if (found) break;
           }
-          if (found) break;
-        }
-      });
-      if (best) {
+        });
+        if (!best) break;
+        consumed.push([best.s, best.e]);
         var vals = [];
         COUNTS[f].forEach(function (_c, v) { if (v.indexOf(best.span) >= 0) vals.push(v); });
         if (vals.length) {
-          consumed.push([best.s, best.e]);
-          byField[f] = {}; vals.forEach(function (v) { byField[f][v] = 1; });
+          if (!byField[f]) byField[f] = {};
+          vals.forEach(function (v) { byField[f][v] = 1; });
         }
       }
     });
@@ -231,19 +249,86 @@
     return ENTITY_FIELDS.some(function (f) { return filters[f] && filters[f].length; });
   }
 
+  // ── 集合运算(否定/交集)：区别于"过滤后加总"的常规聚合模型，这两类问题问的是
+  // "满足/不满足某条件的机构名单"，答案是名单而不是数字，需要单独的计算与渲染路径 ──
+  var NEGATION_RE = /没(?:有)?投|不投|未投|没买|不含|不认购|排除|除了/;
+  var INTERSECT_RE = /既(.+?)又(.+)/;
+
+  function negationField(filters) {
+    for (var i = 0; i < ENTITY_FIELDS.length; i++) { var f = ENTITY_FIELDS[i]; if (filters[f] && filters[f].length) return f; }
+    return null;
+  }
+  // 给定一组 filters（不含时间/份额等区间条件，仅字段等值匹配），返回命中记录里出现过的认购机构集合
+  function distinctInstFromFilters(filters) {
+    var recs = DATA.filter(function (r) {
+      for (var k in filters) { if (filters[k] && filters[k].length && filters[k].indexOf(r[k]) < 0) return false; }
+      return true;
+    });
+    var s = new Set();
+    recs.forEach(function (r) { if (r.inst) s.add(r.inst); });
+    return s;
+  }
+  // "既投白条又投金条的机构"：把句子按"既...又..."切成两半，各自独立跑一次实体匹配，
+  // 得到两组条件——不能合并进同一个 OR 数组，否则就变成了"投了白条或金条"而非"两者都投"。
+  function parseIntersect(q, metric, role) {
+    var m = q.match(INTERSECT_RE);
+    if (!m) return null;
+    var g1 = matchEntities(m[1], metric, role);
+    var g2 = matchEntities(m[2], metric, role);
+    if (!hasEntityFilters(g1) || !hasEntityFilters(g2)) return null;
+    return [g1, g2];
+  }
+
   function parse(q) {
     var role = roleHint(q);
     var metricExplicit = parseMetric(q);
     var metric = metricExplicit || 'share';
+
+    // 交集意图("既投白条又投金条的机构")优先识别——命中后直接走集合运算分支返回，
+    // 不再套用常规的"过滤后加总"逻辑（那套模型回答不了"两个条件都满足"这种名单类问题）。
+    var intersectGroups = parseIntersect(q, metric, role);
+    if (intersectGroups) {
+      var yForInt = parseYears(q);
+      if (yForInt.length) { intersectGroups[0].year = yForInt; intersectGroups[1].year = yForInt; }
+      return {
+        raw: q, filters: {}, metric: metric, recognized: true, inherited: false,
+        unsupported: null, dateFrom: '', dateTo: '', monthOnly: null, monthFrom: null, monthTo: null,
+        time: null, timeLabel: '', groupBy: null, trend: false, topN: null, shareMin: null,
+        setOp: 'intersect', setOpGroups: intersectGroups
+      };
+    }
+
     var filters = matchEntities(q, metric, role);
     var yearsExplicit = parseYears(q);
     if (yearsExplicit.length) filters.year = yearsExplicit;
+
+    // 否定意图("没投赊销白条的机构有哪些")：命中后转成"全量机构集合 减去 命中该条件的机构集合"，
+    // 同样是名单类答案，不走聚合数字模型。年份等非实体条件保留在 baseFilters 里作为共同范围
+    // （例如"2025年没投白条的机构"= 2025年有认购的机构 减去 2025年投过白条的机构）。
+    if (NEGATION_RE.test(q) && hasEntityFilters(filters)) {
+      var negField = negationField(filters);
+      var baseFilters = {};
+      for (var bk in filters) { if (bk !== negField) baseFilters[bk] = filters[bk]; }
+      return {
+        raw: q, filters: filters, metric: metric, recognized: true, inherited: false,
+        unsupported: null, dateFrom: '', dateTo: '', monthOnly: null, monthFrom: null, monthTo: null,
+        time: null, timeLabel: '', groupBy: null, trend: false, topN: null, shareMin: null,
+        setOp: 'subtract', baseFilters: baseFilters
+      };
+    }
+
     var time = parseTime(q, yearsExplicit);
     var explicitGroupBy = parseGroupBy(q);
     var groupBy = explicitGroupBy;
     var trend = /增速|趋势|变化|走势|逐月|月度|每月|环比|同比|增长|逐月/.test(q);
     var topM = q.match(/前\s*(\d+)|top\s*(\d+)/i);
-    var topN = topM ? (+(topM[1] || topM[2])) : (/最多|排名|排行/.test(q) ? 10 : null);
+    // 极值方向：分组问题里若出现"最低/最少"等词，取升序头名而非默认的降序头名；
+    // "哪个月投得最多/最少"这类时间维度极值单独标记 timeExtreme，见 answer() 里的处理。
+    var extremeDir = EXTREME_CUE_RE.test(q) ? (EXTREME_ASC_RE.test(q) ? 'asc' : 'desc') : null;
+    var timeExtreme = (/哪(?:个|一)?月|什么时候/.test(q) && extremeDir) ? extremeDir : null;
+    // "是哪家/是谁"这种单数疑问只想要头名，极值类默认给前3方便核对；未出现极值词、
+    // 但问了"排名/最多"等仍走原有默认前10。
+    var topN = topM ? (+(topM[1] || topM[2])) : (extremeDir ? 3 : (/最多|排名|排行/.test(q) ? 10 : null));
     var threshM = q.match(/(?:超过|大于|高于|>=?)\s*(\d+(?:\.\d+)?)\s*亿/);
 
     // 继承判定只看"是否有实体条件"（机构/管理人/资产…），不把"年份"算作实体——
@@ -271,7 +356,7 @@
     if (!groupBy && filters.year && filters.year.length >= 2) groupBy = 'year';
 
     // 完全无法识别（无实体/年份/指标/时间/意图，且未继承）→ 交给上层给出「没听懂」提示，不硬算数字
-    var recognized = hasFilter || inherited || !!groupBy || !!topN || !!metricExplicit || !!time || trend;
+    var recognized = hasFilter || inherited || !!groupBy || !!topN || !!metricExplicit || !!time || trend || !!timeExtreme;
 
     var spec = {
       raw: q, filters: filters, metric: metric, recognized: recognized, inherited: inherited,
@@ -282,6 +367,8 @@
       monthTo: time ? (time.monthTo || null) : null,
       time: time, timeLabel: time ? time.label : '',
       groupBy: groupBy, trend: trend, topN: topN,
+      extremeDir: (groupBy && groupBy !== 'year') ? extremeDir : null,
+      timeExtreme: timeExtreme,
       shareMin: threshM ? +threshM[1] : null
     };
     return spec;
@@ -329,17 +416,20 @@
 
   // ── render answer ──
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-  function condChips(spec) {
+  // 把一组 filters(年份+实体字段) 渲染成条件芯片——condChips 和集合运算(交集)的双组条件展示共用
+  function filterChipSpans(filters) {
     var chips = [];
-    if (spec.filters.year && spec.filters.year.length) {
-      chips.push('<span class="c"><span class="k">年份</span>' + spec.filters.year.join('/') + '年</span>');
-    }
+    if (filters.year && filters.year.length) chips.push('<span class="c"><span class="k">年份</span>' + filters.year.join('/') + '年</span>');
     ENTITY_FIELDS.forEach(function (f) {
-      if (spec.filters[f] && spec.filters[f].length) {
-        var vals = spec.filters[f]; var show = vals.slice(0, 3).join(' / ') + (vals.length > 3 ? ' 等' + vals.length + '项' : '');
+      if (filters[f] && filters[f].length) {
+        var vals = filters[f]; var show = vals.slice(0, 3).join(' / ') + (vals.length > 3 ? ' 等' + vals.length + '项' : '');
         chips.push('<span class="c"><span class="k">' + FIELD_LABEL[f] + '</span>' + esc(show) + '</span>');
       }
     });
+    return chips;
+  }
+  function condChips(spec) {
+    var chips = filterChipSpans(spec.filters);
     if (spec.timeLabel) chips.push('<span class="c"><span class="k">时间</span>' + esc(spec.timeLabel) + '</span>');
     if (spec.inherited) chips.push('<span class="c" style="background:#fdf6e3;border-color:#ecdfc0;color:#8a6d1d"><span class="k" style="color:#b39a55">⤵</span>承接上一问条件</span>');
     if (spec.shareMin != null) chips.push('<span class="c"><span class="k">份额≥</span>' + spec.shareMin + '亿</span>');
@@ -355,13 +445,64 @@
     return (subj ? subj : '全部年份·全部记录') + (spec.timeLabel ? ' ' + spec.timeLabel : '');
   }
 
+  // 集合运算类答案(否定/交集)：名单形式，不是"过滤后加总"的大数字模型
+  function answerSetOp(spec) {
+    if (spec.setOp === 'subtract') {
+      var full = distinctInstFromFilters(spec.baseFilters);
+      var excluded = distinctInstFromFilters(spec.filters);
+      var result = Array.from(full).filter(function (x) { return !excluded.has(x); }).sort();
+      var html1 = '<div>不满足以下条件的认购机构，共 <strong>' + result.length + '</strong> 家：</div>';
+      html1 += '<div class="itlc-cond">' + filterChipSpans(spec.filters).join('') + '</div>';
+      html1 += '<div class="itlc-cond" style="margin-top:6px">' + result.slice(0, 40).map(function (x) { return '<span class="c">' + esc(x) + '</span>'; }).join('') + '</div>';
+      if (result.length > 40) html1 += '<div style="font-size:11px;color:#96a1b0;margin-top:5px">共 ' + result.length + ' 家，显示前 40</div>';
+      html1 += linkNote(spec);
+      return html1;
+    }
+    if (spec.setOp === 'intersect') {
+      var sets = spec.setOpGroups.map(function (g) { return distinctInstFromFilters(g); });
+      var inter = Array.from(sets[0]).filter(function (x) { return sets.every(function (s) { return s.has(x); }); }).sort();
+      var html2 = '<div>同时满足以下全部条件的认购机构，共 <strong>' + inter.length + '</strong> 家：</div>';
+      spec.setOpGroups.forEach(function (g, i) {
+        html2 += '<div class="itlc-cond" style="margin-top:4px"><span class="c"><span class="k">条件' + (i + 1) + '</span></span>' + filterChipSpans(g).join('') + '</div>';
+      });
+      html2 += '<div class="itlc-cond" style="margin-top:6px">' + inter.slice(0, 40).map(function (x) { return '<span class="c">' + esc(x) + '</span>'; }).join('') + '</div>';
+      if (inter.length > 40) html2 += '<div style="font-size:11px;color:#96a1b0;margin-top:5px">共 ' + inter.length + ' 家，显示前 40</div>';
+      html2 += linkNote(spec);
+      return html2;
+    }
+    return '';
+  }
+
   function answer(spec) {
+    if (spec.setOp) return answerSetOp(spec);
+
     var recs = filterRecs(spec);
     var html = '';
     if (!recs.length) {
       return '<div>没有匹配到记录。可换个说法，或检查一下条件：</div>' + condChips(spec);
     }
     var unit = METRIC_UNIT[spec.metric];
+
+    if (spec.timeExtreme) {
+      var serX = monthlySeries(recs, spec.metric);
+      var dir = spec.timeExtreme;
+      var sortedX = serX.slice().sort(function (a, b) { return dir === 'asc' ? (a.val || 0) - (b.val || 0) : (b.val || 0) - (a.val || 0); });
+      var top1 = sortedX[0];
+      if (top1) {
+        html += '<div>' + esc(subjectLabel(spec)) + ' ' + (dir === 'asc' ? '最少' : '最多') + '的月份是 <strong>' + top1.month + '</strong>，'
+          + METRIC_LABEL[spec.metric] + ' ' + fmt(top1.val, spec.metric) + (unit ? unit : '') + '</div>';
+      }
+      html += condChips(spec);
+      var maxvX = Math.max.apply(null, serX.map(function (s) { return s.val || 0; }).concat([0.0001]));
+      html += '<table class="itlc-tbl"><thead><tr><th>月份</th><th class="r">' + METRIC_LABEL[spec.metric] + (unit ? '(' + unit + ')' : '') + '</th><th></th></tr></thead><tbody>';
+      serX.forEach(function (s) {
+        html += '<tr><td class="name">' + s.month + (top1 && s.month === top1.month ? ' ★' : '') + '</td><td class="r v">' + fmt(s.val, spec.metric) + '</td>'
+          + '<td class="itlc-bar-cell"><div class="itlc-mini-bar"><i style="width:' + ((s.val || 0) / maxvX * 100).toFixed(0) + '%"></i></div></td></tr>';
+      });
+      html += '</tbody></table>';
+      html += linkNote(spec);
+      return html;
+    }
 
     if (spec.trend) {
       var ser = monthlySeries(recs, spec.metric);
@@ -408,8 +549,14 @@
       var dim = spec.groupBy;
       var gm = spec.metric;   // 分组聚合直接用所问指标（项目数/笔数/成本…都按组内算，不再偷换成份额）
       var ga = groupAgg(recs, dim, gm);
+      // 极值方向：groupAgg 默认降序("最多"语义)；若识别到"最低/最少"等词，反转成升序取头名
+      if (spec.extremeDir === 'asc') ga = ga.slice().sort(function (a, b) { return (a.val == null ? Infinity : a.val) - (b.val == null ? Infinity : b.val); });
       var N = spec.topN || 12;
       var top = ga.slice(0, N);
+      if (spec.extremeDir && top.length) {
+        html += '<div style="margin-bottom:6px">' + FIELD_LABEL[dim] + '' + (spec.extremeDir === 'asc' ? '最低' : '最高') + '的是 <strong>' + esc(top[0].key) + '</strong>，'
+          + METRIC_LABEL[gm] + ' ' + fmt(top[0].val, gm) + (METRIC_UNIT[gm] || '') + '</div>';
+      }
       var maxv2 = Math.max.apply(null, top.map(function (g) { return g.val || 0; }).concat([0.0001]));
       html += '<table class="itlc-tbl"><thead><tr><th>' + FIELD_LABEL[dim] + '</th><th class="r">' + METRIC_LABEL[gm] + (METRIC_UNIT[gm] ? '(' + METRIC_UNIT[gm] + ')' : '') + '</th><th></th></tr></thead><tbody>';
       top.forEach(function (g) {
@@ -465,7 +612,9 @@
     '交银理财2月份投资多少，都投了什么资产？',
     '平安理财的投资增速变化情况如何？',
     '按认购机构看今年份额排名前10',
-    '交银理财2024-2026年分别投资规模多少？'
+    '交银理财2024-2026年分别投资规模多少？',
+    '成本最低的机构是哪家？',
+    '没投赊销白条的机构有哪些？'
   ];
 
   function addMsg(role, html) {
@@ -480,13 +629,52 @@
     return '<div>你好，我是投资台账问答助手。可以用大白话问我，例如：</div>' + suggList();
   }
 
+  // ── 反馈留存(本地) ──────────────────────────────────────────
+  // 零依赖单文件架构没有服务器，无法自动跨用户汇总；这里只做"本地攒 + 手动导出"，
+  // 导出后由人工把 json 丢进共享位置，用 scripts/lab/aggregate_chat_feedback.py 聚合。
+  // 记录"没听懂"(自动)和用户主动点"反馈"的回答(显式，信号质量更高)两类。
+  var FEEDBACK_KEY = 'itl_feedback_v1';
+  function recordFeedback(entry) {
+    try {
+      var arr = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]');
+      entry.ts = new Date().toISOString();
+      arr.push(entry);
+      if (arr.length > 500) arr = arr.slice(arr.length - 500);
+      localStorage.setItem(FEEDBACK_KEY, JSON.stringify(arr));
+    } catch (e) { /* localStorage 不可用(如隐私模式)时静默跳过，不影响主功能 */ }
+  }
+  function feedbackCount() {
+    try { return JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]').length; } catch (e) { return 0; }
+  }
+  function exportFeedback() {
+    var arr; try { arr = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]'); } catch (e) { arr = []; }
+    var blob = new Blob([JSON.stringify(arr, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'itl_feedback_' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  function updateFeedbackHint() {
+    var el = document.querySelector('.itlc-fbk-export');
+    if (!el) return;
+    var n = feedbackCount();
+    el.style.display = n > 0 ? 'block' : 'none';
+    el.textContent = '导出反馈(' + n + '条)';
+  }
+
   function handle(q) {
     q = (q || '').trim(); if (!q) return;
     addMsg('user', esc(q));
     var spec;
-    try { spec = parse(q); } catch (e) { addMsg('bot', '抱歉，这句我没解析出来，换个说法试试？'); return; }
+    try { spec = parse(q); } catch (e) {
+      addMsg('bot', '抱歉，这句我没解析出来，换个说法试试？');
+      recordFeedback({ question: q, type: 'exception', error: e.message });
+      updateFeedbackHint();
+      return;
+    }
     if (!spec.recognized) {
       addMsg('bot', '这句我没太听懂——没识别到机构/资产/时间等条件。换个说法，或点下面的例子：' + suggList());
+      recordFeedback({ question: q, type: 'unrecognized' });
+      updateFeedbackHint();
       return;   // 不覆盖上一次上下文、不改面板，避免给出看似确定的错误数字
     }
     if (spec.unsupported) {
@@ -495,7 +683,17 @@
     }
     lastSpec = spec;
     var html;
-    try { html = answer(spec); applyToPanel(spec); } catch (e) { html = '解析成功但计算出错了：' + esc(e.message); }
+    try {
+      html = answer(spec);
+      applyToPanel(spec);
+    } catch (e) {
+      html = '解析成功但计算出错了：' + esc(e.message);
+      recordFeedback({ question: q, type: 'compute_error', error: e.message });
+      updateFeedbackHint();
+      addMsg('bot', html);
+      return;
+    }
+    html += '<div class="itlc-fbk-row" data-itlc-fbk-q="' + esc(q) + '"><span class="lk" data-itlc="badanswer">这个回答不对？点此反馈</span></div>';
     addMsg('bot', html);
   }
 
@@ -514,19 +712,32 @@
       + '<div class="itlc-body"></div>'
       + '<div class="itlc-foot"><textarea class="itlc-ta" rows="1" placeholder="用大白话问，例如：交银理财今年投了多少？"></textarea>'
       + '<button class="itlc-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button></div>'
-      + '<div class="itlc-hint">支持：机构/管理人/承销商/托管行/资产/评级/分层/年份(2024-2026，支持范围与对比) · 份额·规模·成本·利差 · 月份/季度 · 排名·分组·增速 · 跨年份问答不受当前 Tab 限制</div>';
+      + '<div class="itlc-hint">支持：机构/管理人/承销商/托管行/资产/评级/分层/年份(2024-2026，支持范围与对比) · 份额·规模·成本·利差 · 月份/季度 · 排名·分组·增速 · 跨年份问答不受当前 Tab 限制</div>'
+      + '<div class="itlc-fbk-export" style="display:none;font-size:11px;color:#8a9ab5;padding:0 14px 8px;cursor:pointer;text-decoration:underline" data-itlc="exportfbk">导出反馈(0条)</div>';
     document.body.appendChild(elPanel);
 
     elBody = elPanel.querySelector('.itlc-body');
     elTa = elPanel.querySelector('.itlc-ta');
     elSend = elPanel.querySelector('.itlc-send');
     addMsg('bot', suggestBlock());
+    updateFeedbackHint();
 
     ball.addEventListener('click', function () { elPanel.classList.toggle('open'); if (elPanel.classList.contains('open')) elTa.focus(); });
     elPanel.querySelector('.itlc-x').addEventListener('click', function () { elPanel.classList.remove('open'); });
     elSend.addEventListener('click', function () { handle(elTa.value); elTa.value = ''; elTa.style.height = 'auto'; });
     elTa.addEventListener('keydown', function (e) { if (e.isComposing || e.keyCode === 229) return; if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handle(elTa.value); elTa.value = ''; elTa.style.height = 'auto'; } });
     elTa.addEventListener('input', function () { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 90) + 'px'; });
+    elPanel.addEventListener('click', function (e) {
+      var exp = e.target.closest('[data-itlc="exportfbk"]'); if (exp) { exportFeedback(); return; }
+      var bad = e.target.closest('[data-itlc="badanswer"]');
+      if (bad) {
+        var row = bad.closest('[data-itlc-fbk-q]');
+        recordFeedback({ question: row ? row.getAttribute('data-itlc-fbk-q') : '', type: 'user_flagged_wrong' });
+        updateFeedbackHint();
+        bad.textContent = '已记录，谢谢反馈'; bad.style.pointerEvents = 'none'; bad.style.color = '#96a1b0';
+        return;
+      }
+    });
     elBody.addEventListener('click', function (e) {
       var qb = e.target.closest('[data-itlc-q]'); if (qb) { handle(qb.getAttribute('data-itlc-q')); return; }
       var lk = e.target.closest('[data-itlc]');
