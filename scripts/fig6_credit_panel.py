@@ -72,10 +72,10 @@ def compute_maturity_amounts(ledger_path=None):
     # 1. 读非标授信 sheet(A-C列)
     ws_credit = wb['非标授信']
     institutions = []
-    for r in range(2, ws_credit.max_row + 1):
-        name = ws_credit.cell(row=r, column=1).value
-        remaining_orig = ws_credit.cell(row=r, column=2).value  # B非标剩余额度(表格值)
-        total = ws_credit.cell(row=r, column=3).value            # C非标授信总额
+    # read_only 模式必须用 iter_rows 遍历——ws.cell(row,col) 逐格访问会触发整行重解析,
+    # 在大 sheet 上极慢(实测 1902 行 >90s 卡死)。iter_rows 0.2s 完成。与 fig8 同款修复。
+    for row in ws_credit.iter_rows(min_row=2, max_row=ws_credit.max_row, max_col=3, values_only=True):
+        name, remaining_orig, total = row[0], row[1], row[2]   # A机构 / B非标剩余额度 / C非标授信总额
         if name:
             institutions.append({
                 'name': str(name).strip(),
@@ -90,10 +90,11 @@ def compute_maturity_amounts(ledger_path=None):
     # 2. 读非标历史发行 sheet,按月聚合每个机构的认购份额(用于7-12月摊还)
     ws_hist = wb['非标历史发行']
     hist_records = []
-    for r in range(2, ws_hist.max_row + 1):
-        u = ws_hist.cell(row=r, column=21).value  # U认购机构
-        v = ws_hist.cell(row=r, column=22).value  # V认购份额
-        x = ws_hist.cell(row=r, column=24).value  # X循环期结束日
+    # 同上:read_only 模式用 iter_rows,禁用 ws.cell(row,col) 逐格访问
+    for row in ws_hist.iter_rows(min_row=2, max_row=ws_hist.max_row, max_col=24, values_only=True):
+        u = row[20]  # U(21列)认购机构
+        v = row[21]  # V(22列)认购份额
+        x = row[23]  # X(24列)循环期结束日
         if not u or not isinstance(x, datetime.datetime):
             continue
         if x.year != 2026 or x.month < 7 or x.month > 12:

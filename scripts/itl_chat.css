@@ -4,7 +4,7 @@
 .itlc-ball svg { width:26px; height:26px; }
 .itlc-ball .itlc-dot { position:absolute; top:2px; right:2px; width:11px; height:11px; background:#e0b23c; border:2px solid #fff; border-radius:50%; }
 
-.itlc-panel { position:fixed; right:24px; bottom:92px; width:400px; max-width:calc(100vw - 40px); height:640px; max-height:calc(100vh - 130px); background:#fff; border-radius:16px; box-shadow:0 18px 50px rgba(13,27,46,.32); z-index:9999; display:none; flex-direction:column; overflow:hidden; font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif; color:#0d1b2e; }
+.itlc-panel { position:fixed; right:24px; bottom:92px; width:600px; max-width:calc(100vw - 40px); height:832px; max-height:calc(100vh - 130px); background:#fff; border-radius:16px; box-shadow:0 18px 50px rgba(13,27,46,.32); z-index:9999; display:none; flex-direction:column; overflow:hidden; font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif; color:#0d1b2e; }
 .itlc-panel.open { display:flex; }
 .itlc-panel * { box-sizing:border-box; }
 
