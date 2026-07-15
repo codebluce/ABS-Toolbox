@@ -1,0 +1,974 @@
+[
+  {
+    "name": "中信证券",
+    "category": "券商",
+    "owner": "吴沛智",
+    "contact": "总牵头-张佳乐; DCM-李俊润、原静雯; 项目组-宋杰文、杨威、魏子涵",
+    "approval": "—",
+    "quota": "25Y：管理人395亿，销售机构135亿",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0525-0529",
+        "text": "汽融ABS参与中标"
+      }
+    ]
+  },
+  {
+    "name": "兴业证券",
+    "category": "券商",
+    "owner": "吴沛智",
+    "contact": "固收部陶健; 固收部吕璐",
+    "approval": "包销池30亿，15%无单档限制",
+    "quota": "25Y：管理人10亿，销售机构85亿",
+    "progress_count": 2,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "FOP 0-1突破：协调投行分管副总沟通计财分管副总，下周当面敲定。另外投行已经提前找外部机构代下单，作为兜底"
+      },
+      {
+        "date": "0518-0522",
+        "text": "季末极限发行禾昱9-1，1天提备案，1天沟通过交易所审核，执行效率得到消金团队认可，边际补6000万"
+      }
+    ]
+  },
+  {
+    "name": "国开证券",
+    "category": "券商",
+    "owner": "吴沛智",
+    "contact": "顾峻尧",
+    "approval": "",
+    "quota": "",
+    "progress_count": 2,
+    "recent_progress": [
+      {
+        "date": "0622-0626",
+        "text": "落地首单白条ABN承销及投资，1亿"
+      },
+      {
+        "date": "0608-0612",
+        "text": "推动国开承销白条ABN首单"
+      }
+    ]
+  },
+  {
+    "name": "华福证券",
+    "category": "券商",
+    "owner": "吴沛智",
+    "contact": "张志勇（北分总）、孟志达（北分机构部）; 郑哲侃（投行）",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0525-0529",
+        "text": "汽融ABS参与未中标"
+      }
+    ]
+  },
+  {
+    "name": "长城证券",
+    "category": "券商",
+    "owner": "吴沛智",
+    "contact": "荣刘蕊（投行）",
+    "approval": "",
+    "quota": "",
+    "progress_count": 0,
+    "recent_progress": []
+  },
+  {
+    "name": "银河证券",
+    "category": "券商",
+    "owner": "吴沛智",
+    "contact": "余俊琴-投行ED(bj)",
+    "approval": "",
+    "quota": "",
+    "progress_count": 0,
+    "recent_progress": []
+  },
+  {
+    "name": "招商信诺资产",
+    "category": "其他",
+    "owner": "吴沛智",
+    "contact": "彭旦-ABS部门负责人(sz); 王修朋-项目经理(bj)",
+    "approval": "",
+    "quota": "",
+    "progress_count": 0,
+    "recent_progress": []
+  },
+  {
+    "name": "珠海华润银行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "刘京、朱茜-同业部总经理; 刘雨辰-投行部; 季冰洁-同业部团队长（sz）",
+    "approval": "",
+    "quota": "",
+    "progress_count": 0,
+    "recent_progress": []
+  },
+  {
+    "name": "建设银行",
+    "category": "全国大行",
+    "owner": "吴沛智",
+    "contact": "总行投行—阙莎莎（处长）、林冠良; 总行金市债券处—孟希（处长）; 北分—孙易（投行副总）、冯睿楠; 清华园支行-史蕾（行长）、骆伟光、王晶莹",
+    "approval": "一年内赊销白条",
+    "quota": "授信60 / 用信3.6",
+    "progress_count": 5,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "建行自营白条批复50亿落地，常态化首单"
+      },
+      {
+        "date": "0629-0703",
+        "text": "保理承销和投资需占世贸额度，目前评估10亿即可滚动发行，建议建行投行部先行行内协调授信安排"
+      },
+      {
+        "date": "0622-0626",
+        "text": "推动建行自营扩大金条保理品种投承联动"
+      },
+      {
+        "date": "0608-0612",
+        "text": "协助撬动邮储等恢复投资，扩大金条保理品种投承联动"
+      },
+      {
+        "date": "0525-0529",
+        "text": "建行自营白条首单落地"
+      }
+    ]
+  },
+  {
+    "name": "建信理财",
+    "category": "国股行",
+    "owner": "吴沛智",
+    "contact": "公募：投资经理-李天（sz）、朱文奇; 非标：常杰（另类投资部副总）、林昊天",
+    "approval": "白条UA/UB、信托动产融资UA/UB、金采UA、金条及金条白取混发UA、京城单期",
+    "quota": "授信50 / 用信21 / 剩余33",
+    "progress_count": 5,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "紧急沟通加企业主贷品种报审，对接项目组安排材料尽调，建信配合增加品种推准"
+      },
+      {
+        "date": "0629-0703",
+        "text": "推动混池准入，JD非标作为恢复非标投放首批上会项目"
+      },
+      {
+        "date": "0622-0626",
+        "text": "紧跟非标审批进展，快速响应问题，推荐匹配信托"
+      },
+      {
+        "date": "0608-0612",
+        "text": "建信理财B档准入落地"
+      },
+      {
+        "date": "0525-0529",
+        "text": "建信理财混池准入推进中"
+      }
+    ]
+  },
+  {
+    "name": "建信信托",
+    "category": "信托公司",
+    "owner": "吴沛智",
+    "contact": "楼凌霄-分析师; 于涛-投资经理",
+    "approval": "消金、企业主贷、保理、京企贷",
+    "quota": "",
+    "progress_count": 2,
+    "recent_progress": [
+      {
+        "date": "0525-0529",
+        "text": "汽融ABS中标A2"
+      },
+      {
+        "date": "0511-0515",
+        "text": "推动建信信托对接消金非标"
+      }
+    ]
+  },
+  {
+    "name": "贝莱德建信",
+    "category": "其他",
+    "owner": "吴沛智",
+    "contact": "王可菲（sh）",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "等总行同意非标投资"
+      }
+    ]
+  },
+  {
+    "name": "建信基金",
+    "category": "公募基金",
+    "owner": "吴沛智",
+    "contact": "",
+    "approval": "",
+    "quota": "",
+    "progress_count": 0,
+    "recent_progress": []
+  },
+  {
+    "name": "交通银行/交银理财",
+    "category": "全国大行",
+    "owner": "吴沛智",
+    "contact": "郭金淼-项目融资部投资经理(sh); 蔡新雨-投资经理; 舒杰-项目融资处长; 闫军涛-信评部副总; 屠超-信评部",
+    "approval": "未准入京企贷",
+    "quota": "授信300 / 用信140 / 剩余160",
+    "progress_count": 4,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "重点沟通恢复非标投资可行性，卡点在监管对底层资产再分期后与理财产品期限匹配问题"
+      },
+      {
+        "date": "0629-0703",
+        "text": "双方就资产池中超期资产处置频率和理财子合规侧沟通，论证可行性"
+      },
+      {
+        "date": "0615-0618",
+        "text": "推动交银理财恢复保登非标投资"
+      },
+      {
+        "date": "0608-0612",
+        "text": "本周拜访交银理财另类部负责人顾琪，因平层信托投资蚂蚁受过处罚，短期无法放开平层投资，可试点保登非标"
+      }
+    ]
+  },
+  {
+    "name": "交银施罗德基金",
+    "category": "公募基金",
+    "owner": "吴沛智",
+    "contact": "",
+    "approval": "",
+    "quota": "",
+    "progress_count": 0,
+    "recent_progress": []
+  },
+  {
+    "name": "平安理财",
+    "category": "理财子",
+    "owner": "吴沛智",
+    "contact": "陈晗颖、闫东(sz); 孙鑫-公募固收部",
+    "approval": "非标含所有消金资产，公募含所有消金资产",
+    "quota": "授信50 / 用信40 / 剩余10",
+    "progress_count": 2,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "继续扩额扩品，消金40亿授信全部投满，新拓企金保理12亿投资落地"
+      },
+      {
+        "date": "0608-0612",
+        "text": "额度再次顶满，短期难以第三次扩额，等摊还"
+      }
+    ]
+  },
+  {
+    "name": "平安银行",
+    "category": "国股行",
+    "owner": "吴沛智",
+    "contact": "王皓屹-总行同业部投资管理室经理(sz); 余成峰-总行同业部; 刘博丰（投资）-北分; 勾海龙（托管）-北分",
+    "approval": "保理",
+    "quota": "授信30 / 用信16 / 剩余6",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0525-0529",
+        "text": "推动平安理财扩额并持续发力"
+      }
+    ]
+  },
+  {
+    "name": "平安资产",
+    "category": "保险资管",
+    "owner": "吴沛智",
+    "contact": "齐博-信评(sh)",
+    "approval": "白条/金条/保理",
+    "quota": "单笔单批",
+    "progress_count": 2,
+    "recent_progress": [
+      {
+        "date": "0525-0529",
+        "text": "保理已累计中标14亿，提前沟通提高京东资产集中度限制"
+      },
+      {
+        "date": "0511-0515",
+        "text": "推动平安资产参与白条投资"
+      }
+    ]
+  },
+  {
+    "name": "平安养老",
+    "category": "保险/养老",
+    "owner": "吴沛智",
+    "contact": "康元刚（sh）",
+    "approval": "白条，20亿",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0518-0522",
+        "text": "持续参与中标白条1.08亿"
+      }
+    ]
+  },
+  {
+    "name": "民生银行/民生理财",
+    "category": "国股行",
+    "owner": "吴沛智",
+    "contact": "信评-刘洋; 投资经理-沈使园; 部门总经理-黄轶",
+    "approval": "消金40/企金30/京诚50，合计不超80亿（小贷ABS/ABN/非标暂缓）",
+    "quota": "",
+    "progress_count": 5,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "红丽总带队拜访民生总行战客，沟通战客部协助推动信贷管理部准许理财子投资京东非标"
+      },
+      {
+        "date": "0629-0703",
+        "text": "战客表示总行已下发政策明确约束消金非标，短期暂缓"
+      },
+      {
+        "date": "0622-0626",
+        "text": "推动民生理财恢复非标投资"
+      },
+      {
+        "date": "0608-0612",
+        "text": "民生银行/民生理财消金40亿授信全部投满"
+      },
+      {
+        "date": "0525-0529",
+        "text": "民生银行白条投资持续推进"
+      }
+    ]
+  },
+  {
+    "name": "宁波银行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "张晨-总行资金运营中心; 申洋-分行投行部副总; 于一芳、迟铖-分行投行部",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0427-0430",
+        "text": "推动宁波银行参与白条投资"
+      }
+    ]
+  },
+  {
+    "name": "宁银理财",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "周轶群-总经理; 李昕彦、梁海伦-项目投资部",
+    "approval": "",
+    "quota": "",
+    "progress_count": 2,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "已交接"
+      },
+      {
+        "date": "0525-0529",
+        "text": "宁银理财受江苏局严格监管指导，季度报送非标投资情况"
+      }
+    ]
+  },
+  {
+    "name": "浙商银行",
+    "category": "国股行",
+    "owner": "吴沛智",
+    "contact": "林萍-金市总经理; 张逸伦-金市投资经理; 李居静-上海分行",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0518-0522",
+        "text": "本周拜访浙商银行，由于上海局口头指导要求不允许新增投资，目前也暂未放开，后续观望其他股份行行动"
+      }
+    ]
+  },
+  {
+    "name": "浙银理财",
+    "category": "国股行",
+    "owner": "吴沛智",
+    "contact": "顾川-项目投资部",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0427-0430",
+        "text": "推动浙银理财参与消金非标"
+      }
+    ]
+  },
+  {
+    "name": "汇丰银行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "朱哲意-结构融资组总牵头; 张欣怡、贾婧怡-结构融资组投资经理",
+    "approval": "",
+    "quota": "",
+    "progress_count": 3,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "汇丰对我司剩余额度7亿，年内预计50亿到期，Q4到期压力大，希望Q4能倾斜分量"
+      },
+      {
+        "date": "0518-0522",
+        "text": "本周拜访汇丰银行，目前剩余额度7亿"
+      },
+      {
+        "date": "0601-0605",
+        "text": "Q3我司大量非标融资需求，重点摸排汇丰非标额度和投资诉求"
+      }
+    ]
+  },
+  {
+    "name": "汇华理财",
+    "category": "国股行",
+    "owner": "吴沛智",
+    "contact": "林丽（sh）",
+    "approval": "单笔单批；白条夹层30%，其他20%",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动参与汽融ABS，对接券商走流程中；推动消金夹层+UB组合投资，目标本月东樾4-2首单落地"
+      }
+    ]
+  },
+  {
+    "name": "星展银行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "总协调-章璐璐（机构部高级副总裁）",
+    "approval": "消金类投资批复待上会",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0601-0605",
+        "text": "本周沟通后续安排，由于西藏信托不准入目前没有承接池信托可用，预计7月可继续落"
+      }
+    ]
+  },
+  {
+    "name": "开泰银行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "王梦雨-资金管理部副总（sz）",
+    "approval": "消金+企业主贷",
+    "quota": "授信20 / 用信4 / 剩余16",
+    "progress_count": 4,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "汽融ABS项目尽调问题回复，预计周一（25）批复，赶周二投标参与A1档，预计7500w"
+      },
+      {
+        "date": "0608-0612",
+        "text": "线上交流结构化非标优先级，借鉴JPM和花旗，内部研判问题回复"
+      },
+      {
+        "date": "0601-0605",
+        "text": "非标推动：同步市场非标扩量需求信息，内部需研判后保泰国总部审批"
+      },
+      {
+        "date": "0525-0529",
+        "text": "由于中联助贷业务风险较高，本期未能及时完成汽融ABS参与，经理仍会尝试推动二期项目"
+      }
+    ]
+  },
+  {
+    "name": "广州银行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "王建-资管部总助; 谭红艳-资管部副总; 苪安卿-同业部负责人; 徐茁-投资经理",
+    "approval": "信托金条",
+    "quota": "授信20 / 用信3 / 剩余17",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动广州银行参与金条投资"
+      }
+    ]
+  },
+  {
+    "name": "广州农商行自营/资管",
+    "category": "理财子",
+    "owner": "吴沛智",
+    "contact": "韩启钰-资管部副经理; 曹晓理-同业投资经理",
+    "approval": "白条",
+    "quota": "20",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0525-0529",
+        "text": "推动广州农商参与白条投资"
+      }
+    ]
+  },
+  {
+    "name": "广东华兴银行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "自营余云雨",
+    "approval": "11亿 金采、盛采、融资租赁",
+    "quota": "",
+    "progress_count": 2,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "金采尽调回复，推动华兴参与汽融ABS二期"
+      },
+      {
+        "date": "0608-0612",
+        "text": "首期汽融ABS流程未赶上，参与二期"
+      }
+    ]
+  },
+  {
+    "name": "深圳农商行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "罗剑华-金融市场部总经理助理; 俞荣锋-投资中心基金投资岗",
+    "approval": "",
+    "quota": "",
+    "progress_count": 2,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "线上尽调京东非标，对接项目组准备审核材料"
+      },
+      {
+        "date": "0518-0522",
+        "text": "准入信托清单对接中"
+      }
+    ]
+  },
+  {
+    "name": "东莞银行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "罗坚阳-金市副总; 何煦彬-投资经理（dg）",
+    "approval": "推动授信中",
+    "quota": "单笔单批",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动东莞银行参与白条投资"
+      }
+    ]
+  },
+  {
+    "name": "东莞农商资管",
+    "category": "理财子",
+    "owner": "吴沛智",
+    "contact": "李海兴、陈心捷",
+    "approval": "白条、小贷企业主贷、小贷京企贷",
+    "quota": "白条6亿、小贷6亿",
+    "progress_count": 4,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "加快推进小贷主体准入后，可投小贷企业主贷（缺低价资方）"
+      },
+      {
+        "date": "0608-0612",
+        "text": "已批复小贷企业主贷，预计参与盛赢3-8，收益诉求1.60+，单期规模1亿"
+      },
+      {
+        "date": "0601-0605",
+        "text": "下周完成小贷批复，下周二路演小贷企业主贷"
+      },
+      {
+        "date": "0427-0430",
+        "text": "首单落地1亿京东小贷企业主贷"
+      }
+    ]
+  },
+  {
+    "name": "顺德农商行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "投行-伍时游; 资管-廖嘉华",
+    "approval": "非标：2.8%+可碰",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0525-0529",
+        "text": "汽融ABS流程未赶上首期，预计参与第二期，第一期价格上看与投资诉求有差距"
+      }
+    ]
+  },
+  {
+    "name": "中山农商行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "金市部-主任-李靖; 资管部-谭晶霞（副总）、李玉亭",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动中山农商参与白条投资"
+      }
+    ]
+  },
+  {
+    "name": "南海农商",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "金市-郑沛琳; 资管-罗海琪",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0525-0529",
+        "text": "汽融ABS参与未中标（1.9%）"
+      }
+    ]
+  },
+  {
+    "name": "微众银行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "张钰-OCI债券/存单/ABS/货基（接替杨超）; 武昊-金市部投资经理（sz）; 杨超-发行侧资金经理",
+    "approval": "白条、金条、保理",
+    "quota": "单笔单批",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "交流续发项目经验，再次约东家铂睿次级投资分量，下周继续跟进"
+      }
+    ]
+  },
+  {
+    "name": "新网银行",
+    "category": "城商行",
+    "owner": "吴沛智",
+    "contact": "金市-李予馨",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "对接券商推动汽融ABS审批，可投A+B搭售，收益诉求2.5"
+      }
+    ]
+  },
+  {
+    "name": "易方达基金",
+    "category": "公募基金",
+    "owner": "吴沛智",
+    "contact": "固收部-祁峰、李思钊",
+    "approval": "白条、金条、白条取现、动产质押",
+    "quota": "",
+    "progress_count": 2,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "汽融ABS后续问题回复，周一（25）上会，如能批复周二来得及投标。信评重点关注客群在金条的分布，以及金条拒量因汽车抵押增信后回捞客群占比"
+      },
+      {
+        "date": "0525-0529",
+        "text": "汽融ABS参与中标"
+      }
+    ]
+  },
+  {
+    "name": "招商信诺资产",
+    "category": "其他",
+    "owner": "吴沛智",
+    "contact": "金融产品投资部投资经理-李兆元（sh）",
+    "approval": "白条/金条",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动招商信诺资产参与白条投资"
+      }
+    ]
+  },
+  {
+    "name": "广发基金",
+    "category": "公募基金",
+    "owner": "吴沛智",
+    "contact": "陈嘉良-信评",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动广发基金参与白条投资"
+      }
+    ]
+  },
+  {
+    "name": "南方基金",
+    "category": "公募基金",
+    "owner": "吴沛智",
+    "contact": "龚林-信评",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动南方基金参与白条投资"
+      }
+    ]
+  },
+  {
+    "name": "博时基金",
+    "category": "公募基金",
+    "owner": "吴沛智",
+    "contact": "无人对接",
+    "approval": "",
+    "quota": "",
+    "progress_count": 0,
+    "recent_progress": []
+  },
+  {
+    "name": "越秀金控",
+    "category": "私募/财务公司",
+    "owner": "吴沛智",
+    "contact": "邓贺刚-母基金投资部（gz）",
+    "approval": "标品1年内优先白条、金条、保理受益权",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动越秀金控参与白条次级投资"
+      }
+    ]
+  },
+  {
+    "name": "粤海资本",
+    "category": "私募/财务公司",
+    "owner": "吴沛智",
+    "contact": "洪辰、张海斌-投资经理（gz）",
+    "approval": "金白条保理金采企业主贷次级标券 含保登",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动粤海资本参与白条次级投资"
+      }
+    ]
+  },
+  {
+    "name": "南航资本",
+    "category": "私募/财务公司",
+    "owner": "吴沛智",
+    "contact": "谢彭龙",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动南航资本参与白条次级投资"
+      }
+    ]
+  },
+  {
+    "name": "深恒和",
+    "category": "其他",
+    "owner": "吴沛智",
+    "contact": "孙超",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动深恒和参与白条次级投资"
+      }
+    ]
+  },
+  {
+    "name": "思达星汇",
+    "category": "其他",
+    "owner": "吴沛智",
+    "contact": "焦俊辉-abs负责人（sh）",
+    "approval": "全品类次级标券",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "汽融ABS尽调，可投次级，看分配"
+      }
+    ]
+  },
+  {
+    "name": "信达澳亚基金",
+    "category": "公募基金",
+    "owner": "吴沛智",
+    "contact": "王明皓（投资管理部负责人）（sz）",
+    "approval": "",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动信达澳亚参与白条投资"
+      }
+    ]
+  },
+  {
+    "name": "中信证券:自营/资管/投顾/财富",
+    "category": "理财子",
+    "owner": "吴沛智",
+    "contact": "固收-冯晓（投资经理）; 资管-毛枭（信评）; 投顾-陆欣（部门总）、盛杰; 财富-冯嘉琪（投资经理）",
+    "approval": "次级和夹层:白/金/白取; 优先AB:白/金/白取、企业主贷/保理（京诚）; 标券无比例约束，信托受益权15%",
+    "quota": "",
+    "progress_count": 3,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "汽融ABS尽调问题回复，下周二来及参与；消金风控尽调，重点针对结构化非标后续入池信托白条和分分卡资产的尽调"
+      },
+      {
+        "date": "0608-0612",
+        "text": "自营的次级总额40亿几乎满量，投非标次级占额和成本区别于非标平层，目前推动与东家铂睿出券腾挪头寸承接京东新发次级"
+      },
+      {
+        "date": "0525-0529",
+        "text": "汽融ABS参与中标；小贷结构化非标项目次级准入西藏信托和国民信托中"
+      }
+    ]
+  },
+  {
+    "name": "国联民生证券:资管",
+    "category": "理财子",
+    "owner": "吴沛智",
+    "contact": "张晓斌; 高天（资管部类固收投资经理）",
+    "approval": "白条/金条/保理/金采/京小贷/企业主贷/采购贷次级",
+    "quota": "单笔单批",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动国联民生参与白条次级投资"
+      }
+    ]
+  },
+  {
+    "name": "外贸信托",
+    "category": "信托公司",
+    "owner": "吴沛智",
+    "contact": "李靖程、赵思玥",
+    "approval": "次级",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动外贸信托承接白条次级"
+      }
+    ]
+  },
+  {
+    "name": "粤财信托",
+    "category": "信托公司",
+    "owner": "吴沛智",
+    "contact": "邓深圳、吴海斌（gz）",
+    "approval": "次级",
+    "quota": "",
+    "progress_count": 1,
+    "recent_progress": [
+      {
+        "date": "0608-0612",
+        "text": "推动粤财信托承接白条次级"
+      }
+    ]
+  },
+  {
+    "name": "建元信托",
+    "category": "信托公司",
+    "owner": "吴沛智",
+    "contact": "杜鹏、刘青（sh）",
+    "approval": "",
+    "quota": "",
+    "progress_count": 2,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "有蚂蚁和美团经验，下周沟通承接池机会"
+      },
+      {
+        "date": "0608-0612",
+        "text": "前身安信信托，经上海电气/机场/隧道等上海国资重组。蚂蚁承接池10亿，蚂蚁财资认购；招银/青银/宁银/杭银理财"
+      }
+    ]
+  },
+  {
+    "name": "广发证券",
+    "category": "券商",
+    "owner": "吴沛智",
+    "contact": "刘付军",
+    "approval": "消金/企业主贷标券，受益权拿不了，可投夹层25%比例限制",
+    "quota": "",
+    "progress_count": 2,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "汽融ABS尽调，可投B档，看分配"
+      },
+      {
+        "date": "0525-0529",
+        "text": "汽融ABS参与未中标"
+      }
+    ]
+  },
+  {
+    "name": "广发资管",
+    "category": "理财子",
+    "owner": "吴沛智",
+    "contact": "游子榕",
+    "approval": "",
+    "quota": "",
+    "progress_count": 3,
+    "recent_progress": [
+      {
+        "date": "0706-0710",
+        "text": "汽融ABS已入库，可投B档，看分配"
+      },
+      {
+        "date": "0608-0612",
+        "text": "汽融二期ABS推流程继续参与"
+      },
+      {
+        "date": "0525-0529",
+        "text": "汽融ABS参与中标"
+      }
+    ]
+  }
+]
