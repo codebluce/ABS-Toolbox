@@ -134,6 +134,19 @@
       ],
       "closed": null,
       "notes": "v2.5.5 P1/P2/P3 工程清理首轮。B 审计完成 verdict=APPROVED,无 CRITICAL/WARNING。4 审计焦点独立读代码全 PASS:①proj_sizes 死代码在 gen_integrated_dashboard.py 零残留(grep 19 命中全在 gen_pricing_insight/gen_compare_tool 正常业务链);②fig6/fig7/fig8 三可选面板降级策略完全一致(try→真实body/except→WARN+占位,占位仍 append 不破 13panel QC);③shared_tmp 三分支异常清理完整(RuntimeError→exit1、通用Exception→raise不吞错、正常路径读完删tmp置None);④re/pandas import 上提彻底无残留无副作用。git show 932adb0 --stat 确认仅 2 文件(CHANGELOG.md+gen_integrated_dashboard.py),changed_files 声明与实际一致(洁净性优于 v22/v23/v24)。5层自检:层1 git+层4 py_compile 实测 PY_COMPILE_OK 通过,层2/3/5 采信A+代码佐证。1 项 INFO(REV-01 降级达成跨两轮 v27 fig6+v28 fig7/fig8)不阻断。待 Agent C 归档。"
+    },
+    "v29-runtime-hardening": {
+      "skill_version": "v2.5.6",
+      "current_round": 1,
+      "status": "PENDING_REVIEW",
+      "verdict": null,
+      "next_action": "agent_b_review",
+      "submissions": [
+        "A1-v29-runtime-hardening-r1"
+      ],
+      "reviews": [],
+      "closed": null,
+      "notes": "v2.5.6 第二批运行稳定性修复首轮送审。范围:shared_tmp finally 管理;increment_merge workbook 显式 close;output os.replace/原子替换;投资台账历史年份缺失/错配 WARN。第三批/第四批未纳入。"
     }
   },
   "issues": [
