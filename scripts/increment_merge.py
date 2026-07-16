@@ -18,8 +18,34 @@
 6. 全表格式优化 + QC（含存量WXY保护验证）
 """
 import openpyxl, sys, os, argparse
+import tempfile
 from collections import OrderedDict, defaultdict, Counter
 from copy import copy
+
+
+def close_workbook(wb):
+    """Best-effort close for openpyxl workbooks."""
+    if wb is None:
+        return
+    try:
+        wb.close()
+    except Exception:
+        pass
+
+
+def save_workbook_atomic(wb, output_path):
+    """Save workbook to a same-dir temp file, then atomically replace output_path."""
+    out_dir = os.path.dirname(output_path) or "."
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix='.xlsx', dir=out_dir)
+    os.close(tmp_fd)
+    try:
+        wb.save(tmp_path)
+        os.replace(tmp_path, output_path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
+    return output_path
 
 # ============================================================
 # 复用 insert_bookkeeping.py 的核心函数
@@ -313,6 +339,7 @@ def read_detail(path, expected_layer="auto"):
             rate = normalize_rate(c1)
             layer = current_layer if current_layer else (expected_layer if expected_layer != "auto" else "优先A")
             items.append({'rate': rate, 'name': str(c2).strip(), 'size': sf, 'layer': layer})
+    close_workbook(wb)
     # Merge: same institution + same rate + same layer
     merged = OrderedDict()
     for it in items:
@@ -838,6 +865,10 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     print("=" * 60)
     print(f"v2.1 {mode_label}")
     print("=" * 60)
+    wb_a = None
+    wb_b = None
+    wb_out = None
+    wb_orig = None
 
     # === Step 1: Preprocess ledger(s) ===
     print("\n=== Step 1: Preprocessing ===")
@@ -895,7 +926,9 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
 
         if not increment:
             print("  No increment projects found. Nothing to merge.")
-            wb_a.save(output_path)
+            save_workbook_atomic(wb_a, output_path)
+            close_workbook(wb_b)
+            close_workbook(wb_a)
             print(f"Saved (unchanged): {output_path}")
             return
 
@@ -1290,10 +1323,9 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
             if cell.value is None:
                 cell.value = title
 
-    # v2.5.1: 先保存到临时文件，QC PASS 后 rename 到 output_path
+    # v2.5.1: 先保存到临时文件，QC PASS 后 os.replace 到 output_path
     # 这样 QC FAIL 时不会留下错误文件（REV-01 修复）
-    import tempfile
-    tmp_fd, tmp_path = tempfile.mkstemp(suffix='.xlsx', dir=os.path.dirname(output_path))
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix='.xlsx', dir=os.path.dirname(output_path) or '.')
     os.close(tmp_fd)
     wb_a.save(tmp_path)
     print(f"\nSaved (temp): {tmp_path}")
@@ -1330,7 +1362,8 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     # QC 7.2: WXY preservation for non-target projects
     print("\n=== QC 7.2: Existing WXY preservation ===")
     # CRITICAL: Must preprocess the original to expand merged cells for WXY comparison
-    ws_orig_protected = unmerge_and_fill_processed(openpyxl.load_workbook(processed_path, data_only=False).active)
+    wb_orig = openpyxl.load_workbook(processed_path, data_only=False)
+    ws_orig_protected = unmerge_and_fill_processed(wb_orig.active)
     wxy_mismatches = 0
     checked_count = 0
     for proj_name in set_a:
@@ -1393,16 +1426,22 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     # v2.5.1: QC FAIL 阻断——删除临时文件，不生成 output，直接退出
     if qc_fails > 0:
         os.remove(tmp_path)
+        close_workbook(wb_out)
+        close_workbook(wb_orig)
+        close_workbook(wb_b)
+        close_workbook(wb_a)
         print("\n" + "=" * 60)
         print(f"[BLOCKED] {mode_label} aborted due to {qc_fails} QC FAIL(s).")
         print(f"[BLOCKED] Output file NOT saved. Temp file deleted. Fix the issues above and re-run.")
         print("=" * 60)
         return
 
-    # QC PASS: rename 临时文件到 output_path
-    if os.path.exists(output_path):
-        os.remove(output_path)
-    os.rename(tmp_path, output_path)
+    # QC PASS: atomically replace output_path with temp workbook
+    close_workbook(wb_out)
+    close_workbook(wb_orig)
+    close_workbook(wb_b)
+    close_workbook(wb_a)
+    os.replace(tmp_path, output_path)
     print(f"\nSaved: {output_path}")
 
     print("\n" + "=" * 60)

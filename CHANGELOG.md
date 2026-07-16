@@ -12,6 +12,34 @@
 
 ---
 
+## v2.5.6 — 2026-07-17 第二批运行稳定性修复（finally/close/os.replace/历史年份提示）
+
+### 修复
+
+- **shared_tmp finally 管理**:
+  - `gen_integrated_dashboard.py` 的共享预处理临时文件由 `finally` 统一清理
+  - 覆盖预处理、结构断言、compute/render 可选面板等异常路径，避免 tmp 泄漏
+
+- **increment_merge workbook 显式 close**:
+  - 新增 `close_workbook()`，对 processed/new_raw/output/original/detail workbooks 做显式关闭
+  - QC FAIL、无增量 early return、QC PASS 路径均补齐关闭动作
+
+- **output 原子替换**:
+  - 新增 `save_workbook_atomic()`，无增量分支先保存同目录临时文件，再 `os.replace()` 输出
+  - QC PASS 分支由 `os.remove()+os.rename()` 改为 `os.replace(tmp_path, output_path)`，减少 Windows 下半替换风险
+
+- **投资台账历史年份提示**:
+  - 2024/2025/2026 年源文件缺失时输出 WARN，不再静默跳过
+  - 文件名年份与配置年份不一致时输出 WARN，提示可能错配
+
+### 验证
+
+- `py_compile` 通过：`gen_integrated_dashboard.py` / `increment_merge.py` / `gen_investment_ledger.py`
+- 综合看板端到端通过：0706 定稿生成 13 个 panel + Tab JS 齐全
+- `increment_merge` 无增量 smoke 通过：同文件 processed/new_raw 触发 no-increment 分支并原子输出临时 xlsx
+
+---
+
 ## v2.5.5 — 2026-07-17 P1/P2/P3 工程清理（容错一致 + import上提）
 
 ### 修复

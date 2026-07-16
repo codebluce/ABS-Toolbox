@@ -228,7 +228,7 @@ _YEAR_COMPUTE = {
 
 
 def compute_data_multi_year(year_paths, preprocessed_path=None):
-    """paths: {'2026': path, '2025': path, '2024': path}（可只传部分年份，缺失年份跳过不报错）
+    """paths: {'2026': path, '2025': path, '2024': path}（可只传部分年份，缺失年份 WARN 后跳过）
 
     preprocessed_path: 2026 台账的共享预处理产物(可选)。2025/2024 走 _compute_flat_year,
         不经 preprocess,不受影响。
@@ -239,7 +239,11 @@ def compute_data_multi_year(year_paths, preprocessed_path=None):
     for year in ('2026', '2025', '2024'):
         path = year_paths.get(year)
         if not path or not os.path.exists(path):
+            print(f'[WARN] 投资台账 {year} 年源文件缺失，已跳过: {path or "<未配置>"}')
             continue
+        basename = os.path.basename(path)
+        if year not in basename:
+            print(f'[WARN] 投资台账 {year} 年源文件名未包含年份 {year}，请确认是否错配: {basename}')
         # 2026 走 compute_data(支持 preprocessed_path 注入);2025/2024 走 flat 解析,无需注入
         if year == '2026':
             by_year[year] = compute_data(path, preprocessed_path=preprocessed_path)

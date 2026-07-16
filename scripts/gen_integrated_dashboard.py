@@ -282,7 +282,7 @@ def main():
     print('=' * 60)
 
     # 1. 单次预处理:产出共享 tmp,注入各子模块(原 8 次 preprocess → 1 次,预期省 ~80s)
-    #    shared_tmp 创建移入 try,preprocess 自身异常时 finally 兜底删除
+    #    shared_tmp 全生命周期由 finally 管理,任何异常路径均兜底删除。
     from abs_common import preprocess_xlsx_for_pandas
     shared_tmp = None
     try:
@@ -306,71 +306,58 @@ def main():
         }
         led_data = gen_investment_ledger.compute_data_multi_year(
             ledger_year_paths, preprocessed_path=shared_tmp)   # 只 2026 用
+
+        # 2. 各 render_body（institution 3 次调用，传 section_key）
+        print('\n[2/4] 渲染 body...')
+        panels = [
+            ('pricing',     'compare',    gen_pricing_insight.render_pricing_panel(cmp_data)),
+            ('pricing',     'invest',     gen_compare_tool.render_body_invest(cmp_data)),
+            ('pricing',     'cost',       gen_abs_cost_report.render_body(cost_data)),
+            ('pricing',     'spread',     gen_spread_report.render_body(spread_data)),
+            ('institution', 'manager',    gen_institution_stats.render_body(inst_data, section_key='manager')),
+            ('institution', 'sales',      gen_institution_stats.render_body(inst_data, section_key='sales')),
+            ('institution', 'custodian',  gen_institution_stats.render_body(inst_data, section_key='custodian')),
+        ]
+
+        # 投资人分析模块:理财子分析 panel(fig4 矩阵 + fig5 画像 并排,同步最新台账)
+        print('\n[3/4] 生成投资人分析 > 理财子分析 panel...')
+        try:
+            wlz_body = fig7_wlz_panel.render_wlz_panel(regenerate=True, preprocessed_path=shared_tmp)
+            panels.append(('investor', 'wlz', wlz_body))
+        except Exception as e:
+            print(f'[WARN] 理财子分析面板跳过: {e}')
+            panels.append(('investor', 'wlz', '<div style="padding:40px;text-align:center;color:#9aa5b5;">理财子分析数据暂不可用</div>'))
+
+        # 投资人分析模块:非标额度 panel
+        print('\n[3.5/4] 生成投资人分析 > 非标额度 panel...')
+        try:
+            credit_body = fig6_credit_panel.render_credit_panel(
+                ledger_path=xlsx_path, preprocessed_path=shared_tmp)
+            panels.append(('investor', 'credit', credit_body))
+        except Exception as e:
+            print(f'[WARN] 非标额度面板跳过: {e}')
+            panels.append(('investor', 'credit', '<div style="padding:40px;text-align:center;color:#9aa5b5;">非标额度数据暂不可用</div>'))
+
+        # 投资人分析模块:总授信额度 panel
+        print('\n[3.6/4] 生成投资人分析 > 授信总额度 panel...')
+        try:
+            credit_total_body = fig8_credit_total_panel.render_credit_total_panel(
+                ledger_path=xlsx_path, preprocessed_path=shared_tmp)
+            panels.append(('investor', 'credit_total', credit_total_body))
+        except Exception as e:
+            print(f'[WARN] 授信总额度面板跳过: {e}')
+            panels.append(('investor', 'credit_total', '<div style="padding:40px;text-align:center;color:#9aa5b5;">授信总额度数据暂不可用</div>'))
     except RuntimeError as e:
         print(f'\n[ERROR] {e}')
         print('[ERROR] 请修正数据或逻辑后重试')
-        if shared_tmp:
-            try:
-                os.remove(shared_tmp)
-            except OSError:
-                pass
         sys.exit(1)
-    except Exception:
+    finally:
         if shared_tmp:
             try:
                 os.remove(shared_tmp)
             except OSError:
                 pass
-        raise
-
-    # 2. 各 render_body（institution 3 次调用，传 section_key）
-    print('\n[2/4] 渲染 body...')
-    panels = [
-        ('pricing',     'compare',    gen_pricing_insight.render_pricing_panel(cmp_data)),
-        ('pricing',     'invest',     gen_compare_tool.render_body_invest(cmp_data)),
-        ('pricing',     'cost',       gen_abs_cost_report.render_body(cost_data)),
-        ('pricing',     'spread',     gen_spread_report.render_body(spread_data)),
-        ('institution', 'manager',    gen_institution_stats.render_body(inst_data, section_key='manager')),
-        ('institution', 'sales',      gen_institution_stats.render_body(inst_data, section_key='sales')),
-        ('institution', 'custodian',  gen_institution_stats.render_body(inst_data, section_key='custodian')),
-    ]
-
-    # 投资人分析模块:理财子分析 panel(fig4 矩阵 + fig5 画像 并排,同步最新台账)
-    print('\n[3/4] 生成投资人分析 > 理财子分析 panel...')
-    try:
-        wlz_body = fig7_wlz_panel.render_wlz_panel(regenerate=True, preprocessed_path=shared_tmp)
-        panels.append(('investor', 'wlz', wlz_body))
-    except Exception as e:
-        print(f'[WARN] 理财子分析面板跳过: {e}')
-        panels.append(('investor', 'wlz', '<div style="padding:40px;text-align:center;color:#9aa5b5;">理财子分析数据暂不可用</div>'))
-
-    # 投资人分析模块:非标额度 panel
-    print('\n[3.5/4] 生成投资人分析 > 非标额度 panel...')
-    try:
-        credit_body = fig6_credit_panel.render_credit_panel(
-            ledger_path=xlsx_path, preprocessed_path=shared_tmp)
-        panels.append(('investor', 'credit', credit_body))
-    except Exception as e:
-        print(f'[WARN] 非标额度面板跳过: {e}')
-        panels.append(('investor', 'credit', '<div style="padding:40px;text-align:center;color:#9aa5b5;">非标额度数据暂不可用</div>'))
-
-    # 投资人分析模块:总授信额度 panel
-    print('\n[3.6/4] 生成投资人分析 > 授信总额度 panel...')
-    try:
-        credit_total_body = fig8_credit_total_panel.render_credit_total_panel(
-            ledger_path=xlsx_path, preprocessed_path=shared_tmp)
-        panels.append(('investor', 'credit_total', credit_total_body))
-    except Exception as e:
-        print(f'[WARN] 授信总额度面板跳过: {e}')
-        panels.append(('investor', 'credit_total', '<div style="padding:40px;text-align:center;color:#9aa5b5;">授信总额度数据暂不可用</div>'))
-
-    # 共享 tmp 生命周期结束(所有 read 已完成,进入 HTML 拼接),统一删除杜绝泄漏
-    if shared_tmp:
-        try:
-            os.remove(shared_tmp)
-        except OSError:
-            pass
-        shared_tmp = None
+            shared_tmp = None
 
     # 投资台账模块：按年份拆分的多维筛选统计 panel（2026/2025/2024 各一个子 Tab，
     # 智能问答悬浮球随第一个年份 panel 一起挂载，语料覆盖全部年份，不受当前子 Tab 限制）
