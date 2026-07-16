@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-07-16",
+  "updated_at": "2026-07-17",
   "slugs": {
     "v20-institution-stats": {
       "skill_version": "v2.0.0",
@@ -119,6 +119,19 @@
       ],
       "closed": "C1-v27-p0-hardening-r1",
       "notes": "v2.5.4 P0防错包已归档(C1-v27-p0-hardening-r1)。B 审计完成:4 审计焦点独立读代码全 PASS 无 CRITICAL。QC 7.1/7.2/7.3 采用 tmp+rename 真阻断架构,规避 v26 REV-01(save 在 QC 前致阻断无效)同类隐患；WXY三元组整行取舍；fig6/fig8 唯一匹配防重复占用；#ABS-006 iloc[1:] 单行表头修复补回首行认购。C 归档核查 fig8 unmatched=7 合计5.93亿,含6条>=0.1亿,作为 MEDIUM audit_escape_risk 留档,建议 v28 扩展匹配规则或展示未计入金额。REV-02 字符串日期比较作为 LOW/INFO 留档。"
+    },
+    "v28-p123-cleanup": {
+      "skill_version": "v2.5.5",
+      "current_round": 1,
+      "status": "PENDING_REVIEW",
+      "verdict": null,
+      "next_action": "agent_b_review",
+      "submissions": [
+        "A1-v28-p123-cleanup-r1"
+      ],
+      "reviews": [],
+      "closed": null,
+      "notes": "v2.5.5 P1/P2/P3 工程清理首轮送审。范围:确认 proj_sizes 重算死代码已清理;统一投资人分析可选面板异常降级;re/pandas 局部 import 上提;shared_tmp 异常清理;过时注释清理。"
     }
   },
   "issues": [
