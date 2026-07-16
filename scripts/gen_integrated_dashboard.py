@@ -9,9 +9,12 @@
 """
 import os
 import sys
+import re
 import argparse
 from datetime import datetime
 from pathlib import Path
+
+import pandas as pd
 
 # 脚本目录加入 sys.path，便于 import 4 个生成器
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -171,7 +174,6 @@ def build_integrated_html(panels, all_css):
             # 机构统计的 3 个 panel 用 section 名，发行定价用看板名
             if module == 'institution':
                 # 从 body 里找 section-title
-                import re
                 title_match = re.search(r'<span class="section-title">(.*?)</span>', body)
                 sub_label = title_match.group(1).replace('表一：', '').replace('表二：', '').replace('表三：', '') if title_match else sub
             elif module == 'investor':
@@ -234,7 +236,7 @@ def build_integrated_html(panels, all_css):
 </html>"""
 
 
-# 共享 tmp 结构断言:fig4/fig5 按列名读 + iloc[2:] 跳前2行,结构不符会静默错数。
+# 共享 tmp 结构断言:fig4/fig5 按列名读 + 单行表头后从 iloc[1:] 读数据,结构不符会静默错数。
 # 此断言在 main 创建共享 tmp 后注入前执行,不符立即 fail,杜绝静默错数风险。
 SHARED_TMP_REQUIRED_COLS = {
     '月份', '资产类型', '项目名称', '发行场所', '认购机构', '认购份额',   # fig4 load_all_rows
@@ -245,8 +247,7 @@ SHARED_TMP_REQUIRED_COLS = {
 
 def _assert_shared_tmp_structure(tmp_path):
     """断言共享 tmp 满足所有消费方的结构依赖,不符立即 fail。"""
-    import pandas as _pd
-    raw = _pd.read_excel(tmp_path, header=None)
+    raw = pd.read_excel(tmp_path, header=None)
     headers = [str(h).strip() if h is not None else '' for h in raw.iloc[0].tolist()]
     missing = SHARED_TMP_REQUIRED_COLS - set(headers)
     if missing:
@@ -314,6 +315,13 @@ def main():
             except OSError:
                 pass
         sys.exit(1)
+    except Exception:
+        if shared_tmp:
+            try:
+                os.remove(shared_tmp)
+            except OSError:
+                pass
+        raise
 
     # 2. 各 render_body（institution 3 次调用，传 section_key）
     print('\n[2/4] 渲染 body...')
@@ -329,8 +337,12 @@ def main():
 
     # 投资人分析模块:理财子分析 panel(fig4 矩阵 + fig5 画像 并排,同步最新台账)
     print('\n[3/4] 生成投资人分析 > 理财子分析 panel...')
-    wlz_body = fig7_wlz_panel.render_wlz_panel(regenerate=True, preprocessed_path=shared_tmp)
-    panels.append(('investor', 'wlz', wlz_body))
+    try:
+        wlz_body = fig7_wlz_panel.render_wlz_panel(regenerate=True, preprocessed_path=shared_tmp)
+        panels.append(('investor', 'wlz', wlz_body))
+    except Exception as e:
+        print(f'[WARN] 理财子分析面板跳过: {e}')
+        panels.append(('investor', 'wlz', '<div style="padding:40px;text-align:center;color:#9aa5b5;">理财子分析数据暂不可用</div>'))
 
     # 投资人分析模块:非标额度 panel
     print('\n[3.5/4] 生成投资人分析 > 非标额度 panel...')
@@ -344,9 +356,13 @@ def main():
 
     # 投资人分析模块:总授信额度 panel
     print('\n[3.6/4] 生成投资人分析 > 授信总额度 panel...')
-    credit_total_body = fig8_credit_total_panel.render_credit_total_panel(
-        ledger_path=xlsx_path, preprocessed_path=shared_tmp)
-    panels.append(('investor', 'credit_total', credit_total_body))
+    try:
+        credit_total_body = fig8_credit_total_panel.render_credit_total_panel(
+            ledger_path=xlsx_path, preprocessed_path=shared_tmp)
+        panels.append(('investor', 'credit_total', credit_total_body))
+    except Exception as e:
+        print(f'[WARN] 授信总额度面板跳过: {e}')
+        panels.append(('investor', 'credit_total', '<div style="padding:40px;text-align:center;color:#9aa5b5;">授信总额度数据暂不可用</div>'))
 
     # 共享 tmp 生命周期结束(所有 read 已完成,进入 HTML 拼接),统一删除杜绝泄漏
     if shared_tmp:
