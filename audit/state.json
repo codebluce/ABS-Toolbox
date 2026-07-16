@@ -108,17 +108,17 @@
     "v27-p0-hardening": {
       "skill_version": "v2.5.4",
       "current_round": 1,
-      "status": "REVIEWED",
+      "status": "COMPLETED",
       "verdict": "APPROVED_WITH_CONDITIONS",
-      "next_action": "agent_c_close",
+      "next_action": null,
       "submissions": [
         "A1-v27-p0-hardening-r1"
       ],
       "reviews": [
         "B1-v27-p0-hardening-r1"
       ],
-      "closed": null,
-      "notes": "v2.5.4 P0防错包。B 审计完成:4 审计焦点独立读代码全 PASS 无 CRITICAL。焦点1 QC 7.1/7.2/7.3 真阻断——increment_merge.py L1394 qc_fails>0 → L1395 os.remove(tmp) → L1400 return(不落盘),仅 PASS 分支 L1402 os.rename 落盘,全程无 wb.save,从架构上规避 v26 REV-01(save 在 QC 前致阻断无效)同类隐患。焦点2 WXY三元组 abs_common.py L235-246 wxy_complete==3 统一 .where 整行取舍,消除逐列 fillna 拼接。焦点3 fig6/fig8 唯一匹配才计入+multi 不计入+WARN+大额 unmatched 告警,保守偏差防重复占用。焦点4 #ABS-006 iloc[2:]→iloc[1:] 单行表头修复补回首行认购。git tag audit/v2.5.4-v27-p0-hardening-r01→c9c2626,8 文件与 A 声明一致。2 项 Issue(REV-01 WARNING fig8 保守漏计需确认 unmatched=7 金额量级 + REV-02 INFO 字符串日期比较)均 blocks_approval=false。verdict=APPROVED_WITH_CONDITIONS,1 condition 待 Agent C 归档确认。"
+      "closed": "C1-v27-p0-hardening-r1",
+      "notes": "v2.5.4 P0防错包已归档(C1-v27-p0-hardening-r1)。B 审计完成:4 审计焦点独立读代码全 PASS 无 CRITICAL。QC 7.1/7.2/7.3 采用 tmp+rename 真阻断架构,规避 v26 REV-01(save 在 QC 前致阻断无效)同类隐患；WXY三元组整行取舍；fig6/fig8 唯一匹配防重复占用；#ABS-006 iloc[1:] 单行表头修复补回首行认购。C 归档核查 fig8 unmatched=7 合计5.93亿,含6条>=0.1亿,作为 MEDIUM audit_escape_risk 留档,建议 v28 扩展匹配规则或展示未计入金额。REV-02 字符串日期比较作为 LOW/INFO 留档。"
     }
   },
   "issues": [
@@ -272,8 +272,8 @@
       "severity": "WARNING",
       "category": "FUNCTION_EQUIVALENCE",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "fig6/fig8 _apply_new_subscriptions 采保守匹配:len(matches)>1 的 multi 不计入(WARN 避免重复占用)、len==0 的 unmatched 不计入(大额≥0.1亿告警)。宁少算不重复方向正确,但存在保守漏计风险。本轮 fig8 unmatched=7 需 Agent C 归档时确认 7 条金额量级——若含大额基石机构则剩余额度虚高,应记 audit_escape_risk 或建议 v28 扩展匹配规则(参考 v25 MATCH_HARD_MAP)"
+      "status": "resolved",
+      "desc": "fig6/fig8 _apply_new_subscriptions 采保守匹配:len(matches)>1 的 multi 不计入(WARN 避免重复占用)、len==0 的 unmatched 不计入(大额≥0.1亿告警)。C1 已核查 fig8 unmatched=7 合计5.93亿(杭州银行0.8+0.55、建信信托0.9、国泰海通1.3、招商证券1.0、中信证券1.3、中信建投投顾0.08),作为 MEDIUM audit_escape_risk 留档,建议 v28 扩展匹配规则或展示未计入金额"
     },
     {
       "id": "REV-v2.5.4-v27-p0-hardening-r1-02",
@@ -281,8 +281,8 @@
       "severity": "INFO",
       "category": "FUNCTION_EQUIVALENCE",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "fig8 compute_maturity_amounts 的 mask 用字符串比较 df['簿记时间']>='2026-07-01' 依赖 pandas 隐式字符串转换。当前台账日期格式统一(YYYY-MM-DD)时正确,但若未来日期格式漂移(如 2026/7/1)可能误判。建议后续统一 to_datetime 后比较。不阻断,C1 留档"
+      "status": "resolved",
+      "desc": "fig8 compute_maturity_amounts 的 mask 用字符串比较 df['簿记时间']>='2026-07-01' 依赖 pandas 隐式字符串转换。当前台账日期格式统一(YYYY-MM-DD)时正确,建议后续统一 pd.Timestamp 显式比较。不阻断,C1 留档"
     }
   ],
   "counters": {
