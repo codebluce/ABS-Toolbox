@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-07-05",
+  "updated_at": "2026-07-16",
   "slugs": {
     "v20-institution-stats": {
       "skill_version": "v2.0.0",
@@ -54,7 +54,9 @@
       "submissions": [
         "A1-v23-internal-merge-unify-r1"
       ],
-      "reviews": ["B1-v23-internal-merge-unify-r1"],
+      "reviews": [
+        "B1-v23-internal-merge-unify-r1"
+      ],
       "closed": "C1-v23-internal-merge-unify-r1",
       "notes": "v2.3.0 第四轮。已归档(C1-v23-internal-merge-unify-r1)。internal_merge 翻译官改造(88 行→15 行+upgrade_22_to_25 40 行),闭环技术债 #ABS-002,解除三个 C1(v20/v21/v22)的 deferred_critical。Agent B 独立复核完成:6 层自检全部重跑通过,功能等价性完整无回归。4 项瑕疵 REV-03(SKILL.md version)由 C 顺手升至 2.3.0 resolved;REV-01(commit_hash 以 tag→1ef0612 为准)/REV-02(补记完整 13 文件 changed_files 清单,§1§6.3 矛盾留档)/REV-04(22列实际24列口径确认)由 C1 归档留档关闭。verdict=APPROVED_WITH_CONDITIONS。"
     },
@@ -102,6 +104,19 @@
       ],
       "closed": null,
       "notes": "v2.5.1 第七轮。B 审计完成:QC 7.20 UV 列值保护逻辑正确+端到端 PASS,但 QC FAIL 阻断无效(wb_a.save 在 QC 之前执行,FAIL 时文件已保存)。1 CRITICAL REV-01(FAIL阻断无效 blocks_approval=true)+ 2 WARNING(REV-02 changed_files遗漏 + REV-03 rebook行号对齐风险)。需 A 修复:把 save 移到 QC 之后。"
+    },
+    "v27-p0-hardening": {
+      "skill_version": "v2.5.4",
+      "current_round": 1,
+      "status": "PENDING_REVIEW",
+      "verdict": null,
+      "next_action": "agent_b_review",
+      "submissions": [
+        "A1-v27-p0-hardening-r1"
+      ],
+      "reviews": [],
+      "closed": null,
+      "notes": "v2.5.4 P0防错包首轮送审。范围:QC 7.1/7.2/7.3 真阻断、WXY三元组 resolved、防拼接记录、fig6/fig8 新增认购改 WXY穿透优先+匹配审计、#ABS-006 iloc[2:] 行偏移修复。A1 已提交并打 tag audit/v2.5.4-v27-p0-hardening-r01。"
     }
   },
   "issues": [

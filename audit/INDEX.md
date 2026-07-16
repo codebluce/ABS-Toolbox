@@ -5,11 +5,11 @@
 
 ## 统计概览
 
-- 送审轮次(submissions):7
+- 送审轮次(submissions):8
 - 复审轮次(reviews):6(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档;v24-self-check r1 APPROVED_WITH_CONDITIONS 已归档;v25-match-rule-tune r1 APPROVED_WITH_CONDITIONS 已归档;v26-uv-protection r1 NEEDS_REVISION)
 - 归档(closed):6(v20-institution-stats r1 + v21-bookkeeping r1 + v22-pricing r1 + v23-internal-merge-unify r1 + v24-self-check r1 + v25-match-rule-tune r1 均已归档)
 - 已验证 Issue:0
-- 待处理 Issue:3(v26-uv-protection r1:1 CRITICAL FAIL阻断无效 + 1 WARNING changed_files遗漏 + 1 WARNING rebook行号对齐)
+- 待处理 Issue:3(v26-uv-protection r1:1 CRITICAL FAIL阻断无效 + 1 WARNING changed_files遗漏 + 1 WARNING rebook行号对齐);1 个待审 slug(v27-p0-hardening r1)
 
 ## Submissions
 
@@ -22,6 +22,7 @@
 | v24-self-check | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.4-v24-self-check-r01`(✅已双推) | `31f716f` | [A1-v24-self-check-r1.md](submissions/A1-v24-self-check-r1.md) |
 | v25-match-rule-tune | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.5-v25-match-rule-tune-r01`(✅已双推) | `ae1907e` | [A1-v25-match-rule-tune-r1.md](submissions/A1-v25-match-rule-tune-r1.md) |
 | v26-uv-protection | r1 | NEEDS_REVISION | ✅ 4/4 | 2026-07-13 | `audit/v2.5.1-v26-uv-protection-r01`(✅已双推) | `1ad1a89` | [A1-v26-uv-protection-r1.md](submissions/A1-v26-uv-protection-r1.md) |
+| v27-p0-hardening | r1 | PENDING_REVIEW | ✅ 4/4 | 2026-07-16 | `audit/v2.5.4-v27-p0-hardening-r01`(✅已双推) | `c9c2626` | [A1-v27-p0-hardening-r1.md](submissions/A1-v27-p0-hardening-r1.md) |
 
 ## Reviews
 
@@ -83,6 +84,8 @@
 | v23-internal-merge-unify | r1 已归档(COMPLETED,APPROVED_WITH_CONDITIONS) | — | v2.3.0 第四轮 internal_merge 翻译官改造,闭环 #ABS-002(解除 v20/v21/v22 三个 C1 的 deferred_critical);6 层自检通过;4 项瑕疵 REV-03 已修复,REV-01/02/04 由 C1 留档关闭 |
 | v24-self-check | r1 已归档(COMPLETED) | — | v2.4.0 新增 5 层自检工具脚本;核心层 3 逐 cell diff 回归闸门通过(13753 cell 0 差异);降级模式 --mode degraded 已验;3 项 WARNING + 1 INFO 由 C1 留档关闭;延期验证项:auto 自动降级分支留原 skill 退役时实测 |
 | v25-match-rule-tune | r1 已归档(COMPLETED) | — | v2.5.0 匹配规则调优:normalize 去连字符+全角空格 bug 修复+core_name+MATCH_HARD_MAP+Pass 1-4 优先级链+rebook 默认模式;5 处改动 git show ae1907e 逐行独立核查全真实、优先级链守卫顺序正确、rebook 向后兼容;6 层自检层1/6 读代码确认+层2-5采信 A 输出;§5 污染文件声明与实际一致(commit 仅 4 文件,较 v22/v23/v24 洁净性显著改善);2 项瑕疵(1 WARNING changed_files 口径+1 INFO 阈值观察)由 C1 留档关闭;延期观察:Pass4 阈值/hard_map 业务观察 1-2 周 |
+| v26-uv-protection | r1 NEEDS_REVISION | A-fix | B1 已指出 QC FAIL 阻断无效等 3 项 Issue，待修复轮 |
+| v27-p0-hardening | r1 PENDING_REVIEW | B 审计 | v2.5.4 P0 防错包：QC阻断+WXY三元组+fig6/fig8 resolved口径+匹配审计+#ABS-006 修复 |
 
 ## 命名规则
 
