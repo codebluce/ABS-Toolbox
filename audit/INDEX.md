@@ -1,15 +1,15 @@
 # ABS工具箱 Audit Index
 
 > 本文件手动维护(后续可脚本化,参见 macro-allocation-strategy/scripts/refresh_audit_index.py)。
-> 最后刷新:2026-07-16
+> 最后刷新:2026-07-17
 
 ## 统计概览
 
 - 送审轮次(submissions):9
-- 复审轮次(reviews):7(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档;v24-self-check r1 APPROVED_WITH_CONDITIONS 已归档;v25-match-rule-tune r1 APPROVED_WITH_CONDITIONS 已归档;v26-uv-protection r1 NEEDS_REVISION;v27-p0-hardening r1 APPROVED_WITH_CONDITIONS 已归档)
+- 复审轮次(reviews):8(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档;v24-self-check r1 APPROVED_WITH_CONDITIONS 已归档;v25-match-rule-tune r1 APPROVED_WITH_CONDITIONS 已归档;v26-uv-protection r1 NEEDS_REVISION;v27-p0-hardening r1 APPROVED_WITH_CONDITIONS 已归档;v28-p123-cleanup r1 APPROVED 待归档)
 - 归档(closed):7(v20-institution-stats r1 + v21-bookkeeping r1 + v22-pricing r1 + v23-internal-merge-unify r1 + v24-self-check r1 + v25-match-rule-tune r1 + v27-p0-hardening r1 均已归档)
 - 已验证 Issue:0
-- 待处理 Issue:3(v26-uv-protection r1:1 CRITICAL FAIL阻断无效 + 1 WARNING changed_files遗漏 + 1 WARNING rebook行号对齐);1 个待审 slug(v28-p123-cleanup r1)
+- 待处理 Issue:3(v26-uv-protection r1:1 CRITICAL FAIL阻断无效 + 1 WARNING changed_files遗漏 + 1 WARNING rebook行号对齐);1 个待归档 slug(v28-p123-cleanup r1 APPROVED,待 Agent C 归档)
 
 ## Submissions
 
@@ -23,7 +23,7 @@
 | v25-match-rule-tune | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.5-v25-match-rule-tune-r01`(✅已双推) | `ae1907e` | [A1-v25-match-rule-tune-r1.md](submissions/A1-v25-match-rule-tune-r1.md) |
 | v26-uv-protection | r1 | NEEDS_REVISION | ✅ 4/4 | 2026-07-13 | `audit/v2.5.1-v26-uv-protection-r01`(✅已双推) | `1ad1a89` | [A1-v26-uv-protection-r1.md](submissions/A1-v26-uv-protection-r1.md) |
 | v27-p0-hardening | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | ✅ 4/4 | 2026-07-16 | `audit/v2.5.4-v27-p0-hardening-r01`(✅已双推) | `c9c2626` | [A1-v27-p0-hardening-r1.md](submissions/A1-v27-p0-hardening-r1.md) |
-| v28-p123-cleanup | r1 | PENDING_REVIEW | ✅ 4/4 | 2026-07-17 | `audit/v2.5.5-v28-p123-cleanup-r01`(✅已双推) | `932adb0` | [A1-v28-p123-cleanup-r1.md](submissions/A1-v28-p123-cleanup-r1.md) |
+| v28-p123-cleanup | r1 | REVIEWED / APPROVED | ✅ 4/4 | 2026-07-17 | `audit/v2.5.5-v28-p123-cleanup-r01`(✅已双推) | `932adb0` | [A1-v28-p123-cleanup-r1.md](submissions/A1-v28-p123-cleanup-r1.md) |
 
 ## Reviews
 
@@ -36,6 +36,7 @@
 | v25-match-rule-tune | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 2(1 WARNING DOC_CONSISTENCY + 1 INFO FUNCTION_EQUIVALENCE,均无害不阻断,待 C 留档) | 2026-07-05 | [B1-v25-match-rule-tune-r1.md](reviews/B1-v25-match-rule-tune-r1.md) |
 | v26-uv-protection | r1 | REVIEWED / NEEDS_REVISION | 3(1 CRITICAL FAIL阻断无效 blocks_approval + 1 WARNING changed_files遗漏 + 1 WARNING rebook行号对齐) | 2026-07-13 | [B1-v26-uv-protection-r1.md](reviews/B1-v26-uv-protection-r1.md) |
 | v27-p0-hardening | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | 2(1 WARNING FUNCTION_EQUIVALENCE fig8保守漏计已由 C 核查 unmatched=7 合计5.93亿并留档 + 1 INFO 字符串日期比较,均不阻断) | 2026-07-16 | [B1-v27-p0-hardening-r1.md](reviews/B1-v27-p0-hardening-r1.md) |
+| v28-p123-cleanup | r1 | REVIEWED / APPROVED | 1(1 INFO DOC_CONSISTENCY 降级达成跨两轮,不阻断) | 2026-07-17 | [B1-v28-p123-cleanup-r1.md](reviews/B1-v28-p123-cleanup-r1.md) |
 
 > 注:v20 r1 已通过用户委托的独立审计(4 瑕疵已修正),审计意见未走正式 B 流程,直接待 Agent C 归档。
 
@@ -73,6 +74,7 @@
 | REV-v2.5-v25-match-rule-tune-r01-02 | v25-match-rule-tune | r1 | INFO | resolved(C1 留档/延期:Pass4 len>=3 阈值+MATCH_HARD_MAP 业务观察 1-2 周,发现新难匹配 case 再扩展) | [B1](reviews/B1-v25-match-rule-tune-r1.md) |
 | REV-v2.5.4-v27-p0-hardening-r1-01 | v27-p0-hardening | r1 | WARNING | resolved(C1 核查 fig8 unmatched=7 合计5.93亿,含6条>=0.1亿;作为 MEDIUM audit_escape_risk 留档,建议 v28 扩展匹配规则或展示未计入金额) | [B1](reviews/B1-v27-p0-hardening-r1.md) |
 | REV-v2.5.4-v27-p0-hardening-r1-02 | v27-p0-hardening | r1 | INFO | resolved(C1 留档:fig8 mask 字符串日期比较当前可行,建议后续统一 pd.Timestamp 显式比较) | [B1](reviews/B1-v27-p0-hardening-r1.md) |
+| REV-v2.5.5-v28-p123-cleanup-r1-01 | v28-p123-cleanup | r1 | INFO | open(降级达成跨两轮:v27 fig6+v28 fig7/fig8,表述准确,待 C 留档,不阻断) | [B1](reviews/B1-v28-p123-cleanup-r1.md) |
 
 > 注:首轮 2 项 WARNING(REV-01/REV-02)经二次独立复核确认均为本地核查环境假阳性(.git 损坏 + 编码搜索漏匹配),已全部平反 resolved,无阻断归档的遗留 Issue。
 > 技术债 #ABS-002(internal_merge 与 run_increment_merge 并存)留第三轮封装层处理,详见 [C1 归档报告](closed/C1-v21-bookkeeping-r1.md) §3 audit_escape_risks。
@@ -91,7 +93,7 @@
 | v25-match-rule-tune | r1 已归档(COMPLETED) | — | v2.5.0 匹配规则调优:normalize 去连字符+全角空格 bug 修复+core_name+MATCH_HARD_MAP+Pass 1-4 优先级链+rebook 默认模式;5 处改动 git show ae1907e 逐行独立核查全真实、优先级链守卫顺序正确、rebook 向后兼容;6 层自检层1/6 读代码确认+层2-5采信 A 输出;§5 污染文件声明与实际一致(commit 仅 4 文件,较 v22/v23/v24 洁净性显著改善);2 项瑕疵(1 WARNING changed_files 口径+1 INFO 阈值观察)由 C1 留档关闭;延期观察:Pass4 阈值/hard_map 业务观察 1-2 周 |
 | v26-uv-protection | r1 NEEDS_REVISION | A-fix | B1 已指出 QC FAIL 阻断无效等 3 项 Issue，待修复轮 |
 | v27-p0-hardening | r1 已归档(COMPLETED,APPROVED_WITH_CONDITIONS) | — | v2.5.4 P0 防错包：4 焦点独立读代码全 PASS 无 CRITICAL。QC rename 架构规避 v26 REV-01 同类隐患；WXY三元组整行取舍；fig6/fig8 唯一匹配+multi不计入WARN+大额unmatched告警；#ABS-006 iloc[1:] 单行表头修复。C1 已核查 fig8 unmatched=7 合计5.93亿并作为 MEDIUM audit_escape_risk 留档，建议 v28 扩展匹配规则或展示未计入金额 |
-| v28-p123-cleanup | r1 PENDING_REVIEW | B 审计 | v2.5.5 P1/P2/P3 工程清理：确认 proj_sizes 死代码已无；统一投资人分析可选面板降级；局部 import 上提；shared_tmp 异常清理；过时注释清理 |
+| v28-p123-cleanup | r1 REVIEWED / APPROVED | C-close | v2.5.5 P1/P2/P3 工程清理：B 审计 verdict=APPROVED 无 CRITICAL/WARNING。4 焦点独立读代码全 PASS(proj_sizes 死代码零残留 + fig6/fig7/fig8 三面板降级一致 + shared_tmp 三分支异常清理完整不吞错 + re/pandas import 上提彻底);git show 932adb0 --stat 仅 2 文件 changed_files 声明一致(洁净性优于 v22/v23/v24);5 层自检层1 git+层4 py_compile 实测通过。1 项 INFO(降级跨两轮达成)不阻断，待 Agent C 归档 |
 
 ## 命名规则
 
