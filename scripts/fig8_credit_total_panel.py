@@ -63,10 +63,11 @@ def approximate_match(inst_a, inst_b):
     return False
 
 
-def compute_maturity_amounts(ledger_path=None):
+def compute_maturity_amounts(ledger_path=None, preprocessed_path=None):
     """计算每个总授信机构 7-12月摊还到期额度 + 实时更新剩余额度
 
     ledger_path: 发行台账路径,None 时用默认 0703 定稿
+    preprocessed_path: 共享预处理产物(可选),传入则跳过自身 preprocess
     """
     if ledger_path is None:
         ledger_path = LEDGER_FILE
@@ -119,12 +120,21 @@ def compute_maturity_amounts(ledger_path=None):
 
     # 4. 读最新发行台账,计算新增认购规模(全量,不限发行场所)
     print(f'\n读取台账计算新增认购规模: {ledger_path}')
-    tmp = preprocess_xlsx_for_pandas(ledger_path)
-    raw = pd.read_excel(tmp, header=None)
-    headers = raw.iloc[0].tolist()
-    df_ledger = raw.iloc[2:].copy()
-    df_ledger.columns = [str(h).strip() if h is not None and str(h).strip() else f'col{i}'
-                         for i, h in enumerate(headers)]
+    # 共享 tmp(preprocessed_path 传入)跳过 preprocess,由创建方统一删;独立 tmp 读后即删(修泄漏)
+    own_tmp = preprocessed_path is None
+    tmp = preprocessed_path if preprocessed_path is not None else preprocess_xlsx_for_pandas(ledger_path)
+    try:
+        raw = pd.read_excel(tmp, header=None)
+        headers = raw.iloc[0].tolist()
+        df_ledger = raw.iloc[2:].copy()
+        df_ledger.columns = [str(h).strip() if h is not None and str(h).strip() else f'col{i}'
+                             for i, h in enumerate(headers)]
+    finally:
+        if own_tmp:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
 
     df_ledger['簿记时间'] = pd.to_datetime(df_ledger['簿记时间'], errors='coerce')
     df_ledger['认购份额'] = pd.to_numeric(df_ledger['认购份额'], errors='coerce')
@@ -235,12 +245,13 @@ CREDIT_TOTAL_CSS = """
 """
 
 
-def render_credit_total_panel(ledger_path=None):
+def render_credit_total_panel(ledger_path=None, preprocessed_path=None):
     """生成总授信额度监控 panel HTML body(供综合看板集成)
 
     返回: HTML 字符串(不含 <html>/<head>/<body>,仅 panel div)
     """
-    institutions = compute_maturity_amounts(ledger_path=ledger_path)
+    institutions = compute_maturity_amounts(ledger_path=ledger_path,
+                                            preprocessed_path=preprocessed_path)
 
     totals = {'remaining': 0.0, 'total': 0.0, 'new_subscription': 0.0,
               'maturities': {7: 0.0, 8: 0.0, 9: 0.0, 10: 0.0, 11: 0.0, 12: 0.0}}

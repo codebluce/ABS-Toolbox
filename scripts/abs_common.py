@@ -476,7 +476,8 @@ def filter_excluded_institutions(df, role_cols=None, label='数据加载'):
     return df[~mask].copy()
 
 
-def load_and_filter(xlsx_path, need_tenor=False, extra_required=None, fix_year=True):
+def load_and_filter(xlsx_path, need_tenor=False, extra_required=None, fix_year=True,
+                    preprocessed_path=None):
     """统一的数据读取与预处理入口
 
     Args:
@@ -486,6 +487,10 @@ def load_and_filter(xlsx_path, need_tenor=False, extra_required=None, fix_year=T
         fix_year: 是否执行"2025→2026簿记日期纠错"（默认True，兼容现有调用）。
                   该纠错逻辑假设台账业务年份为2026，若传入的是2025年历史台账本身
                   （而非当前年台账），必须传 False，否则2025年的真实日期会被误改成2026年。
+        preprocessed_path: 已预处理的共享临时文件路径（可选）。传入则跳过自身 preprocess，
+                  直接读该文件。综合看板 main 单次预处理后注入各子模块，消除 ~7 次重复预处理。
+                  传入时本函数不负责删除 tmp（由创建方统一删）；为 None 时走原逻辑（自己
+                  preprocess，调用方负责删除返回的 tmp_path）。
 
     Returns:
         df: 全量数据DataFrame（过滤自持后）
@@ -494,16 +499,21 @@ def load_and_filter(xlsx_path, need_tenor=False, extra_required=None, fix_year=T
         tenor_col: 期限列名（need_tenor=True时）或None
     """
     # 合并单元格预处理
-    tmp_path = preprocess_xlsx_for_pandas(xlsx_path)
+    if preprocessed_path is not None:
+        tmp_path = preprocessed_path          # 共享 tmp:跳过 preprocess,由创建方统一删
+    else:
+        tmp_path = preprocess_xlsx_for_pandas(xlsx_path)
     try:
         df_raw = pd.read_excel(tmp_path, engine='openpyxl', header=None)
     except Exception as e:
         # 预处理已成功生成临时文件，读取失败应报错而非静默回退
         # （回退到未预处理文件会导致合并单元格数据失真）
-        try:
-            os.remove(tmp_path)
-        except OSError:
-            pass
+        # 共享 tmp(preprocessed_path 传入)不删,由创建方统一管理
+        if preprocessed_path is None:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
         raise ValueError(
             f"[INPUT ERROR] 预处理后的临时文件读取失败：{e}\n"
             f"临时文件路径：{tmp_path}\n"

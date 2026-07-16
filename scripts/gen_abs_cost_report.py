@@ -25,9 +25,10 @@ from abs_common import (
 # COST_BINS / COST_LABELS 从 abs_common 导入
 
 # ── 数据读取与预处理 ──────────────────────────────────────────
-def read_data(xlsx_path):
+def read_data(xlsx_path, preprocessed_path=None):
     """读取并预处理台账数据，返回 df, dfa"""
-    df, dfa, tmp_path, _ = load_and_filter(xlsx_path, need_tenor=False)
+    df, dfa, tmp_path, _ = load_and_filter(xlsx_path, need_tenor=False,
+                                           preprocessed_path=preprocessed_path)
     try:
         dfa[RESOLVED_COST_COL + 'pct'] = dfa[RESOLVED_COST_COL] * 100
         dfa['成本区间'] = pd.cut(
@@ -40,10 +41,11 @@ def read_data(xlsx_path):
         dfa['月份'] = dfa['簿记时间'].dt.to_period('M')
         return df, dfa
     finally:
-        try:
-            os.remove(tmp_path)
-        except OSError:
-            pass
+        if preprocessed_path is None:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
 
 
 def merge_by_interval(df):
@@ -353,10 +355,10 @@ def build_month_section(mlabel, mdf, month_idx, asset_order):
 
 
 # ── 数据计算层（供综合看板调用）──────────────────────────────
-def compute_data(xlsx_path):
+def compute_data(xlsx_path, preprocessed_path=None):
     """读取台账 + 计算所有数据 + QC precheck，返回数据 dict"""
     print(f'Loading: {xlsx_path}')
-    df, dfa = read_data(xlsx_path)
+    df, dfa = read_data(xlsx_path, preprocessed_path=preprocessed_path)
     print(f'优先A记录: {len(dfa)} 条 | 资产类型: {dfa["资产类型"].nunique()} 种')
 
     asset_order = dfa.groupby('资产类型').size().sort_values(ascending=False).index.tolist()

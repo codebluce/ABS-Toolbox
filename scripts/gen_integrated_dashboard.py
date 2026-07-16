@@ -234,6 +234,33 @@ def build_integrated_html(panels, all_css):
 </html>"""
 
 
+# 共享 tmp 结构断言:fig4/fig5 按列名读 + iloc[2:] 跳前2行,结构不符会静默错数。
+# 此断言在 main 创建共享 tmp 后注入前执行,不符立即 fail,杜绝静默错数风险。
+SHARED_TMP_REQUIRED_COLS = {
+    '月份', '资产类型', '项目名称', '发行场所', '认购机构', '认购份额',   # fig4 load_all_rows
+    '申购利率', '穿透机构', '申购规模', '成本', '簿记时间', '分层情况',     # fig5 load_wxy_df
+    '规模', '国股CD', '计划管理人', '联席承销商', '托管行',                # load_and_filter
+}
+
+
+def _assert_shared_tmp_structure(tmp_path):
+    """断言共享 tmp 满足所有消费方的结构依赖,不符立即 fail。"""
+    import pandas as _pd
+    raw = _pd.read_excel(tmp_path, header=None)
+    headers = [str(h).strip() if h is not None else '' for h in raw.iloc[0].tolist()]
+    missing = SHARED_TMP_REQUIRED_COLS - set(headers)
+    if missing:
+        raise ValueError(
+            f'[shared_tmp] 列名缺失,共享 tmp 结构不满足消费方依赖: {sorted(missing)}\n'
+            f'  现有列: {headers}'
+        )
+    if raw.shape[1] < 25:
+        raise ValueError(f'[shared_tmp] 列数 {raw.shape[1]} < 25,定稿台账应为 25 列')
+    if len(raw) < 3:
+        raise ValueError(f'[shared_tmp] 行数 {len(raw)} < 3,无有效数据行')
+    print(f'[shared_tmp] 结构断言通过: {raw.shape[1]} 列 / {len(raw)} 行 / 关键列名齐全')
+
+
 def main():
     parser = argparse.ArgumentParser(description='ABS 综合看板生成器（路径 C · 数据驱动）')
     parser.add_argument('xlsx_path', help='台账文件路径（.xlsx）')
@@ -253,38 +280,39 @@ def main():
     print('  ABS 综合看板生成器（数据驱动）')
     print('=' * 60)
 
-    # 1. 各 compute_data（内部跑 QC precheck）
-    print('\n[1/4] 计算数据...')
+    # 1. 单次预处理:产出共享 tmp,注入各子模块(原 8 次 preprocess → 1 次,预期省 ~80s)
+    #    shared_tmp 创建移入 try,preprocess 自身异常时 finally 兜底删除
+    from abs_common import preprocess_xlsx_for_pandas
+    shared_tmp = None
     try:
-        cmp_data = gen_compare_tool.compute_data(xlsx_path)
-        # Inject proj_sizes_js for insight panel
-        if 'proj_sizes_js' not in cmp_data:
-            proj_sizes = {}
-            import pandas as pd
-            for _, r in cmp_data['dfa'].iterrows():
-                proj = str(r['项目名称']) if pd.notna(r.get('项目名称')) else ''
-                amt = r.get('对应金额（亿）')
-                if proj and pd.notna(amt):
-                    try:
-                        proj_sizes[proj] = float(amt)
-                    except:
-                        pass
-            import json
-            cmp_data['proj_sizes_js'] = json.dumps(proj_sizes, ensure_ascii=False)
-        cost_data = gen_abs_cost_report.compute_data(xlsx_path)
-        spread_data = gen_spread_report.compute_data(xlsx_path)
+        print('\n[1/4] 单次预处理(共享 tmp)...')
+        shared_tmp = preprocess_xlsx_for_pandas(xlsx_path)
+        print(f'[preprocess] 共享预处理产物: {shared_tmp}')
+        _assert_shared_tmp_structure(shared_tmp)   # 结构断言:不符立即 fail,防 fig4/fig5 静默错数
+
+        # 各 compute_data(注入 shared_tmp;gen_institution_stats 综合看板场景不 preprocess,不注入)
+        print('\n[1.5/4] 计算数据...')
+        cmp_data = gen_compare_tool.compute_data(xlsx_path, preprocessed_path=shared_tmp)
+        cost_data = gen_abs_cost_report.compute_data(xlsx_path, preprocessed_path=shared_tmp)
+        spread_data = gen_spread_report.compute_data(xlsx_path, preprocessed_path=shared_tmp)
         inst_data = gen_institution_stats.compute_data(xlsx_path)
-        # 投资台账：2026 用当前入参台账，2025/2024 走固定的历史台账路径（缺失则该年份跳过，不报错）
+        # 投资台账：2026 用当前入参台账(注入 shared_tmp)，2025/2024 走固定的历史台账路径（缺失则该年份跳过，不报错）
         source_dir = SCRIPT_DIR.parent / 'deliverables' / 'ledger' / '01_source'
         ledger_year_paths = {
             '2026': xlsx_path,
             '2025': str(source_dir / '2025年ABS发行台账.xlsx'),
             '2024': str(source_dir / '2024年ABS发行台账.xlsx'),
         }
-        led_data = gen_investment_ledger.compute_data_multi_year(ledger_year_paths)
+        led_data = gen_investment_ledger.compute_data_multi_year(
+            ledger_year_paths, preprocessed_path=shared_tmp)   # 只 2026 用
     except RuntimeError as e:
         print(f'\n[ERROR] {e}')
         print('[ERROR] 请修正数据或逻辑后重试')
+        if shared_tmp:
+            try:
+                os.remove(shared_tmp)
+            except OSError:
+                pass
         sys.exit(1)
 
     # 2. 各 render_body（institution 3 次调用，传 section_key）
@@ -301,13 +329,14 @@ def main():
 
     # 投资人分析模块:理财子分析 panel(fig4 矩阵 + fig5 画像 并排,同步最新台账)
     print('\n[3/4] 生成投资人分析 > 理财子分析 panel...')
-    wlz_body = fig7_wlz_panel.render_wlz_panel(regenerate=True)
+    wlz_body = fig7_wlz_panel.render_wlz_panel(regenerate=True, preprocessed_path=shared_tmp)
     panels.append(('investor', 'wlz', wlz_body))
 
     # 投资人分析模块:非标额度 panel
     print('\n[3.5/4] 生成投资人分析 > 非标额度 panel...')
     try:
-        credit_body = fig6_credit_panel.render_credit_panel(ledger_path=xlsx_path)
+        credit_body = fig6_credit_panel.render_credit_panel(
+            ledger_path=xlsx_path, preprocessed_path=shared_tmp)
         panels.append(('investor', 'credit', credit_body))
     except Exception as e:
         print(f'[WARN] 非标额度面板跳过: {e}')
@@ -315,8 +344,17 @@ def main():
 
     # 投资人分析模块:总授信额度 panel
     print('\n[3.6/4] 生成投资人分析 > 授信总额度 panel...')
-    credit_total_body = fig8_credit_total_panel.render_credit_total_panel(ledger_path=xlsx_path)
+    credit_total_body = fig8_credit_total_panel.render_credit_total_panel(
+        ledger_path=xlsx_path, preprocessed_path=shared_tmp)
     panels.append(('investor', 'credit_total', credit_total_body))
+
+    # 共享 tmp 生命周期结束(所有 read 已完成,进入 HTML 拼接),统一删除杜绝泄漏
+    if shared_tmp:
+        try:
+            os.remove(shared_tmp)
+        except OSError:
+            pass
+        shared_tmp = None
 
     # 投资台账模块：按年份拆分的多维筛选统计 panel（2026/2025/2024 各一个子 Tab，
     # 智能问答悬浮球随第一个年份 panel 一起挂载，语料覆盖全部年份，不受当前子 Tab 限制）

@@ -41,9 +41,9 @@ def compute_scatter_by_month(df, month=None):
     return summary, list(zip(summary['institution'], summary['mean_rate'], summary['total_size'], summary['n']))
 
 
-def precompute_all_months():
+def precompute_all_months(preprocessed_path=None):
     """预计算全部 + 1-8 月的散点数据"""
-    df = load_wxy_df()
+    df = load_wxy_df(preprocessed_path=preprocessed_path)
     result = {}
     # 全部
     summary, data = compute_scatter_by_month(df, None)
@@ -158,9 +158,9 @@ renderFig5Plotly('all');
 '''
 
 
-def render_fig5_interactive():
+def render_fig5_interactive(preprocessed_path=None):
     """生成 fig5 交互版 HTML body(Plotly 版)"""
-    data_by_month = precompute_all_months()
+    data_by_month = precompute_all_months(preprocessed_path=preprocessed_path)
     plotly_html = build_plotly_html(data_by_month)
     return plotly_html
 

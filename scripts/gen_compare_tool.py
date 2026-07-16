@@ -25,10 +25,11 @@ from abs_common import (
 
 
 # ── 数据加载 ──────────────────────────────────────────────────
-def load_data(xlsx_path):
+def load_data(xlsx_path, preprocessed_path=None):
     """读取并预处理台账数据，返回 df, dfa"""
     df, dfa, tmp_path, tenor_col = load_and_filter(xlsx_path, need_tenor=True,
-                                                    extra_required=['国股CD'])
+                                                    extra_required=['国股CD'],
+                                                    preprocessed_path=preprocessed_path)
     try:
         dfa['簿记时间'] = pd.to_datetime(dfa['簿记时间'], errors='coerce')
         dfa['月份'] = dfa['簿记时间'].dt.to_period('M')
@@ -46,10 +47,12 @@ def load_data(xlsx_path):
             dfa['对应金额（亿）'] = None
         return df, dfa
     finally:
-        try:
-            os.remove(tmp_path)
-        except OSError:
-            pass
+        # 共享 tmp(preprocessed_path 传入)由创建方统一删,不在此删
+        if preprocessed_path is None:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
 
 
 def build_product_list(dfa):
@@ -198,9 +201,9 @@ CSS = """  * { box-sizing: border-box; margin: 0; padding: 0; }
 
 
 # ── 数据计算层（供综合看板调用）──────────────────────────────
-def compute_data(xlsx_path):
+def compute_data(xlsx_path, preprocessed_path=None):
     """读取台账 + 计算 products/rows + QC precheck"""
-    df, dfa = load_data(xlsx_path)
+    df, dfa = load_data(xlsx_path, preprocessed_path=preprocessed_path)
     products = build_product_list(dfa)
     rows = build_js_data(dfa, products)
     data_js = json.dumps(rows, ensure_ascii=False, indent=2)

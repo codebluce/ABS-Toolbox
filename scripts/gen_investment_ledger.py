@@ -109,13 +109,15 @@ def _records_from_25col_df(df, year_tag):
     return records
 
 
-def compute_data(xlsx_path):
+def compute_data(xlsx_path, preprocessed_path=None):
     """读取台账 → 逐条投资记录（穿透优先口径），返回可序列化 dict（单年，CLI 预览用，年份=2026）"""
-    df, dfa, tmp_path, _tenor = load_and_filter(xlsx_path)
-    try:
-        os.remove(tmp_path)
-    except OSError:
-        pass
+    df, dfa, tmp_path, _tenor = load_and_filter(xlsx_path, preprocessed_path=preprocessed_path)
+    # 共享 tmp(preprocessed_path 传入)由创建方统一删,不在此删
+    if preprocessed_path is None:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
 
     records = _records_from_25col_df(df, '2026')
 
@@ -225,8 +227,11 @@ _YEAR_COMPUTE = {
 }
 
 
-def compute_data_multi_year(year_paths):
+def compute_data_multi_year(year_paths, preprocessed_path=None):
     """paths: {'2026': path, '2025': path, '2024': path}（可只传部分年份，缺失年份跳过不报错）
+
+    preprocessed_path: 2026 台账的共享预处理产物(可选)。2025/2024 走 _compute_flat_year,
+        不经 preprocess,不受影响。
 
     返回 {'by_year': {year: {records,xlsx_basename,count}}, 'all_records': [...三年合并，供智能问答跨年语料]}
     """
@@ -235,7 +240,11 @@ def compute_data_multi_year(year_paths):
         path = year_paths.get(year)
         if not path or not os.path.exists(path):
             continue
-        by_year[year] = _YEAR_COMPUTE[year](path)
+        # 2026 走 compute_data(支持 preprocessed_path 注入);2025/2024 走 flat 解析,无需注入
+        if year == '2026':
+            by_year[year] = compute_data(path, preprocessed_path=preprocessed_path)
+        else:
+            by_year[year] = _YEAR_COMPUTE[year](path)
 
     all_records = []
     for year in ('2026', '2025', '2024'):

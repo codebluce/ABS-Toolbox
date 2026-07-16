@@ -14,15 +14,25 @@ LEDGER = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                       '2026年ABS发行台账-0703-定稿.xlsx')
 
 
-def load_wxy_df():
+def load_wxy_df(preprocessed_path=None):
     # preprocess_xlsx_for_pandas 返回临时文件路径,需再用 pandas 读
-    tmp = preprocess_xlsx_for_pandas(LEDGER)
-    raw = pd.read_excel(tmp, header=None)
-    # Row1 是表头,数据从 Row3 起(0-indexed: row 0 是表头,row 1 是示例数据行,row 2 起是真实数据)
-    headers = raw.iloc[0].tolist()
-    df = raw.iloc[2:].copy()
-    df.columns = [str(h).strip() if h is not None and str(h).strip() else f'col{i}'
-                  for i, h in enumerate(headers)]
+    # preprocessed_path 传入则跳过 preprocess 并绕过硬编码 LEDGER(综合看板注入,修复台账错位)
+    import os as _os
+    own_tmp = preprocessed_path is None
+    tmp = preprocessed_path if preprocessed_path is not None else preprocess_xlsx_for_pandas(LEDGER)
+    try:
+        raw = pd.read_excel(tmp, header=None)
+        # Row1 是表头,数据从 Row3 起(0-indexed: row 0 是表头,row 1 是示例数据行,row 2 起是真实数据)
+        headers = raw.iloc[0].tolist()
+        df = raw.iloc[2:].copy()
+        df.columns = [str(h).strip() if h is not None and str(h).strip() else f'col{i}'
+                      for i, h in enumerate(headers)]
+    finally:
+        if own_tmp:
+            try:
+                _os.remove(tmp)
+            except OSError:
+                pass
 
     # 筛选有 WXY 的行
     df = df[df['申购利率'].notna() & df['穿透机构'].notna()].copy()

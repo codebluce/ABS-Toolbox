@@ -39,14 +39,27 @@ OUTPUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                       'lab_viz', 'fig4_new_welizhi_matrix.png')
 
 
-def load_all_rows():
-    """加载全行数据(不只WXY),含发行场所/资产类型/认购机构/认购份额 + 月份"""
-    tmp = preprocess_xlsx_for_pandas(LEDGER)
-    raw = pd.read_excel(tmp, header=None)
-    headers = raw.iloc[0].tolist()
-    df = raw.iloc[2:].copy()
-    df.columns = [str(h).strip() if h is not None and str(h).strip() else f'col{i}'
-                  for i, h in enumerate(headers)]
+def load_all_rows(preprocessed_path=None):
+    """加载全行数据(不只WXY),含发行场所/资产类型/认购机构/认购份额 + 月份
+
+    preprocessed_path: 共享预处理产物(可选),传入则跳过自身 preprocess 并绕过硬编码 LEDGER。
+        综合看板注入后,理财子矩阵图与 main 传入的台账同步(修复原硬编码 0703 的数据错位)。
+    """
+    import os as _os
+    own_tmp = preprocessed_path is None
+    tmp = preprocessed_path if preprocessed_path is not None else preprocess_xlsx_for_pandas(LEDGER)
+    try:
+        raw = pd.read_excel(tmp, header=None)
+        headers = raw.iloc[0].tolist()
+        df = raw.iloc[2:].copy()
+        df.columns = [str(h).strip() if h is not None and str(h).strip() else f'col{i}'
+                      for i, h in enumerate(headers)]
+    finally:
+        if own_tmp:
+            try:
+                _os.remove(tmp)
+            except OSError:
+                pass
 
     # 类型转换
     df['认购份额'] = pd.to_numeric(df['认购份额'], errors='coerce')

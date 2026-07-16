@@ -30,18 +30,20 @@ def png_to_base64(png_path):
     return f'data:image/png;base64,{b64}'
 
 
-def render_wlz_panel(regenerate=True):
+def render_wlz_panel(regenerate=True, preprocessed_path=None):
     """生成理财子分析 panel HTML body(交互版)
 
     交互版:fig4 矩阵 + fig5 画像,各出 ECharts + Plotly 两版,上下排列
     每个图含月份滑块(0=全部,1-8=具体月),默认显示全部月份
     regenerate 参数保留兼容性(交互版直接从台账读数据,无需重跑 PNG)
+    preprocessed_path: 共享预处理产物(可选),注入 fig4/fig5,绕过硬编码 LEDGER,
+        与 main 传入的台账同步(修复原读 0703 的数据错位)。
     """
     import fig4_interactive
     import fig5_interactive
 
-    fig4_html = fig4_interactive.render_fig4_interactive()
-    fig5_html = fig5_interactive.render_fig5_interactive()
+    fig4_html = fig4_interactive.render_fig4_interactive(preprocessed_path=preprocessed_path)
+    fig5_html = fig5_interactive.render_fig5_interactive(preprocessed_path=preprocessed_path)
 
     html_body = f'''
 <div class="section">
