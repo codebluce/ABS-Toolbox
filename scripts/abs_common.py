@@ -212,9 +212,15 @@ def clean_colnames(df_raw):
 
 
 def resolve_columns(df):
-    """WXY列优先，TUV列回退；忽略非数值脏数据"""
+    """WXY列三元组优先，TUV列整行回退；忽略非数值脏数据
+
+    W/X/Y 代表同一条穿透申购记录，必须作为三元组整体使用。
+    旧版逐列 fillna 会在 WXY 部分缺失时制造"W 来自穿透、X/Y 来自表面"的拼接记录。
+    """
     w = pd.to_numeric(df['申购利率'], errors='coerce')
-    x = df['穿透机构']
+    x_raw = df['穿透机构']
+    x_str = x_raw.astype(str).str.strip()
+    x_present = x_raw.notna() & (x_str != '') & (x_str.str.lower() != 'nan')
     y = pd.to_numeric(df['申购规模'], errors='coerce')
 
     cost_raw = df['成本'].astype(str).str.strip()
@@ -226,9 +232,18 @@ def resolve_columns(df):
     )
     v = pd.to_numeric(df['认购份额'], errors='coerce')
 
-    df[RESOLVED_COST_COL] = w.fillna(t)
-    df[RESOLVED_INST_COL] = x.where(x.notna(), u)
-    df[RESOLVED_SHARE_COL] = y.fillna(v)
+    wxy_count = w.notna().astype(int) + x_present.astype(int) + y.notna().astype(int)
+    wxy_complete = wxy_count == 3
+    wxy_partial = (wxy_count > 0) & (wxy_count < 3)
+
+    if wxy_partial.any():
+        sample_cols = [c for c in ['项目名称', '分层', '认购机构', '申购利率', '穿透机构', '申购规模'] if c in df.columns]
+        sample = df.loc[wxy_partial, sample_cols].head(5).to_dict('records')
+        print(f"[WARN] WXY三元组部分缺失 {int(wxy_partial.sum())} 行，已整行回退 TUV，避免拼接记录。样例: {sample}")
+
+    df[RESOLVED_COST_COL] = t.where(~wxy_complete, w)
+    df[RESOLVED_INST_COL] = u.where(~wxy_complete, x_raw)
+    df[RESOLVED_SHARE_COL] = v.where(~wxy_complete, y)
 
     # 机构名自动归并：去公司后缀 + 投行上报后缀
     before_count = df[RESOLVED_INST_COL].nunique()

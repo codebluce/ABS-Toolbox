@@ -51,7 +51,8 @@ def load_all_rows(preprocessed_path=None):
     try:
         raw = pd.read_excel(tmp, header=None)
         headers = raw.iloc[0].tolist()
-        df = raw.iloc[2:].copy()
+        # 定稿台账为单行表头，Row1 起即真实数据；不能跳过 Row1 首条认购记录（#ABS-006）
+        df = raw.iloc[1:].copy()
         df.columns = [str(h).strip() if h is not None and str(h).strip() else f'col{i}'
                       for i, h in enumerate(headers)]
     finally:

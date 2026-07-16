@@ -1305,11 +1305,13 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     # QC 7.1: Target project bookkeeping completeness
     # Only count rows where WXY was written (not original U/V rows without WXY)
     print("\n=== QC 7.1: Target project amount ===")
+    qc_pre_fails = 0
     # Track which projects were supplemented (had WXY added)
     supplemented_keys = set(k for k, _, _ in target_projects)
     for key, _, _ in target_projects:
         r = get_project_range(ws_out, key)
-        if not r: continue
+        if not r:
+            continue
         s, e = r
         ty = 0.0
         for rr in range(s, e + 1):
@@ -1320,6 +1322,8 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
         td = sum(it['size'] for it in dmap.get(key, []))
         diff = abs(ty - td)
         status = 'PASS' if diff < 0.01 else 'FAIL'
+        if status == 'FAIL':
+            qc_pre_fails += 1
         print(f"  {key}: WXY_Y={ty:.3f} detail={td:.3f} diff={diff:.3f} {status}")
 
 
@@ -1366,6 +1370,7 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     if wxy_mismatches == 0:
         print(f"  PASS: All {checked_count} non-target projects WXY preserved")
     else:
+        qc_pre_fails += 1
         print(f"  FAIL: {wxy_mismatches} projects WXY changed")
 
     # QC 7.3: Target projects present in output
@@ -1376,12 +1381,14 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
         if r:
             print(f"  {proj_name}: rows {r[0]}-{r[1]} [OK]")
         else:
+            qc_pre_fails += 1
             print(f"  {proj_name}: NOT FOUND [X]")
 
     # QC 7.4-7.20: Enhanced QC checks
     qc_fails, qc_warns = run_enhanced_qc(ws_out, ws_orig_protected, set_a, supplemented_keys,
                     target_projects, dmap, detail_map_results,
                     detail_layers_available, detail_layers_used)
+    qc_fails += qc_pre_fails
 
     # v2.5.1: QC FAIL 阻断——删除临时文件，不生成 output，直接退出
     if qc_fails > 0:

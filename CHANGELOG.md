@@ -12,6 +12,43 @@
 
 ---
 
+## v2.5.4 — 2026-07-16 P0 防错包（QC阻断 + WXY三元组 + 额度口径 + #ABS-006）
+
+### 修复
+
+- **核心 QC 真阻断**:
+  - `increment_merge.py` 的 QC 7.1/7.2/7.3 失败计入 `qc_fails`
+  - 避免目标金额不一致、非目标 WXY 被改、目标项目缺失时只打印 FAIL 但仍落盘
+
+- **WXY/TUV 三元组 resolved 口径**:
+  - `abs_common.resolve_columns()` 不再逐列 `fillna`
+  - WXY 完整则整行用 WXY；WXY 全空或部分缺失则整行回退 TUV
+  - WXY 部分缺失打印 WARN，避免制造“成本来自 W、机构/份额来自 U/V”的拼接假记录
+
+- **fig6/fig8 新增认购改 resolved 口径 + 匹配审计**:
+  - 非标额度/授信总额度新增认购改为 WXY 完整优先，否则 TUV 回退
+  - 增加匹配审计：多匹配不计入以防重复占用；大额未匹配打印 WARN
+  - 输出 WXY/TUV/PARTIAL_WXY 来源统计
+
+- **#ABS-006 行偏移修复**:
+  - fig4/fig5/fig6/fig8 的台账读取从 `raw.iloc[2:]` 改为 `raw.iloc[1:]`
+  - 补回 Row1 首条真实认购记录（东道17-3 邮储银行 4 亿）
+
+### 验证
+
+- `py_compile` 通过：`abs_common.py` / `increment_merge.py` / `fig6_credit_panel.py` / `fig8_credit_total_panel.py` / fig4/fig5 数据加载
+- fig6 独立计算通过：matched=2, multi=0, unmatched=0
+- fig8 独立计算通过：matched=16, multi=0, unmatched=7，未匹配大额记录以 WARN 输出
+- 综合看板生成通过：13 个 panel + Tab JS 齐全
+- #ABS-006 验证：fig4 原始认购份额合计增加 4 亿（1125.455 → 1129.455）
+
+### 注意
+
+- fig8 新增认购口径从表面 U/V 调整为 WXY 穿透优先，部分机构新增认购/实时剩余额度会发生预期变化
+- WXY 部分缺失当前在看板读取层整行回退 TUV 并 WARN；台账写入层仍应通过 QC 防止异常落盘
+
+---
+
 ## v2.5.3 — 2026-07-14 read_detail 层名解析修复（#ABS-005）
 
 ### 修复

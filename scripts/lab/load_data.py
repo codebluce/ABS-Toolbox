@@ -22,9 +22,9 @@ def load_wxy_df(preprocessed_path=None):
     tmp = preprocessed_path if preprocessed_path is not None else preprocess_xlsx_for_pandas(LEDGER)
     try:
         raw = pd.read_excel(tmp, header=None)
-        # Row1 是表头,数据从 Row3 起(0-indexed: row 0 是表头,row 1 是示例数据行,row 2 起是真实数据)
+        # 定稿台账为单行表头，Row1 起即真实数据；不能跳过 Row1 首条认购记录（#ABS-006）
         headers = raw.iloc[0].tolist()
-        df = raw.iloc[2:].copy()
+        df = raw.iloc[1:].copy()
         df.columns = [str(h).strip() if h is not None and str(h).strip() else f'col{i}'
                       for i, h in enumerate(headers)]
     finally:

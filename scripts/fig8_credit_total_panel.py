@@ -63,6 +63,62 @@ def approximate_match(inst_a, inst_b):
     return False
 
 
+def _add_resolved_subscription_columns(df):
+    """新增认购口径:WXY完整则用穿透X/Y,否则整行回退U/V。"""
+    w = pd.to_numeric(df['申购利率'], errors='coerce')
+    x_raw = df['穿透机构']
+    x_str = x_raw.astype(str).str.strip()
+    x_present = x_raw.notna() & (x_str != '') & (x_str.str.lower() != 'nan')
+    y = pd.to_numeric(df['申购规模'], errors='coerce')
+    u = df['认购机构']
+    v = pd.to_numeric(df['认购份额'], errors='coerce')
+
+    wxy_count = w.notna().astype(int) + x_present.astype(int) + y.notna().astype(int)
+    wxy_complete = wxy_count == 3
+    wxy_partial = (wxy_count > 0) & (wxy_count < 3)
+
+    df = df.copy()
+    df['resolved_inst'] = u.where(~wxy_complete, x_raw)
+    df['resolved_share'] = v.where(~wxy_complete, y)
+    df['resolved_source'] = 'TUV'
+    df.loc[wxy_complete, 'resolved_source'] = 'WXY'
+    df.loc[wxy_partial, 'resolved_source'] = 'TUV_PARTIAL_WXY'
+    return df, {
+        'wxy': int(wxy_complete.sum()),
+        'tuv': int((wxy_count == 0).sum()),
+        'partial': int(wxy_partial.sum()),
+    }
+
+
+def _apply_new_subscriptions(institutions, new_sub_records, label):
+    """将新增认购记录匹配到授信机构,并打印匹配审计摘要。"""
+    multi_matches = []
+    unmatched = []
+    matched_count = 0
+    for rec in new_sub_records:
+        sub_name = rec['name']
+        size = rec['size']
+        matches = [inst for inst in institutions if approximate_match(inst['name'], sub_name)]
+        if len(matches) == 1:
+            matches[0]['new_subscription'] += size
+            matched_count += 1
+        elif len(matches) > 1:
+            multi_matches.append((sub_name, size, rec.get('source'), [m['name'] for m in matches]))
+        else:
+            unmatched.append((sub_name, size, rec.get('source')))
+
+    if multi_matches:
+        print(f'[WARN] {label}: {len(multi_matches)} 条新增认购匹配到多个授信机构，未计入以避免重复占用。')
+        for sub_name, size, source, names in multi_matches[:10]:
+            print(f'  MULTI: {sub_name} {size:.3f}({source}) -> {names}')
+    big_unmatched = [(n, s, src) for n, s, src in unmatched if s >= 0.1]
+    if big_unmatched:
+        print(f'[WARN] {label}: {len(big_unmatched)} 条>=0.1亿新增认购未匹配授信机构，未计入。')
+        for sub_name, size, source in big_unmatched[:10]:
+            print(f'  UNMATCHED: {sub_name} {size:.3f}({source})')
+    print(f'[MATCH] {label}: matched={matched_count}, multi={len(multi_matches)}, unmatched={len(unmatched)}')
+
+
 def compute_maturity_amounts(ledger_path=None, preprocessed_path=None):
     """计算每个总授信机构 7-12月摊还到期额度 + 实时更新剩余额度
 
@@ -126,7 +182,7 @@ def compute_maturity_amounts(ledger_path=None, preprocessed_path=None):
     try:
         raw = pd.read_excel(tmp, header=None)
         headers = raw.iloc[0].tolist()
-        df_ledger = raw.iloc[2:].copy()
+        df_ledger = raw.iloc[1:].copy()
         df_ledger.columns = [str(h).strip() if h is not None and str(h).strip() else f'col{i}'
                              for i, h in enumerate(headers)]
     finally:
@@ -137,23 +193,24 @@ def compute_maturity_amounts(ledger_path=None, preprocessed_path=None):
                 pass
 
     df_ledger['簿记时间'] = pd.to_datetime(df_ledger['簿记时间'], errors='coerce')
-    df_ledger['认购份额'] = pd.to_numeric(df_ledger['认购份额'], errors='coerce')
+    df_ledger, source_stats = _add_resolved_subscription_columns(df_ledger)
 
     # 筛选:L列(簿记时间) >= 2026-07-01 (全量,不限发行场所)
     mask = (df_ledger['簿记时间'] >= '2026-07-01') & \
-           (df_ledger['认购机构'].notna()) & \
-           (df_ledger['认购份额'].notna()) & (df_ledger['认购份额'] > 0)
+           (df_ledger['resolved_inst'].notna()) & \
+           (df_ledger['resolved_share'].notna()) & (df_ledger['resolved_share'] > 0)
     df_new = df_ledger[mask].copy()
     print(f'7月起全口径新增认购记录数: {len(df_new)}')
+    print(f"[口径] 新增认购 resolved 来源: WXY={source_stats['wxy']} TUV={source_stats['tuv']} PARTIAL_WXY回退={source_stats['partial']}")
 
-    new_sub_records = [(str(u).strip(), float(s))
-                       for u, s in zip(df_new['认购机构'], df_new['认购份额'])]
+    new_sub_records = [
+        {'name': str(u).strip(), 'size': float(s), 'source': src}
+        for u, s, src in zip(df_new['resolved_inst'], df_new['resolved_share'], df_new['resolved_source'])
+    ]
 
-    # 5. 对每个总授信机构,近似匹配聚合新增认购规模
+    # 5. 对每条新增认购做唯一匹配审计后计入总授信机构
+    _apply_new_subscriptions(institutions, new_sub_records, '授信总额度新增认购')
     for inst in institutions:
-        for sub_name, size in new_sub_records:
-            if approximate_match(inst['name'], sub_name):
-                inst['new_subscription'] += size
         inst['remaining'] = inst['remaining_orig'] - inst['new_subscription']
 
     print()
