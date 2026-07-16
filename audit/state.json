@@ -108,15 +108,17 @@
     "v27-p0-hardening": {
       "skill_version": "v2.5.4",
       "current_round": 1,
-      "status": "PENDING_REVIEW",
-      "verdict": null,
-      "next_action": "agent_b_review",
+      "status": "REVIEWED",
+      "verdict": "APPROVED_WITH_CONDITIONS",
+      "next_action": "agent_c_close",
       "submissions": [
         "A1-v27-p0-hardening-r1"
       ],
-      "reviews": [],
+      "reviews": [
+        "B1-v27-p0-hardening-r1"
+      ],
       "closed": null,
-      "notes": "v2.5.4 P0防错包首轮送审。范围:QC 7.1/7.2/7.3 真阻断、WXY三元组 resolved、防拼接记录、fig6/fig8 新增认购改 WXY穿透优先+匹配审计、#ABS-006 iloc[2:] 行偏移修复。A1 已提交并打 tag audit/v2.5.4-v27-p0-hardening-r01。"
+      "notes": "v2.5.4 P0防错包。B 审计完成:4 审计焦点独立读代码全 PASS 无 CRITICAL。焦点1 QC 7.1/7.2/7.3 真阻断——increment_merge.py L1394 qc_fails>0 → L1395 os.remove(tmp) → L1400 return(不落盘),仅 PASS 分支 L1402 os.rename 落盘,全程无 wb.save,从架构上规避 v26 REV-01(save 在 QC 前致阻断无效)同类隐患。焦点2 WXY三元组 abs_common.py L235-246 wxy_complete==3 统一 .where 整行取舍,消除逐列 fillna 拼接。焦点3 fig6/fig8 唯一匹配才计入+multi 不计入+WARN+大额 unmatched 告警,保守偏差防重复占用。焦点4 #ABS-006 iloc[2:]→iloc[1:] 单行表头修复补回首行认购。git tag audit/v2.5.4-v27-p0-hardening-r01→c9c2626,8 文件与 A 声明一致。2 项 Issue(REV-01 WARNING fig8 保守漏计需确认 unmatched=7 金额量级 + REV-02 INFO 字符串日期比较)均 blocks_approval=false。verdict=APPROVED_WITH_CONDITIONS,1 condition 待 Agent C 归档确认。"
     }
   },
   "issues": [
@@ -263,6 +265,24 @@
       "blocks_approval": false,
       "status": "resolved",
       "desc": "Pass4 len>=3 阈值+MATCH_HARD_MAP 属经验值。C1 留档/延期:业务观察 1-2 周,发现新难匹配 case 再扩展 hard_map"
+    },
+    {
+      "id": "REV-v2.5.4-v27-p0-hardening-r1-01",
+      "slug": "v27-p0-hardening",
+      "severity": "WARNING",
+      "category": "FUNCTION_EQUIVALENCE",
+      "blocks_approval": false,
+      "status": "open",
+      "desc": "fig6/fig8 _apply_new_subscriptions 采保守匹配:len(matches)>1 的 multi 不计入(WARN 避免重复占用)、len==0 的 unmatched 不计入(大额≥0.1亿告警)。宁少算不重复方向正确,但存在保守漏计风险。本轮 fig8 unmatched=7 需 Agent C 归档时确认 7 条金额量级——若含大额基石机构则剩余额度虚高,应记 audit_escape_risk 或建议 v28 扩展匹配规则(参考 v25 MATCH_HARD_MAP)"
+    },
+    {
+      "id": "REV-v2.5.4-v27-p0-hardening-r1-02",
+      "slug": "v27-p0-hardening",
+      "severity": "INFO",
+      "category": "FUNCTION_EQUIVALENCE",
+      "blocks_approval": false,
+      "status": "open",
+      "desc": "fig8 compute_maturity_amounts 的 mask 用字符串比较 df['簿记时间']>='2026-07-01' 依赖 pandas 隐式字符串转换。当前台账日期格式统一(YYYY-MM-DD)时正确,但若未来日期格式漂移(如 2026/7/1)可能误判。建议后续统一 to_datetime 后比较。不阻断,C1 留档"
     }
   ],
   "counters": {
@@ -294,6 +314,11 @@
       "blocked_count": 0
     },
     "v25-match-rule-tune": {
+      "max_round": 1,
+      "rebase_count": 0,
+      "blocked_count": 0
+    },
+    "v27-p0-hardening": {
       "max_round": 1,
       "rebase_count": 0,
       "blocked_count": 0
