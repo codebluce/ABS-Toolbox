@@ -5,11 +5,11 @@
 
 ## 统计概览
 
-- 送审轮次(submissions):11
-- 复审轮次(reviews):10(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档;v24-self-check r1 APPROVED_WITH_CONDITIONS 已归档;v25-match-rule-tune r1 APPROVED_WITH_CONDITIONS 已归档;v26-uv-protection r1 NEEDS_REVISION;v27-p0-hardening r1 APPROVED_WITH_CONDITIONS 已归档;v28-p123-cleanup r1 APPROVED 已归档;v29-runtime-hardening r1 APPROVED 已归档;v30-actual-share-uv r1 APPROVED 已归档)
+- 送审轮次(submissions):12
+- 复审轮次(reviews):10(v21-bookkeeping r1 APPROVED 已归档;v22-pricing r1 APPROVED_WITH_CONDITIONS 已归档;v20-institution-stats r1 走独立审计等效 APPROVED 已归档;v23-internal-merge-unify r1 APPROVED_WITH_CONDITIONS 已归档;v24-self-check r1 APPROVED_WITH_CONDITIONS 已归档;v25-match-rule-tune r1 APPROVED_WITH_CONDITIONS 已归档;v26-uv-protection r1 NEEDS_REVISION(r2 已送审 PENDING_REVIEW 待 B);v27-p0-hardening r1 APPROVED_WITH_CONDITIONS 已归档;v28-p123-cleanup r1 APPROVED 已归档;v29-runtime-hardening r1 APPROVED 已归档;v30-actual-share-uv r1 APPROVED 已归档)
 - 归档(closed):10(v20-institution-stats r1 + v21-bookkeeping r1 + v22-pricing r1 + v23-internal-merge-unify r1 + v24-self-check r1 + v25-match-rule-tune r1 + v27-p0-hardening r1 + v28-p123-cleanup r1 + v29-runtime-hardening r1 + v30-actual-share-uv r1 均已归档)
 - 已验证 Issue:0
-- 待处理 Issue:3(v26-uv-protection r1:1 CRITICAL FAIL阻断无效 + 1 WARNING changed_files遗漏 + 1 WARNING rebook行号对齐);无待归档 slug
+- 待处理 Issue:3(v26-uv-protection r1 的 3 Issue 已由 r2 A-fix 声明 fixed:REV-01 tmp+os.replace 真阻断 + REV-02 changed_files 补记 + REV-03 Counter 多重集;待 B2 复核确认);无待归档 slug
 
 ## Submissions
 
@@ -22,6 +22,7 @@
 | v24-self-check | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.4-v24-self-check-r01`(✅已双推) | `31f716f` | [A1-v24-self-check-r1.md](submissions/A1-v24-self-check-r1.md) |
 | v25-match-rule-tune | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-05 | `audit/v2.5-v25-match-rule-tune-r01`(✅已双推) | `ae1907e` | [A1-v25-match-rule-tune-r1.md](submissions/A1-v25-match-rule-tune-r1.md) |
 | v26-uv-protection | r1 | NEEDS_REVISION | ✅ 4/4 | 2026-07-13 | `audit/v2.5.1-v26-uv-protection-r01`(✅已双推) | `1ad1a89` | [A1-v26-uv-protection-r1.md](submissions/A1-v26-uv-protection-r1.md) |
+| v26-uv-protection | r2 | PENDING_REVIEW | ✅ 4/4 | 2026-07-18 | `audit/v2.5.1-v26-uv-protection-r02`(✅已双推) | `3d5335a` | [A2-v26-uv-protection-r2.md](submissions/A2-v26-uv-protection-r2.md) |
 | v27-p0-hardening | r1 | REVIEWED / APPROVED_WITH_CONDITIONS | ✅ 4/4 | 2026-07-16 | `audit/v2.5.4-v27-p0-hardening-r01`(✅已双推) | `c9c2626` | [A1-v27-p0-hardening-r1.md](submissions/A1-v27-p0-hardening-r1.md) |
 | v28-p123-cleanup | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-17 | `audit/v2.5.5-v28-p123-cleanup-r01`(✅已双推) | `932adb0` | [A1-v28-p123-cleanup-r1.md](submissions/A1-v28-p123-cleanup-r1.md) |
 | v29-runtime-hardening | r1 | COMPLETED(已归档) | ✅ 4/4 | 2026-07-17 | `audit/v2.5.6-v29-runtime-hardening-r01`(✅已双推) | `1ed4874` | [A1-v29-runtime-hardening-r1.md](submissions/A1-v29-runtime-hardening-r1.md) |
@@ -99,7 +100,7 @@
 | v23-internal-merge-unify | r1 已归档(COMPLETED,APPROVED_WITH_CONDITIONS) | — | v2.3.0 第四轮 internal_merge 翻译官改造,闭环 #ABS-002(解除 v20/v21/v22 三个 C1 的 deferred_critical);6 层自检通过;4 项瑕疵 REV-03 已修复,REV-01/02/04 由 C1 留档关闭 |
 | v24-self-check | r1 已归档(COMPLETED) | — | v2.4.0 新增 5 层自检工具脚本;核心层 3 逐 cell diff 回归闸门通过(13753 cell 0 差异);降级模式 --mode degraded 已验;3 项 WARNING + 1 INFO 由 C1 留档关闭;延期验证项:auto 自动降级分支留原 skill 退役时实测 |
 | v25-match-rule-tune | r1 已归档(COMPLETED) | — | v2.5.0 匹配规则调优:normalize 去连字符+全角空格 bug 修复+core_name+MATCH_HARD_MAP+Pass 1-4 优先级链+rebook 默认模式;5 处改动 git show ae1907e 逐行独立核查全真实、优先级链守卫顺序正确、rebook 向后兼容;6 层自检层1/6 读代码确认+层2-5采信 A 输出;§5 污染文件声明与实际一致(commit 仅 4 文件,较 v22/v23/v24 洁净性显著改善);2 项瑕疵(1 WARNING changed_files 口径+1 INFO 阈值观察)由 C1 留档关闭;延期观察:Pass4 阈值/hard_map 业务观察 1-2 周 |
-| v26-uv-protection | r1 NEEDS_REVISION | A-fix | B1 已指出 QC FAIL 阻断无效等 3 项 Issue，待修复轮 |
+| v26-uv-protection | r2 PENDING_REVIEW | →B 审计 | r1 的 3 Issue(REV-01 CRITICAL FAIL阻断无效 + REV-02 changed_files遗漏 + REV-03 rebook行号对齐)已由 r2 A-fix 声明 fixed:3d5335a(save移到QC后 tmp+os.replace 真阻断 + changed_files补记 + QC7.20改项目名匹配键)+ fc5ae99(v2.52 #ABS-004回归修复+Counter多重集最终修复)。r02 tag 已双推指向 3d5335a,运行核查基线建议用 fc5ae99 或当前 HEAD。A2 已送审,待 B2 复核确认 |
 | v27-p0-hardening | r1 已归档(COMPLETED,APPROVED_WITH_CONDITIONS) | — | v2.5.4 P0 防错包：4 焦点独立读代码全 PASS 无 CRITICAL。QC rename 架构规避 v26 REV-01 同类隐患；WXY三元组整行取舍；fig6/fig8 唯一匹配+multi不计入WARN+大额unmatched告警；#ABS-006 iloc[1:] 单行表头修复。C1 已核查 fig8 unmatched=7 合计5.93亿并作为 MEDIUM audit_escape_risk 留档，建议 v28 扩展匹配规则或展示未计入金额 |
 | v28-p123-cleanup | r1 已归档(COMPLETED,APPROVED) | — | v2.5.5 P1/P2/P3 工程清理：B 审计 verdict=APPROVED 无 CRITICAL/WARNING。4 焦点独立读代码全 PASS(proj_sizes 死代码零残留 + fig6/fig7/fig8 三面板降级一致 + shared_tmp 三分支异常清理完整不吞错 + re/pandas import 上提彻底);git show 932adb0 --stat 仅 2 文件 changed_files 声明一致(洁净性优于 v22/v23/v24);5 层自检层1 git+层4 py_compile 实测通过。1 项 INFO(降级跨两轮达成)已由 C1 留档关闭 |
 | v29-runtime-hardening | r1 已归档(COMPLETED,APPROVED) | — | v2.5.6 第二批运行稳定性修复：B 审计 verdict=APPROVED 无 CRITICAL/WARNING/INFO。4 焦点独立读代码全 PASS(shared_tmp finally 全路径清理不吞错 + increment_merge close_workbook/wb_a/wb_b/wb_out/wb_orig 三路径显式 close + save_workbook_atomic/os.replace 原子替换不先删正式输出 + 投资台账缺失年份 WARN+continue 兼容/错配仅 WARN 不阻断);git show 1ed4874 --stat 4 文件与 changed_files 声明一致;5 层自检层1 git tag→1ed4874+层4 py_compile 实测 PY_COMPILE_OK 通过。C1 已归档，运行时资源加固不改变业务口径，逃逸风险 LOW |
