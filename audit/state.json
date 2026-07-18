@@ -123,17 +123,17 @@
     "v28-p123-cleanup": {
       "skill_version": "v2.5.5",
       "current_round": 1,
-      "status": "REVIEWED",
+      "status": "COMPLETED",
       "verdict": "APPROVED",
-      "next_action": "agent_c_close",
+      "next_action": null,
       "submissions": [
         "A1-v28-p123-cleanup-r1"
       ],
       "reviews": [
         "B1-v28-p123-cleanup-r1"
       ],
-      "closed": null,
-      "notes": "v2.5.5 P1/P2/P3 工程清理首轮。B 审计完成 verdict=APPROVED,无 CRITICAL/WARNING。4 审计焦点独立读代码全 PASS:①proj_sizes 死代码在 gen_integrated_dashboard.py 零残留(grep 19 命中全在 gen_pricing_insight/gen_compare_tool 正常业务链);②fig6/fig7/fig8 三可选面板降级策略完全一致(try→真实body/except→WARN+占位,占位仍 append 不破 13panel QC);③shared_tmp 三分支异常清理完整(RuntimeError→exit1、通用Exception→raise不吞错、正常路径读完删tmp置None);④re/pandas import 上提彻底无残留无副作用。git show 932adb0 --stat 确认仅 2 文件(CHANGELOG.md+gen_integrated_dashboard.py),changed_files 声明与实际一致(洁净性优于 v22/v23/v24)。5层自检:层1 git+层4 py_compile 实测 PY_COMPILE_OK 通过,层2/3/5 采信A+代码佐证。1 项 INFO(REV-01 降级达成跨两轮 v27 fig6+v28 fig7/fig8)不阻断。待 Agent C 归档。"
+      "closed": "C1-v28-p123-cleanup-r1",
+      "notes": "v2.5.5 P1/P2/P3 工程清理已归档(C1-v28-p123-cleanup-r1)。B 审计完成 verdict=APPROVED,无 CRITICAL/WARNING。4 审计焦点独立读代码全 PASS:①proj_sizes 死代码在 gen_integrated_dashboard.py 零残留(grep 19 命中全在 gen_pricing_insight/gen_compare_tool 正常业务链);②fig6/fig7/fig8 三可选面板降级策略完全一致(try→真实body/except→WARN+占位,占位仍 append 不破 13panel QC),其中 fig6 降级来自 v27,fig7/fig8 来自 v28,跨两轮达成;③shared_tmp 三分支异常清理完整(RuntimeError→exit1、通用Exception→raise不吞错、正常路径读完删tmp置None);④re/pandas import 上提彻底无残留无副作用。git show 932adb0 --stat 确认仅 2 文件(CHANGELOG.md+gen_integrated_dashboard.py),changed_files 声明与实际一致。1 项 INFO(REV-01 降级达成跨两轮)已由 C1 留档关闭。"
     },
     "v29-runtime-hardening": {
       "skill_version": "v2.5.6",
@@ -335,8 +335,8 @@
       "severity": "INFO",
       "category": "DOC_CONSISTENCY",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "A1 §4/§5 称投资人分析3个可选面板均降级为占位块,但 commit 932adb0 diff 仅含 fig7(理财子)/fig8(授信总额度)新增 try/except;fig6(非标额度)try/except 降级在 v27 已存在本轮未改。表述'均降级'成立但达成跨两轮(v27 fig6+v28 fig7/fig8),非本轮一次性完成。无需改代码,C 归档留档"
+      "status": "resolved",
+      "desc": "A1 §4/§5 称投资人分析3个可选面板均降级为占位块,但 commit 932adb0 diff 仅含 fig7(理财子)/fig8(授信总额度)新增 try/except;fig6(非标额度)try/except 降级在 v27 已存在本轮未改。表述'均降级'成立但达成跨两轮(v27 fig6+v28 fig7/fig8),非本轮一次性完成。无需改代码,C1 已归档留档关闭"
     },
     {
       "id": "REV-v2.5.7-v30-actual-share-uv-r01-01",
@@ -389,7 +389,8 @@
     "v28-p123-cleanup": {
       "max_round": 1,
       "rebase_count": 0,
-      "blocked_count": 0
+      "blocked_count": 0,
+      "closed_at": "2026-07-18"
     },
     "v29-runtime-hardening": {
       "max_round": 1,
