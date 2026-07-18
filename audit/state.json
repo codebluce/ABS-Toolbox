@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-07-18",
+  "updated_at": "2026-07-18 B2-v26",
   "slugs": {
     "v20-institution-stats": {
       "skill_version": "v2.0.0",
@@ -93,18 +93,19 @@
     "v26-uv-protection": {
       "skill_version": "v2.5.1",
       "current_round": 2,
-      "status": "PENDING_REVIEW",
-      "verdict": null,
-      "next_action": "agent_b_review",
+      "status": "REVIEWED",
+      "verdict": "APPROVED",
+      "next_action": "agent_c_close",
       "submissions": [
         "A1-v26-uv-protection-r1",
         "A2-v26-uv-protection-r2"
       ],
       "reviews": [
-        "B1-v26-uv-protection-r1"
+        "B1-v26-uv-protection-r1",
+        "B2-v26-uv-protection-r2"
       ],
       "closed": null,
-      "notes": "v2.5.1 第七轮。r1 B 审计 NEEDS_REVISION:QC 7.20 UV 列值保护逻辑正确,但 QC FAIL 阻断无效(save 在 QC 前)。r2 A-fix 已送审(A2-v26-uv-protection-r2),处理 B1 全部 3 Issue:REV-01(CRITICAL,save 移到 QC 后 tmp+os.replace 真阻断)+REV-02(changed_files 补记)+REV-03(QC 7.20 改 (项目名,分层,机构,V) Counter 多重集)。r2 修复跨两 commit:3d5335a(r02 tag,REV-01/02/03 初修)+fc5ae99(v2.5.2,#ABS-004 回归修复+REV-03 完整修复为 Counter)。r02 tag 已双推指向 3d5335a,但运行核查基线建议用 fc5ae99 或当前 HEAD(3d5335a 含 #ABS-004 dict 遍历回归真跑会崩)。后续 v27/v29 对同区域叠加 close_workbook/save_workbook_atomic 加固属独立 slug。待 B 审计 r2。"
+      "notes": "v2.5.1 第七轮。r2 B 审计完成 verdict=APPROVED(B2-v26-uv-protection-r2),B1 全部 3 Issue verified=fixed:REV-01(CRITICAL,3d5335a save 移到 QC 后 mkstemp+save(tmp)/FAIL os.remove(tmp)+return/PASS os.rename,HEAD 升级 os.replace,output_path FAIL 不落盘,真阻断)+REV-02(changed_files 补记,3d5335a --stat=3 文件对齐)+REV-03(QC7.20 HEAD L805-834 Counter 多重集 (项目名,分层,机构,V)+项目名豁免,规避 rebook 行号不对齐)。r2 修复跨两 commit:3d5335a(r02 tag,初修/dict中间态)+fc5ae99(v2.5.2,#ABS-004 回归修复+REV-03 Counter 最终修复)。#ABS-004 已在 fc5ae99 CHANGELOG v2.5.2 闭环(0706台账 QC 7.1/7.2/7.3/7.20 全 PASS,Fails=0)。B2 记录 INFO-01:fc5ae99 未打 tag,建议后续补打修订 tag,不阻断。5 层自检:层1 git stat+层4 py_compile PY_COMPILE_OK 实测,层2 采信 fc5ae99 CHANGELOG QC PASS,层3 SKIP(bugfix),层5 采信后续 v27-v30 无回归。A2 如实披露双 commit 修复链属诚信行为。待 Agent C 归档(归档时时间线需覆盖 3d5335a+fc5ae99 两 commit)。"
     },
     "v27-p0-hardening": {
       "skill_version": "v2.5.4",
