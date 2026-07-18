@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-07-17",
+  "updated_at": "2026-07-18",
   "slugs": {
     "v20-institution-stats": {
       "skill_version": "v2.0.0",
@@ -149,6 +149,19 @@
       ],
       "closed": "C1-v29-runtime-hardening-r1",
       "notes": "v2.5.6 第二批运行稳定性修复已归档(C1-v29-runtime-hardening-r1)。B 审计完成 verdict=APPROVED,无 CRITICAL/WARNING/INFO。4 焦点独立读代码全 PASS:①gen_integrated_dashboard.py shared_tmp finally 全路径清理(shared_tmp=None try外初始化→finally 无条件 os.remove 置None,通用异常不吞错自然抛出,RuntimeError→exit1,led_data 已算好 finally 后 render 无依赖);②increment_merge.py workbook 显式 close(新增 close_workbook best-effort helper,read_detail 返回前关 wb,run_increment_merge 初始化 wb_a/wb_b/wb_out/wb_orig=None,三路径 no-increment/QC FAIL/QC PASS 均 close 四句柄,WXY 校验新增 wb_orig 具名变量修复匿名句柄泄漏);③os.replace 原子替换(no-increment 用 save_workbook_atomic 同目录 mkstemp+os.replace,QC PASS 改 os.replace(tmp,output) 不再先删正式输出消除空窗,dir 兜底 or'.');④gen_investment_ledger.py 历史年份缺失 WARN+continue 保持跳过兼容、年份错配仅 WARN 不阻断。git show 1ed4874 --stat 确认 4 文件与 changed_files 声明完全一致。运行时资源加固不改变业务口径,逃逸风险 LOW。"
+    },
+    "v30-actual-share-uv": {
+      "skill_version": "v2.5.7",
+      "current_round": 1,
+      "status": "PENDING_REVIEW",
+      "verdict": null,
+      "next_action": "agent_b_review",
+      "submissions": [
+        "A1-v30-actual-share-uv-r1"
+      ],
+      "reviews": [],
+      "closed": null,
+      "notes": "v2.5.7 机构实际规模统一改 V列中标口径首轮送审。范围:投资台账 share=V;智能问答规模类=V且申购规模拒答;fig6/fig8新增认购=U/V;机构统计投行认购=V;管理/销售/托管项目规模保留项目去重J列并补说明。"
     }
   },
   "issues": [
