@@ -93,9 +93,9 @@
     "v26-uv-protection": {
       "skill_version": "v2.5.1",
       "current_round": 2,
-      "status": "REVIEWED",
+      "status": "COMPLETED",
       "verdict": "APPROVED",
-      "next_action": "agent_c_close",
+      "next_action": null,
       "submissions": [
         "A1-v26-uv-protection-r1",
         "A2-v26-uv-protection-r2"
@@ -104,8 +104,8 @@
         "B1-v26-uv-protection-r1",
         "B2-v26-uv-protection-r2"
       ],
-      "closed": null,
-      "notes": "v2.5.1 第七轮。r2 B 审计完成 verdict=APPROVED(B2-v26-uv-protection-r2),B1 全部 3 Issue verified=fixed:REV-01(CRITICAL,3d5335a save 移到 QC 后 mkstemp+save(tmp)/FAIL os.remove(tmp)+return/PASS os.rename,HEAD 升级 os.replace,output_path FAIL 不落盘,真阻断)+REV-02(changed_files 补记,3d5335a --stat=3 文件对齐)+REV-03(QC7.20 HEAD L805-834 Counter 多重集 (项目名,分层,机构,V)+项目名豁免,规避 rebook 行号不对齐)。r2 修复跨两 commit:3d5335a(r02 tag,初修/dict中间态)+fc5ae99(v2.5.2,#ABS-004 回归修复+REV-03 Counter 最终修复)。#ABS-004 已在 fc5ae99 CHANGELOG v2.5.2 闭环(0706台账 QC 7.1/7.2/7.3/7.20 全 PASS,Fails=0)。B2 记录 INFO-01:fc5ae99 未打 tag,建议后续补打修订 tag,不阻断。5 层自检:层1 git stat+层4 py_compile PY_COMPILE_OK 实测,层2 采信 fc5ae99 CHANGELOG QC PASS,层3 SKIP(bugfix),层5 采信后续 v27-v30 无回归。A2 如实披露双 commit 修复链属诚信行为。待 Agent C 归档(归档时时间线需覆盖 3d5335a+fc5ae99 两 commit)。"
+      "closed": "C1-v26-uv-protection-r2",
+      "notes": "v2.5.1 第七轮已归档(C1-v26-uv-protection-r2)。r2 B 审计完成 verdict=APPROVED(B2-v26-uv-protection-r2),B1 全部 3 Issue verified=fixed:REV-01(CRITICAL,3d5335a save 移到 QC 后 mkstemp+save(tmp)/FAIL os.remove(tmp)+return/PASS os.rename,HEAD 升级 os.replace,output_path FAIL 不落盘,真阻断)+REV-02(changed_files 补记,3d5335a --stat=3 文件对齐)+REV-03(QC7.20 HEAD L805-834 Counter 多重集 (项目名,分层,机构,V)+项目名豁免,规避 rebook 行号不对齐)。r2 修复跨两 commit:3d5335a(r02 tag,初修/dict中间态)+fc5ae99(v2.5.2,#ABS-004 回归修复+REV-03 Counter 最终修复)。#ABS-004 已在 fc5ae99 CHANGELOG v2.5.2 闭环(0706台账 QC 7.1/7.2/7.3/7.20 全 PASS,Fails=0)。B2 记录 INFO-01:fc5ae99 未打 tag,不阻断;C1 已留档该追溯风险。5 层自检:层1 git stat+层4 py_compile PY_COMPILE_OK 实测,层2 采信 fc5ae99 CHANGELOG QC PASS,层3 SKIP(bugfix),层5 采信后续 v27-v30 无回归。"
     },
     "v27-p0-hardening": {
       "skill_version": "v2.5.4",
@@ -413,7 +413,8 @@
     "v26-uv-protection": {
       "max_round": 2,
       "rebase_count": 0,
-      "blocked_count": 1
+      "blocked_count": 1,
+      "closed_at": "2026-07-18"
     },
     "v27-p0-hardening": {
       "max_round": 1,
