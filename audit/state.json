@@ -153,17 +153,17 @@
     "v30-actual-share-uv": {
       "skill_version": "v2.5.7",
       "current_round": 1,
-      "status": "REVIEWED",
+      "status": "COMPLETED",
       "verdict": "APPROVED",
-      "next_action": "agent_c_close",
+      "next_action": null,
       "submissions": [
         "A1-v30-actual-share-uv-r1"
       ],
       "reviews": [
         "B1-v30-actual-share-uv-r1"
       ],
-      "closed": null,
-      "notes": "v2.5.7 机构实际规模统一改 V列中标口径。B 审计 verdict=APPROVED,无 CRITICAL/WARNING,1 项 INFO(gen_institution_stats.py RESOLVED_SHARE_COL v26遗留残留不阻断)。5焦点独立读代码全 PASS:①投资台账 share=认购份额V/inst=U/cost=T,RESOLVED_*_COL grep 0 残留;②itl_chat.js UNSUPPORTED_METRIC 新增申购规模/报价规模/申报规模/投标规模,L708拒答分支优先于L715 answer,不误答成V列;③fig6/fig8 _add_actual_subscription_columns固定U/V,Y列不扣额度,唯一匹配保留;④compute_ib_subscription投行认购用认购份额V列,项目去重drop_duplicates(项目名称)取J列规模,说明栏补充充分;⑤git show --stat 7文件不含发行定价/成本/利差脚本P1未误改。git核实:tag→b1960ec一致+7文件stat吻合无遗漏(洁净性优)。5层自检:层1 git+层4 py_compile PY_COMPILE_OK实测通过,node --check本地无node环境采信A+代码结构复核,层2/3/5采信A+代码佐证。待 Agent C 归档,INFO项建议C1留档提示后续清理。"
+      "closed": "C1-v30-actual-share-uv-r1",
+      "notes": "v2.5.7 机构实际规模统一改 V列中标口径。已归档(C1-v30-actual-share-uv-r1)。B 审计 verdict=APPROVED,无 CRITICAL/WARNING,1 项 INFO(gen_institution_stats.py RESOLVED_SHARE_COL v26遗留残留不阻断)已由 C1 留档关闭,建议后续版本清理。5焦点独立读代码全 PASS:①投资台账 share=认购份额V/inst=U/cost=T,RESOLVED_*_COL grep 0 残留;②itl_chat.js UNSUPPORTED_METRIC 新增申购规模/报价规模/申报规模/投标规模,L708拒答分支优先于L715 answer,不误答成V列;③fig6/fig8 _add_actual_subscription_columns固定U/V,Y列不扣额度,唯一匹配保留;④compute_ib_subscription投行认购用认购份额V列,项目去重drop_duplicates(项目名称)取J列规模,说明栏补充充分;⑤git show --stat 7文件不含发行定价/成本/利差脚本P1未误改。git核实:tag→b1960ec一致+7文件stat吻合无遗漏(洁净性优)。5层自检:层1 git+层4 py_compile PY_COMPILE_OK实测通过,node --check本地无node环境采信A+代码结构复核,层2/3/5采信A+代码佐证。"
     }
   },
   "issues": [
@@ -344,8 +344,8 @@
       "severity": "INFO",
       "category": "FUNCTION_EQUIVALENCE",
       "blocks_approval": false,
-      "status": "open",
-      "desc": "gen_institution_stats.py 残留 RESOLVED_SHARE_COL(L153定义/L441/443 abs_common resolve赋值),属 v26 UV保护遗留,不在本轮投行认购路径上(compute_ib_subscription已改用认购份额V列),不影响V列口径。建议后续版本清理。不阻断归档,C 留档提示"
+      "status": "resolved",
+      "desc": "gen_institution_stats.py 残留 RESOLVED_SHARE_COL(L153定义/L441/443 abs_common resolve赋值),属 v26 UV保护遗留,不在本轮投行认购路径上(compute_ib_subscription已改用认购份额V列),不影响V列口径。C1 已留档关闭,建议后续版本清理。"
     }
   ],
   "counters": {
