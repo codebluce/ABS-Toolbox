@@ -1,14 +1,13 @@
 """ABS 投资台账面板生成器（综合看板第 4 个 Tab）
 
-数据驱动：复用 abs_common.load_and_filter 取得穿透优先口径的逐条投资记录
-（已剔除自持 / 黑名单机构、已做机构名归并、已纠正 2025→2026 簿记年份），
+数据驱动：复用 abs_common.load_and_filter 取得清洗后的逐条投资记录，
+但机构与份额固定按 U/V 最终中标口径输出（已剔除自持 / 黑名单机构、已纠正 2025→2026 簿记年份），
 序列化为 JSON 内嵌进面板，配 itl_panel.js（vanilla）实现前端多维筛选统计，
 并配 itl_chat.js 提供右下角「智能问答」悬浮球（本地语义解析·离线·数据不出内网·联动面板）。
 
 多年份支持（2024/2025/2026）：三年台账表结构互不相同，各走独立适配路径：
   - 2026：当前业务年台账，走 load_and_filter 默认路径（含 2025→2026 日期纠错）
-  - 2025：25 列表结构与 2026 完全一致，走同一 load_and_filter，但关闭日期纠错
-          （否则 2025 年的真实日期会被误"纠正"成 2026 年）
+  - 2025：24 个有效列（+空列），无 WXY 双轨，走独立轻量解析并保留真实 2025 日期
   - 2024：仅 18 列，无穿透机构/份额分列（无 WXY 双轨），无国股CD（故无利差），
           走独立的轻量解析（不经过 load_and_filter/25 列校验）
 三年记录统一映射到同一套字段（asset/proj/mgr/.../year），前端合并为一份语料供智能问答
@@ -38,9 +37,6 @@ from abs_common import (
     filter_excluded_institutions,
     normalize_investor_name,
     NON_NUMERIC_COST_VALS,
-    RESOLVED_COST_COL,   # 实际成本
-    RESOLVED_INST_COL,   # 实际机构
-    RESOLVED_SHARE_COL,  # 实际份额
 )
 
 # ── 面板样式 / 逻辑从同目录资源文件读取（单一来源，便于维护）──────
@@ -80,13 +76,19 @@ def _n(v):
 
 
 def _records_from_25col_df(df, year_tag):
-    """25 列标准结构（2026/2025 通用）→ 逐条投资记录列表"""
+    """25 列标准结构（2026/2025 通用）→ 逐条投资记录列表。
+
+    投资台账是"实际中标/持有"口径：机构与份额固定取 U/V（认购机构/认购份额）。
+    W/X/Y 是申购报价明细（申购利率/穿透机构/申购规模），不代表最终中标规模，
+    不用于 share 聚合，避免把未中标申购规模计入机构实际认购。
+    """
     records = []
     for _, row in df.iterrows():
-        cost = _n(row.get(RESOLVED_COST_COL))
+        cost = _n(row.get('成本'))
         cd = _n(row.get('国股CD'))
         date = row.get('簿记时间')
         spread = round(cost - cd, 6) if (cost is not None and cd is not None) else None
+        inst = _s(row.get('认购机构'))
         records.append({
             'asset':       _s(row.get('资产类型')),
             'proj':        _s(row.get('项目名称')),
@@ -99,9 +101,9 @@ def _records_from_25col_df(df, year_tag):
             'date':        date.strftime('%Y-%m-%d') if pd.notna(date) else None,
             'layer':       _s(row.get('分层情况')),
             'rating':      _s(row.get('评级')),
-            'inst':        _s(row.get(RESOLVED_INST_COL)),
+            'inst':        normalize_investor_name(inst) if inst else None,
             'cost':        cost,
-            'share':       _n(row.get(RESOLVED_SHARE_COL)),
+            'share':       _n(row.get('认购份额')),
             'cd':          cd,
             'spread':      spread,
             'year':        year_tag,
@@ -110,7 +112,7 @@ def _records_from_25col_df(df, year_tag):
 
 
 def compute_data(xlsx_path, preprocessed_path=None):
-    """读取台账 → 逐条投资记录（穿透优先口径），返回可序列化 dict（单年，CLI 预览用，年份=2026）"""
+    """读取台账 → 逐条投资记录（实际中标口径 U/V），返回可序列化 dict（单年，CLI 预览用，年份=2026）"""
     df, dfa, tmp_path, _tenor = load_and_filter(xlsx_path, preprocessed_path=preprocessed_path)
     # 共享 tmp(preprocessed_path 传入)由创建方统一删,不在此删
     if preprocessed_path is None:

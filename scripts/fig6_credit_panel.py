@@ -60,31 +60,16 @@ def approximate_match(inst_a, inst_b):
     return False
 
 
-def _add_resolved_subscription_columns(df):
-    """新增认购口径:WXY完整则用穿透X/Y,否则整行回退U/V。"""
-    w = pd.to_numeric(df['申购利率'], errors='coerce')
-    x_raw = df['穿透机构']
-    x_str = x_raw.astype(str).str.strip()
-    x_present = x_raw.notna() & (x_str != '') & (x_str.str.lower() != 'nan')
-    y = pd.to_numeric(df['申购规模'], errors='coerce')
-    u = df['认购机构']
-    v = pd.to_numeric(df['认购份额'], errors='coerce')
+def _add_actual_subscription_columns(df):
+    """新增认购/额度占用口径:固定使用 U/V（认购机构/认购份额）。
 
-    wxy_count = w.notna().astype(int) + x_present.astype(int) + y.notna().astype(int)
-    wxy_complete = wxy_count == 3
-    wxy_partial = (wxy_count > 0) & (wxy_count < 3)
-
+    Y列"申购规模"只是申购报价规模，申购不一定中标；额度占用必须按最终中标的V列计算。
+    """
     df = df.copy()
-    df['resolved_inst'] = u.where(~wxy_complete, x_raw)
-    df['resolved_share'] = v.where(~wxy_complete, y)
-    df['resolved_source'] = 'TUV'
-    df.loc[wxy_complete, 'resolved_source'] = 'WXY'
-    df.loc[wxy_partial, 'resolved_source'] = 'TUV_PARTIAL_WXY'
-    return df, {
-        'wxy': int(wxy_complete.sum()),
-        'tuv': int((wxy_count == 0).sum()),
-        'partial': int(wxy_partial.sum()),
-    }
+    df['actual_inst'] = df['认购机构']
+    df['actual_share'] = pd.to_numeric(df['认购份额'], errors='coerce')
+    df['actual_source'] = 'UV'
+    return df, {'uv': int(df['actual_share'].notna().sum())}
 
 
 def _apply_new_subscriptions(institutions, new_sub_records, label):
@@ -189,23 +174,23 @@ def compute_maturity_amounts(ledger_path=None, preprocessed_path=None):
             except OSError:
                 pass
 
-    # 类型转换 + 新增认购 resolved 口径
+    # 类型转换 + 新增认购实际中标口径(U/V)
     df_ledger['发行场所'] = df_ledger['发行场所'].astype(str)
     df_ledger['簿记时间'] = pd.to_datetime(df_ledger['簿记时间'], errors='coerce')
-    df_ledger, source_stats = _add_resolved_subscription_columns(df_ledger)
+    df_ledger, source_stats = _add_actual_subscription_columns(df_ledger)
 
     # 筛选:F列含"非标"或"保登" + L列>=2026-07-01
     mask = (df_ledger['发行场所'].str.contains('非标|保登', na=False)) & \
            (df_ledger['簿记时间'] >= '2026-07-01') & \
-           (df_ledger['resolved_inst'].notna()) & \
-           (df_ledger['resolved_share'].notna()) & (df_ledger['resolved_share'] > 0)
+           (df_ledger['actual_inst'].notna()) & \
+           (df_ledger['actual_share'].notna()) & (df_ledger['actual_share'] > 0)
     df_new = df_ledger[mask].copy()
     print(f'7月起非标/保登新增认购记录数: {len(df_new)}')
-    print(f"[口径] 新增认购 resolved 来源: WXY={source_stats['wxy']} TUV={source_stats['tuv']} PARTIAL_WXY回退={source_stats['partial']}")
+    print(f"[口径] 新增认购实际中标来源: U/V={source_stats['uv']}；Y列申购规模不用于额度占用")
 
     new_sub_records = [
         {'name': str(u).strip(), 'size': float(s), 'source': src}
-        for u, s, src in zip(df_new['resolved_inst'], df_new['resolved_share'], df_new['resolved_source'])
+        for u, s, src in zip(df_new['actual_inst'], df_new['actual_share'], df_new['actual_source'])
     ]
 
     # 5. 对每条新增认购做唯一匹配审计后计入非标授信机构

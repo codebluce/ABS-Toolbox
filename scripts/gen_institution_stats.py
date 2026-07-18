@@ -493,7 +493,9 @@ def compute_ib_subscription(df):
     ib_df = df_ib[ib_mask].copy()
     ib_df['机构简称'] = ib_df['机构_clean'].str.replace('投行.*', '', regex=True).str.strip()
     ib_df['机构简称'] = ib_df['机构简称'].apply(normalize_entity)
-    ib_scale = ib_df.groupby('机构简称')[RESOLVED_SHARE_COL].sum()
+    # 投行认购规模是最终中标口径，固定使用 V列「认购份额」；Y列「申购规模」不代表中标。
+    ib_df['认购份额_数值'] = pd.to_numeric(ib_df['认购份额'], errors='coerce')
+    ib_scale = ib_df.groupby('机构简称')['认购份额_数值'].sum()
     return ib_scale
 
 
@@ -727,8 +729,9 @@ def render_body(data, section_key=None):
 <div class="note-bar">
   <span>管理人/销售机构：仅统计券商，剔除信托/银行/保险</span>
   <span>申万宏源/申万宏源资管/申万资管合并为同一主体</span>
-  <span>联席承销商即销售机构</span>
+  <span>联席承销商即销售机构；多联席承销项目按参与机构重复归属</span>
   <span>托管行分行名归并为总行名（XX银行），同名合并</span>
+  <span>管理/参与/托管规模=项目去重后J列发行规模；投行认购规模=U列投行记录的V列中标份额</span>
   <span>规模占比 = 机构规模 / 全部项目总规模</span>
 </div>
 
