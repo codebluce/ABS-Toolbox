@@ -1418,8 +1418,20 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
             print(f"  {proj_name}: NOT FOUND [X]")
 
     # QC 7.4-7.20: Enhanced QC checks
+    # 增量合并模式下,新增项目的 U/V 本来不存在于 processed 台账,
+    # QC 7.20 不应把新增项目误判为“非目标项目 U/V 新增或篡改”。
+    # 因此传给增强 QC 的 target_projects 需包含全部 increment 项目,
+    # 但 supplemented_keys 仍只表示实际录入过簿记明细的项目,供 QC 7.10 使用。
+    qc_target_projects = list(target_projects)
+    if not supplement:
+        existing_qc_targets = set(k for k, _, _ in qc_target_projects)
+        for proj_name in sorted(increment):
+            if proj_name not in existing_qc_targets:
+                r = get_project_range(ws_out, proj_name)
+                if r:
+                    qc_target_projects.append((proj_name, r[0], r[1]))
     qc_fails, qc_warns = run_enhanced_qc(ws_out, ws_orig_protected, set_a, supplemented_keys,
-                    target_projects, dmap, detail_map_results,
+                    qc_target_projects, dmap, detail_map_results,
                     detail_layers_available, detail_layers_used)
     qc_fails += qc_pre_fails
 
