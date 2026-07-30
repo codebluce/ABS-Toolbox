@@ -22,3 +22,8 @@ verify_abn.py
 
 # increment_merge 临时文件残留(QC崩溃时未清理)
 deliverables/ledger/03_final/tmp*.xlsx
+
+# GitHub Pages/OSS 静态站点包由脚本生成，不进 main 分支
+# 真实发布内容进入 gh-pages 分支。
+deliverables/dashboard_site/
+deliverables/dashboard_site_test/
