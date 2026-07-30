@@ -90,6 +90,7 @@ const DEFAULT_QUESTIONS = [
   '优先A档平均成本多少',
   '2024年赊销白条投了多少',
   '交银理财2024-2026年分别投资规模多少',
+  '易方达2025年投资规模',
 ];
 
 const questions = process.argv[3]

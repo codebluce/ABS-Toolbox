@@ -198,7 +198,15 @@
       if (needsCue) { var cue = FIELD_CUE[chosen.field]; if (!cue || !cue.test(q)) continue; }
       consumed.push([s, e]);
       if (!byField[chosen.field]) byField[chosen.field] = {};
-      chosen.values.forEach(function (v) { byField[chosen.field][v] = 1; });
+      var chosenValues = chosen.values.slice();
+      // 机构类字段：精确命中 3 字以上简称时，补入同前缀的完整机构名。
+      // 例：「易方达」同时命中「易方达基金」；但「中信」这类 2 字短词不扩展，避免误并。
+      if (KW_FIELDS.indexOf(chosen.field) >= 0 && cand.str.length >= 3) {
+        COUNTS[chosen.field].forEach(function (_c, v) {
+          if (v.indexOf(cand.str) === 0 && chosenValues.indexOf(v) < 0) chosenValues.push(v);
+        });
+      }
+      chosenValues.forEach(function (v) { byField[chosen.field][v] = 1; });
     }
     var out = {};
     // ── 子串兜底匹配(仅 asset/layer 这类少值结构化字段)──
@@ -235,6 +243,39 @@
           if (!byField[f]) byField[f] = {};
           vals.forEach(function (v) { byField[f][v] = 1; });
         }
+      }
+    });
+
+    // ── 机构类字段子串兜底匹配 ──
+    // 解决「易方达」应命中「易方达基金」这类简称问题。仅在字段未精确命中时启用，
+    // 且片段长度至少 3 个汉字/字符，避免「中信」同时误并中信证券/中信建投/中信银行等过宽匹配。
+    KW_FIELDS.forEach(function (f) {
+      if (byField[f]) return;
+      var best = null;
+      COUNTS[f].forEach(function (_c, v) {
+        if (!v || v.length < 3) return;
+        for (var L = Math.min(v.length, q.length); L >= 3; L--) {
+          if (best && L < best.len) break;
+          var found = false;
+          for (var i2 = 0; i2 + L <= v.length; i2++) {
+            var sub = v.substr(i2, L); var idx = q.indexOf(sub);
+            if (idx < 0) continue;
+            var e2 = idx + L, ov = false;
+            for (var j2 = 0; j2 < consumed.length; j2++) { if (idx < consumed[j2][1] && e2 > consumed[j2][0]) { ov = true; break; } }
+            if (ov) continue;
+            if (!best || L > best.len) best = { len: L, span: sub, s: idx, e: e2 };
+            found = true; break;
+          }
+          if (found) break;
+        }
+      });
+      if (!best) return;
+      var vals = [];
+      COUNTS[f].forEach(function (_c, v) { if (v.indexOf(best.span) >= 0) vals.push(v); });
+      if (vals.length) {
+        consumed.push([best.s, best.e]);
+        if (!byField[f]) byField[f] = {};
+        vals.forEach(function (v) { byField[f][v] = 1; });
       }
     });
     Object.keys(byField).forEach(function (f) { out[f] = Object.keys(byField[f]); });
