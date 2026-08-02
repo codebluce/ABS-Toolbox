@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import openpyxl
 import html
 import pandas as pd
-from abs_common import preprocess_xlsx_for_pandas
+from abs_common import normalize_investor_name, preprocess_xlsx_for_pandas
 
 CREDIT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            '..', 'deliverables', 'dashboards', '04_reference',
@@ -35,7 +35,7 @@ def normalize(name):
     """机构名归一化:去空格/括号统一/去常见后缀"""
     if not name:
         return ''
-    n = str(name).strip()
+    n = normalize_investor_name(str(name).strip())
     n = n.replace('（', '(').replace('）', ')')
     n = n.replace(' ', '').replace('　', '')
     # 去常见后缀
@@ -66,7 +66,7 @@ def _add_actual_subscription_columns(df):
     Y列"申购规模"只是申购报价规模，申购不一定中标；额度占用必须按最终中标的V列计算。
     """
     df = df.copy()
-    df['actual_inst'] = df['认购机构']
+    df['actual_inst'] = df['认购机构'].apply(normalize_investor_name)
     df['actual_share'] = pd.to_numeric(df['认购份额'], errors='coerce')
     df['actual_source'] = 'UV'
     return df, {'uv': int(df['actual_share'].notna().sum())}
