@@ -4,7 +4,8 @@
 
 - 最新入口：`index.html`
 - 最新来源：`deliverables\dashboards\01_latest\ABS综合看板_20260802.html`
-- 历史归档：`archive/index.html`
+- 历史归档：已下线（protected 模式不发布明文历史版本）
 - 生成时间：`2026-08-02T12:10:19`
+- 加密模式：`True`
 
-安全说明：站点包只包含静态 HTML，不包含源 Excel、簿记明细、脚本、`.env` 等文件。
+安全说明：站点包为加密门禁版本，`index.html` 只包含密文和本地解密逻辑，不包含明文看板。
