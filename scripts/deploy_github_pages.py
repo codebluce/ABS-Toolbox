@@ -13,8 +13,12 @@ site package is copied to gh-pages.
 from __future__ import annotations
 
 import argparse
+import base64
+import gzip
+import hashlib
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -22,6 +26,8 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable
+
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
@@ -95,6 +101,116 @@ def generate_dashboard(ledger_path: Path) -> Path:
     return latest_by_mtime(find_dashboard_files())
 
 
+def encrypt_dashboard_html(dashboard_path: Path, password: str, iterations: int) -> dict:
+    """Return encrypted payload metadata for static password-gated Pages.
+
+    The deployed page contains only gzip(html) encrypted by AES-GCM. The password is
+    never written to disk; it is used to derive a 256-bit key through PBKDF2-SHA256.
+    """
+    if not password:
+        raise ValueError("protected mode requires a non-empty password")
+    raw = dashboard_path.read_bytes()
+    compressed = gzip.compress(raw, compresslevel=6, mtime=0)
+    salt = secrets.token_bytes(16)
+    iv = secrets.token_bytes(12)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations, dklen=32)
+    cipher = AESGCM(key).encrypt(iv, compressed, None)
+    return {
+        "algorithm": "PBKDF2-SHA256 + AES-256-GCM + gzip",
+        "iterations": iterations,
+        "salt": base64.b64encode(salt).decode("ascii"),
+        "iv": base64.b64encode(iv).decode("ascii"),
+        "ciphertext": base64.b64encode(cipher).decode("ascii"),
+        "plainBytes": len(raw),
+        "gzipBytes": len(compressed),
+        "cipherBytes": len(cipher),
+    }
+
+
+def protected_shell_html(latest_dashboard: Path, payload: dict) -> str:
+    latest_name = latest_dashboard.name
+    latest_date = dashboard_date(latest_dashboard)
+    payload_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    return f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>ABS 综合看板 · 访问验证</title>
+  <style>
+    :root{{color-scheme:light;--ink:#111827;--muted:#667085;--line:#e5e7eb;--bg:#f6f7f9;--card:#fff;--brand:#172033;--danger:#b42318;--ok:#067647;}}
+    *{{box-sizing:border-box}} body{{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 20% 20%,#eef4ff,transparent 30%),var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;color:var(--ink)}}
+    .card{{width:min(560px,calc(100vw - 32px));background:rgba(255,255,255,.92);border:1px solid rgba(229,231,235,.9);border-radius:24px;padding:30px;box-shadow:0 24px 80px rgba(15,23,42,.12);backdrop-filter:blur(14px)}}
+    .eyebrow{{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}} h1{{margin:10px 0 8px;font-size:30px;line-height:1.12}} p{{margin:0;color:var(--muted);line-height:1.7;font-size:14px}} .meta{{margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfcfe;font-size:13px;color:#475467;display:grid;gap:6px}}
+    label{{display:block;margin:22px 0 8px;font-weight:700;font-size:14px}} .row{{display:flex;gap:10px}} input{{flex:1;border:1px solid #cfd4dc;border-radius:12px;padding:13px 14px;font-size:16px;outline:none}} input:focus{{border-color:#344054;box-shadow:0 0 0 4px rgba(52,64,84,.08)}} button{{border:0;border-radius:12px;background:var(--brand);color:white;font-weight:800;padding:0 18px;font-size:15px;cursor:pointer}} button:disabled{{opacity:.6;cursor:not-allowed}} .msg{{min-height:22px;margin-top:12px;font-size:14px}} .err{{color:var(--danger)}} .ok{{color:var(--ok)}} .hint{{margin-top:18px;font-size:12px;color:#98a2b3}}
+    #viewer{{display:none;position:fixed;inset:0;border:0;width:100vw;height:100vh;background:white}}
+  </style>
+</head>
+<body>
+  <main class="card" id="gate">
+    <div class="eyebrow">ABS Dashboard Protected</div>
+    <h1>ABS 综合看板</h1>
+    <p>请输入访问密码。看板数据已在发布前加密,密码只在本机浏览器中用于解密,不会发送到服务器。</p>
+    <div class="meta">
+      <div><strong>版本</strong>：{latest_date}</div>
+      <div><strong>来源</strong>：{latest_name}</div>
+      <div><strong>加密</strong>：PBKDF2-SHA256 / AES-GCM / gzip</div>
+    </div>
+    <label for="password">访问密码</label>
+    <div class="row"><input id="password" type="password" autocomplete="current-password" placeholder="输入密码后按 Enter"><button id="unlock">解锁</button></div>
+    <div class="msg" id="msg"></div>
+    <div class="hint">提示：首次解锁会在浏览器本地完成密钥派生、解密和解压；请使用强密码并避免在公共设备保存。</div>
+  </main>
+  <iframe id="viewer" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups allow-forms"></iframe>
+  <script>
+    const PAYLOAD = {payload_json};
+    const $ = (id) => document.getElementById(id);
+    const msg = (text, cls='') => {{ $('msg').className = 'msg ' + cls; $('msg').textContent = text; }};
+    const b64 = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+    async function deriveKey(password) {{
+      const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+      return crypto.subtle.deriveKey({{name:'PBKDF2', salt:b64(PAYLOAD.salt), iterations:PAYLOAD.iterations, hash:'SHA-256'}}, base, {{name:'AES-GCM', length:256}}, false, ['decrypt']);
+    }}
+    async function ungzip(bytes) {{
+      if (!('DecompressionStream' in window)) throw new Error('当前浏览器不支持 DecompressionStream,请升级浏览器。');
+      const ds = new DecompressionStream('gzip');
+      const stream = new Blob([bytes]).stream().pipeThrough(ds);
+      const buf = await new Response(stream).arrayBuffer();
+      return new TextDecoder('utf-8').decode(buf);
+    }}
+    async function unlock() {{
+      const password = $('password').value;
+      if (!password) {{ msg('请输入密码。', 'err'); return; }}
+      $('unlock').disabled = true;
+      const t0 = performance.now();
+      try {{
+        msg('正在解密看板...', '');
+        const key = await deriveKey(password);
+        const plain = await crypto.subtle.decrypt({{name:'AES-GCM', iv:b64(PAYLOAD.iv)}}, key, b64(PAYLOAD.ciphertext));
+        const html = await ungzip(new Uint8Array(plain));
+        const elapsed = Math.round(performance.now() - t0);
+        msg('解锁成功,正在打开看板... ' + elapsed + 'ms', 'ok');
+        const viewer = $('viewer');
+        viewer.srcdoc = html;
+        viewer.style.display = 'block';
+        $('gate').style.display = 'none';
+      }} catch (err) {{
+        console.error(err);
+        msg('密码错误或浏览器不支持解密。', 'err');
+      }} finally {{
+        $('unlock').disabled = false;
+      }}
+    }}
+    $('unlock').addEventListener('click', unlock);
+    $('password').addEventListener('keydown', e => {{ if (e.key === 'Enter') unlock(); }});
+    $('password').focus();
+  </script>
+</body>
+</html>
+"""
+
+
 def write_archive_index(archive_dir: Path, dashboards: list[Path]) -> None:
     rows = []
     for p in sorted(dashboards, key=dashboard_date, reverse=True):
@@ -144,20 +260,38 @@ def write_archive_index(archive_dir: Path, dashboards: list[Path]) -> None:
     (archive_dir / "index.html").write_text(html, encoding="utf-8")
 
 
-def build_site(latest_dashboard: Path | None = None) -> Path:
+def build_site(
+    latest_dashboard: Path | None = None,
+    *,
+    protected: bool = False,
+    password: str | None = None,
+    iterations: int = 310_000,
+) -> Path:
     print("\n[2/4] 组装静态站点包...")
     dashboards = find_dashboard_files()
     latest_dashboard = latest_dashboard or latest_by_mtime(dashboards)
 
     if SITE_STAGING_DIR.exists():
         shutil.rmtree(SITE_STAGING_DIR)
-    archive_dir = SITE_STAGING_DIR / "archive"
-    archive_dir.mkdir(parents=True, exist_ok=True)
+    SITE_STAGING_DIR.mkdir(parents=True, exist_ok=True)
 
-    shutil.copy2(latest_dashboard, SITE_STAGING_DIR / "index.html")
-    for p in dashboards:
-        shutil.copy2(p, archive_dir / p.name)
-    write_archive_index(archive_dir, dashboards)
+    protected_payload = None
+    if protected:
+        if not password:
+            raise RuntimeError("--protected 需要通过环境变量提供密码")
+        print("[site] protected 模式: gzip(html) + AES-GCM, 不发布明文 archive")
+        protected_payload = encrypt_dashboard_html(latest_dashboard, password, iterations)
+        (SITE_STAGING_DIR / "index.html").write_text(
+            protected_shell_html(latest_dashboard, protected_payload), encoding="utf-8"
+        )
+    else:
+        archive_dir = SITE_STAGING_DIR / "archive"
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(latest_dashboard, SITE_STAGING_DIR / "index.html")
+        for p in dashboards:
+            shutil.copy2(p, archive_dir / p.name)
+        write_archive_index(archive_dir, dashboards)
+
     (SITE_STAGING_DIR / ".nojekyll").write_text("", encoding="utf-8")
 
     # Keep the site package deterministic for the same dashboard HTML.
@@ -167,26 +301,43 @@ def build_site(latest_dashboard: Path | None = None) -> Path:
         "generatedAt": packaged_at,
         "latest": latest_dashboard.name,
         "latestDate": dashboard_date(latest_dashboard),
-        "dashboardCount": len(dashboards),
-        "archive": [p.name for p in sorted(dashboards, key=dashboard_date, reverse=True)],
+        "dashboardCount": 1 if protected else len(dashboards),
+        "archive": [] if protected else [p.name for p in sorted(dashboards, key=dashboard_date, reverse=True)],
+        "protected": protected,
         "source": "scripts/deploy_github_pages.py",
     }
+    if protected_payload:
+        manifest["encryption"] = {
+            "algorithm": protected_payload["algorithm"],
+            "iterations": protected_payload["iterations"],
+            "plainBytes": protected_payload["plainBytes"],
+            "gzipBytes": protected_payload["gzipBytes"],
+            "cipherBytes": protected_payload["cipherBytes"],
+        }
     (SITE_STAGING_DIR / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    archive_line = "- 历史归档：已下线（protected 模式不发布明文历史版本）" if protected else "- 历史归档：`archive/index.html`"
+    security_line = "安全说明：站点包为加密门禁版本，`index.html` 只包含密文和本地解密逻辑，不包含明文看板。" if protected else "安全说明：站点包只包含静态 HTML，不包含源 Excel、簿记明细、脚本、`.env` 等文件。"
     readme = f"""# ABS综合看板静态站点包
 
 本目录由 `scripts/deploy_github_pages.py` 自动生成，用于发布到 GitHub Pages。
 
 - 最新入口：`index.html`
 - 最新来源：`{latest_dashboard.relative_to(REPO_ROOT)}`
-- 历史归档：`archive/index.html`
+{archive_line}
 - 生成时间：`{manifest['generatedAt']}`
+- 加密模式：`{protected}`
 
-安全说明：站点包只包含静态 HTML，不包含源 Excel、簿记明细、脚本、`.env` 等文件。
+{security_line}
 """
     (SITE_STAGING_DIR / "README.md").write_text(readme, encoding="utf-8")
 
     print(f"[site] 最新: {latest_dashboard.name}")
+    if protected_payload:
+        print(
+            f"[site] 加密体积: raw={protected_payload['plainBytes']} "
+            f"gzip={protected_payload['gzipBytes']} cipher={protected_payload['cipherBytes']}"
+        )
     print(f"[site] 文件数: {len(list(SITE_STAGING_DIR.rglob('*')))}")
     return SITE_STAGING_DIR
 
@@ -266,6 +417,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--branch", default="gh-pages", help="Pages 分支名,默认 gh-pages")
     parser.add_argument("--message", default=None, help="gh-pages commit message")
     parser.add_argument("--allow-dirty", action="store_true", help="允许 main 工作树有未提交改动(不推荐)")
+    parser.add_argument("--protected", action="store_true", help="发布加密门禁版: gzip(html)+AES-GCM,不发布明文archive")
+    parser.add_argument("--password-env", default="ABS_DASHBOARD_PASSWORD", help="protected模式读取密码的环境变量名")
+    parser.add_argument("--pbkdf2-iterations", type=int, default=310_000, help="PBKDF2-SHA256迭代次数,默认310000")
     return parser.parse_args()
 
 
@@ -281,15 +435,25 @@ def main() -> None:
         ledger = args.ledger or find_latest_ledger()
         latest_dashboard = generate_dashboard(ledger)
 
-    site_dir = build_site(latest_dashboard)
+    password = os.environ.get(args.password_env) if args.protected else None
+    site_dir = build_site(
+        latest_dashboard,
+        protected=args.protected,
+        password=password,
+        iterations=args.pbkdf2_iterations,
+    )
     date_tag = dashboard_date(latest_by_mtime(find_dashboard_files()))
-    message = args.message or f"deploy: update ABS dashboard site {date_tag}"
+    mode = "protected" if args.protected else "site"
+    message = args.message or f"deploy: update ABS dashboard {mode} {date_tag}"
     changed = publish_to_pages(site_dir, args.remote, args.branch, message, args.no_push)
 
     print("\n[完成] GitHub Pages 更新流程结束")
     print(f"站点包: {site_dir}")
     print("主入口: https://codebluce.github.io/ABS-Toolbox/")
-    print("归档页: https://codebluce.github.io/ABS-Toolbox/archive/index.html")
+    if args.protected:
+        print("归档页: protected 模式已下线明文 archive")
+    else:
+        print("归档页: https://codebluce.github.io/ABS-Toolbox/archive/index.html")
     print(f"是否产生 gh-pages 更新: {'是' if changed else '否'}")
 
 
