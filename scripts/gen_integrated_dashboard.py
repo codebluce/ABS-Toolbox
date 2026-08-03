@@ -9,7 +9,6 @@
 """
 import os
 import sys
-import re
 import argparse
 from datetime import datetime
 from pathlib import Path
@@ -21,14 +20,14 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-import gen_institution_stats
 import gen_abs_cost_report
 import gen_spread_report
 import gen_compare_tool
 import gen_investment_ledger
 import gen_pricing_insight
+import gen_institution_profile
 
-# 投资人分析模块(lab 实验转正:fig7_wlz_panel 调 fig4_new + fig5 同步台账)
+# 机构画像模块(lab 实验转正:fig7_wlz_panel 调 fig4_new + fig5 同步台账)
 LAB_DIR = SCRIPT_DIR / 'lab'
 if str(LAB_DIR) not in sys.path:
     sys.path.insert(0, str(LAB_DIR))
@@ -146,13 +145,12 @@ def build_integrated_html(panels, all_css):
     panels: List[(module, sub, body_html)]
     all_css: 4 份原始 CSS + TAB_CSS 拼接的字符串
 
-    4 个 top tab: 发行定价 / 机构统计 / 投资人分析 / 投资台账
-    投资人分析 > 理财子分析 (fig4 矩阵 + fig5 画像 并排)
+    3 个 top tab: 发行定价 / 机构画像 / 投资台账
+    机构画像 > 机构速查 + 理财子分析 + 非标额度 + 授信总额度
     投资台账 > 2026年/2025年/2024年 三个年份子 Tab (各自独立筛选状态，多维筛选 + 分组/透视/明细 + 导出 CSV)
               智能问答悬浮球语料覆盖全部年份，不受当前激活子 Tab 限制
     """
-    MODULES = [('pricing', '发行定价'), ('institution', '机构统计'),
-               ('investor', '投资人分析'), ('ledger', '投资台账')]
+    MODULES = [('pricing', '发行定价'), ('progress', '机构画像'), ('ledger', '投资台账')]
     # 第一层 Tab 标签
     top_buttons = []
     for module, label in MODULES:
@@ -171,13 +169,8 @@ def build_integrated_html(panels, all_css):
         module_panels = [p for p in panels if p[0] == module]
         for m, sub, body in module_panels:
             # 从 body 提取子 Tab 显示名（用 section-title 或 banner-title）
-            # 机构统计的 3 个 panel 用 section 名，发行定价用看板名
-            if module == 'institution':
-                # 从 body 里找 section-title
-                title_match = re.search(r'<span class="section-title">(.*?)</span>', body)
-                sub_label = title_match.group(1).replace('表一：', '').replace('表二：', '').replace('表三：', '') if title_match else sub
-            elif module == 'investor':
-                sub_label_map = {'wlz': '理财子分析', 'credit': '非标额度', 'credit_total': '授信总额度'}
+            if module == 'progress':
+                sub_label_map = {'quick': '机构速查', 'wlz': '理财子分析', 'credit': '非标额度', 'credit_total': '授信总额度'}
                 sub_label = sub_label_map.get(sub, sub)
             elif module == 'ledger':
                 sub_label_map = {'query_2026': '2026年', 'query_2025': '2025年', 'query_2024': '2024年'}
@@ -291,12 +284,11 @@ def main():
         print(f'[preprocess] 共享预处理产物: {shared_tmp}')
         _assert_shared_tmp_structure(shared_tmp)   # 结构断言:不符立即 fail,防 fig4/fig5 静默错数
 
-        # 各 compute_data(注入 shared_tmp;gen_institution_stats 综合看板场景不 preprocess,不注入)
+        # 各 compute_data(注入 shared_tmp)
         print('\n[1.5/4] 计算数据...')
         cmp_data = gen_compare_tool.compute_data(xlsx_path, preprocessed_path=shared_tmp)
         cost_data = gen_abs_cost_report.compute_data(xlsx_path, preprocessed_path=shared_tmp)
         spread_data = gen_spread_report.compute_data(xlsx_path, preprocessed_path=shared_tmp)
-        inst_data = gen_institution_stats.compute_data(xlsx_path)
         # 投资台账：2026 用当前入参台账(注入 shared_tmp)，2025/2024 走固定的历史台账路径（缺失则该年份跳过，不报错）
         source_dir = SCRIPT_DIR.parent / 'deliverables' / 'ledger' / '01_source'
         ledger_year_paths = {
@@ -314,39 +306,37 @@ def main():
             ('pricing',     'invest',     gen_compare_tool.render_body_invest(cmp_data)),
             ('pricing',     'cost',       gen_abs_cost_report.render_body(cost_data)),
             ('pricing',     'spread',     gen_spread_report.render_body(spread_data)),
-            ('institution', 'manager',    gen_institution_stats.render_body(inst_data, section_key='manager')),
-            ('institution', 'sales',      gen_institution_stats.render_body(inst_data, section_key='sales')),
-            ('institution', 'custodian',  gen_institution_stats.render_body(inst_data, section_key='custodian')),
+            ('progress',    'quick',      gen_institution_profile.render_body()),
         ]
 
-        # 投资人分析模块:理财子分析 panel(fig4 矩阵 + fig5 画像 并排,同步最新台账)
-        print('\n[3/4] 生成投资人分析 > 理财子分析 panel...')
+        # 机构画像模块:理财子分析 panel(fig4 矩阵 + fig5 画像 并排,同步最新台账)
+        print('\n[3/4] 生成机构画像 > 理财子分析 panel...')
         try:
             wlz_body = fig7_wlz_panel.render_wlz_panel(regenerate=True, preprocessed_path=shared_tmp)
-            panels.append(('investor', 'wlz', wlz_body))
+            panels.append(('progress', 'wlz', wlz_body))
         except Exception as e:
             print(f'[WARN] 理财子分析面板跳过: {e}')
-            panels.append(('investor', 'wlz', '<div style="padding:40px;text-align:center;color:#9aa5b5;">理财子分析数据暂不可用</div>'))
+            panels.append(('progress', 'wlz', '<div style="padding:40px;text-align:center;color:#9aa5b5;">理财子分析数据暂不可用</div>'))
 
-        # 投资人分析模块:非标额度 panel
-        print('\n[3.5/4] 生成投资人分析 > 非标额度 panel...')
+        # 机构画像模块:非标额度 panel
+        print('\n[3.5/4] 生成机构画像 > 非标额度 panel...')
         try:
             credit_body = fig6_credit_panel.render_credit_panel(
                 ledger_path=xlsx_path, preprocessed_path=shared_tmp)
-            panels.append(('investor', 'credit', credit_body))
+            panels.append(('progress', 'credit', credit_body))
         except Exception as e:
             print(f'[WARN] 非标额度面板跳过: {e}')
-            panels.append(('investor', 'credit', '<div style="padding:40px;text-align:center;color:#9aa5b5;">非标额度数据暂不可用</div>'))
+            panels.append(('progress', 'credit', '<div style="padding:40px;text-align:center;color:#9aa5b5;">非标额度数据暂不可用</div>'))
 
-        # 投资人分析模块:总授信额度 panel
-        print('\n[3.6/4] 生成投资人分析 > 授信总额度 panel...')
+        # 机构画像模块:总授信额度 panel
+        print('\n[3.6/4] 生成机构画像 > 授信总额度 panel...')
         try:
             credit_total_body = fig8_credit_total_panel.render_credit_total_panel(
                 ledger_path=xlsx_path, preprocessed_path=shared_tmp)
-            panels.append(('investor', 'credit_total', credit_total_body))
+            panels.append(('progress', 'credit_total', credit_total_body))
         except Exception as e:
             print(f'[WARN] 授信总额度面板跳过: {e}')
-            panels.append(('investor', 'credit_total', '<div style="padding:40px;text-align:center;color:#9aa5b5;">授信总额度数据暂不可用</div>'))
+            panels.append(('progress', 'credit_total', '<div style="padding:40px;text-align:center;color:#9aa5b5;">授信总额度数据暂不可用</div>'))
     except RuntimeError as e:
         print(f'\n[ERROR] {e}')
         print('[ERROR] 请修正数据或逻辑后重试')
@@ -368,12 +358,12 @@ def main():
     # 4. CSS 拼接 + 套 Tab 框架 + 写文件
     print('\n[4/4] 拼接 HTML...')
     all_css = '\n'.join([
-        gen_institution_stats.CSS,
         gen_abs_cost_report.CSS,
         gen_spread_report.CSS,
         gen_compare_tool.CSS,
         gen_pricing_insight.PRICING_INSIGHT_CSS,
         gen_compare_tool.INVEST_CSS,
+        gen_institution_profile.PROFILE_CSS,
         fig6_credit_panel.CREDIT_CSS,
         fig8_credit_total_panel.CREDIT_TOTAL_CSS,
         gen_investment_ledger.LEDGER_CSS,
@@ -391,12 +381,12 @@ def main():
     with open(out_path, 'r', encoding='utf-8') as f:
         content = f.read()
     panel_count = content.count('<div class="panel"')
-    expected_panel_count = 10 + len(led_data['by_year'])  # 7 主 + 理财子/非标额度/授信总额度 3 个 + 各年份投资台账
+    expected_panel_count = 8 + len(led_data['by_year'])  # 发行定价4 + 机构速查1 + 理财子/非标额度/授信总额度3 + 各年份投资台账
     has_select_module = 'function selectModule' in content
     has_select_sub = 'function selectSub' in content
     ledger_years_str = '+'.join(sorted(led_data['by_year'].keys(), reverse=True))
     if panel_count == expected_panel_count and has_select_module and has_select_sub:
-        print(f'[QC] 综合看板结构检查通过：{panel_count} 个 panel(7 主 + 理财子分析 + 非标额度 + 授信总额度 + 投资台账[{ledger_years_str}]) + Tab 切换 JS 齐全')
+        print(f'[QC] 综合看板结构检查通过：{panel_count} 个 panel(发行定价4 + 机构画像4 + 投资台账[{ledger_years_str}]) + Tab 切换 JS 齐全')
     else:
         print(f'[QC WARN] 结构异常：panel={panel_count}(预期{expected_panel_count}), selectModule={has_select_module}, selectSub={has_select_sub}')
 
