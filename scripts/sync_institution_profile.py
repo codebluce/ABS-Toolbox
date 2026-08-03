@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_INPUT_DIR = ROOT.parents[1] / "Inbox" / "joyspace_profile_sync"
+DEFAULT_INPUT_DIR = ROOT / "data" / "joyspace_profile_sync"
 DEFAULT_OUTPUT = ROOT / "data" / "机构画像数据.json"
 DEFAULT_META = ROOT / "data" / "机构画像数据.meta.json"
 OWNER_SHEETS = ["吴沛智", "李亦非", "姜守园", "邓殷洁", "高雅"]

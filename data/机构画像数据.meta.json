@@ -1,13 +1,13 @@
 {
   "source": "JoySpace 5QmWOOFQl19SdQUM1l3y",
-  "synced_at": "2026-08-03T23:34:42",
+  "synced_at": "2026-08-03T23:53:35",
   "record_count": 257,
   "source_files": [
-    "D:\\wupeizhi.nolan\\Documents\\LikeCodeNex\\Inbox\\joyspace_profile_sync\\吴沛智.json",
-    "D:\\wupeizhi.nolan\\Documents\\LikeCodeNex\\Inbox\\joyspace_profile_sync\\李亦非.json",
-    "D:\\wupeizhi.nolan\\Documents\\LikeCodeNex\\Inbox\\joyspace_profile_sync\\姜守园.json",
-    "D:\\wupeizhi.nolan\\Documents\\LikeCodeNex\\Inbox\\joyspace_profile_sync\\邓殷洁.json",
-    "D:\\wupeizhi.nolan\\Documents\\LikeCodeNex\\Inbox\\joyspace_profile_sync\\高雅.json"
+    "D:\\wupeizhi.nolan\\Documents\\LikeCodeNex\\skills\\ABS工具箱\\data\\joyspace_profile_sync\\吴沛智.json",
+    "D:\\wupeizhi.nolan\\Documents\\LikeCodeNex\\skills\\ABS工具箱\\data\\joyspace_profile_sync\\李亦非.json",
+    "D:\\wupeizhi.nolan\\Documents\\LikeCodeNex\\skills\\ABS工具箱\\data\\joyspace_profile_sync\\姜守园.json",
+    "D:\\wupeizhi.nolan\\Documents\\LikeCodeNex\\skills\\ABS工具箱\\data\\joyspace_profile_sync\\邓殷洁.json",
+    "D:\\wupeizhi.nolan\\Documents\\LikeCodeNex\\skills\\ABS工具箱\\data\\joyspace_profile_sync\\高雅.json"
   ],
   "builder": "scripts/sync_institution_profile.py"
 }
