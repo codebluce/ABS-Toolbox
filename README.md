@@ -3,6 +3,15 @@
 > v2.0.0(2026-07-05)第一轮。本 skill 整合了原 3 个 ABS 业务 skill(发行定价 / 机构统计 / 簿记录入),提供从台账录入到机构统计到发行定价分析的端到端工作流。
 > 第一轮激活:机构统计 + 产出归档。第二轮(1-2 周后)激活簿记录入 + 发行定价 + 全流程编排。
 
+## 在线看板访问
+
+综合看板加密发布,访问需输入密码(密码向数据维护人索取)。两个入口内容一致:
+
+- **国内主入口(Cloudflare Pages,免代理快)**:`https://abs-toolbox.pages.dev`(待 CF 项目创建后回填实际 URL)
+- 海外/备用入口(GitHub Pages):`https://codebluce.github.io/ABS-Toolbox/`
+
+> 部署与镜像同步机制见 `docs/cloudflare_pages_部署.md`。
+
 ## 快速开始
 
 ### 环境要求

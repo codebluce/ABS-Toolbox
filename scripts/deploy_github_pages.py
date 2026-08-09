@@ -37,6 +37,11 @@ FINAL_LEDGER_DIR = REPO_ROOT / "deliverables" / "ledger" / "03_final"
 DASHBOARD_PREFIX = "ABS综合看板_"
 DASHBOARD_SUFFIX = ".html"
 
+# Cloudflare Pages 国内加速镜像。指向 gh-pages 分支自动同步,与 GitHub Pages 内容一致。
+# 创建项目后回填实际 URL(形如 https://abs-toolbox-xxxx.pages.dev);留空则不提示。
+# 详见 docs/cloudflare_pages_部署.md。
+CF_PAGES_URL = os.environ.get("ABS_CF_PAGES_URL", "")
+
 
 def run(cmd: list[str], cwd: Path | None = None, check: bool = True) -> subprocess.CompletedProcess[str]:
     print("$ " + " ".join(cmd))
@@ -449,7 +454,15 @@ def main() -> None:
 
     print("\n[完成] GitHub Pages 更新流程结束")
     print(f"站点包: {site_dir}")
-    print("主入口: https://codebluce.github.io/ABS-Toolbox/")
+    print("海外/备用入口(GitHub Pages): https://codebluce.github.io/ABS-Toolbox/")
+    if CF_PAGES_URL:
+        print(f"国内主入口(Cloudflare Pages,免代理): {CF_PAGES_URL}")
+        if changed:
+            print("  ↑ gh-pages 已更新,CF Pages 将在 1~2 分钟内自动同步该镜像")
+        else:
+            print("  ↑ 本次无 gh-pages 变更,CF 镜像保持不变")
+    else:
+        print("国内主入口(Cloudflare Pages): 未配置 ABS_CF_PAGES_URL,详见 docs/cloudflare_pages_部署.md")
     if args.protected:
         print("归档页: protected 模式已下线明文 archive")
     else:

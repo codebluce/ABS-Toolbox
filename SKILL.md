@@ -180,6 +180,21 @@ skills/ABS工具箱/
 - 无外部数据源依赖(纯本地 Excel 处理)
 - Windows 调用前加 `PYTHONUTF8=1` 避免 GBK 编码问题
 
+## 看板在线发布
+
+综合看板通过 `scripts/deploy_github_pages.py --protected` 加密门禁发布到 `gh-pages` 分支,两个入口内容一致(同一加密壳,同一密码解锁):
+
+- **国内主入口(Cloudflare Pages,免代理)**:`https://abs-toolbox.pages.dev`(CF 项目创建后回填实际 URL)
+- 海外/备用入口(GitHub Pages):`https://codebluce.github.io/ABS-Toolbox/`
+
+```bash
+# 发布加密门禁版(GitHub Pages 即时生效 + Cloudflare Pages 自动同步镜像)
+ABS_DASHBOARD_PASSWORD="<访问密码>" PYTHONUTF8=1 .venv/bin/python \
+  scripts/deploy_github_pages.py --protected
+```
+
+国内加速镜像的接入与回填见 `docs/cloudflare_pages_部署.md`。
+
 ## 审计流程(A→B→C 循环)
 
 ABS工具箱采用三角色审计循环,参考 macro-allocation-strategy 精简适配。详见 `audit/README.md`。
