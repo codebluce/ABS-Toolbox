@@ -22102,14 +22102,15 @@ function progDoSearch(name, owner) {
   contactSection.innerHTML = '<div class="prog-section-title">联系人信息</div>' + progRenderContact(contact);
 
   // 2. 最近5条进展记录
-  if (rec.recent_progress.length === 0) {
+  const recentProgress = (rec.recent_progress || []).slice(0, 5);
+  if (recentProgress.length === 0) {
     progressSection.innerHTML = '<div class="prog-section-title">最近进展记录</div>' +
       '<div style="padding:20px;color:#9aa5b5;font-size:13px;text-align:center">暂无进展记录</div>';
   } else {
-    const dateRange = rec.recent_progress[0].date + ' → ' + rec.recent_progress[rec.recent_progress.length - 1].date;
-    let html = '<div class="prog-section-title">最近 ' + rec.recent_progress.length + ' 条进展记录 <span style="font-size:12px;color:#6b7a95;font-weight:400">（' + dateRange + '）</span></div>';
+    const dateRange = recentProgress[0].date + ' → ' + recentProgress[recentProgress.length - 1].date;
+    let html = '<div class="prog-section-title">最近 ' + recentProgress.length + ' 条进展记录 <span style="font-size:12px;color:#6b7a95;font-weight:400">（' + dateRange + '）</span></div>';
     html += '<div class="prog-progress-list">';
-    rec.recent_progress.forEach(p => {
+    recentProgress.forEach(p => {
       html += '<div class="prog-progress-item">' +
         '<div class="prog-progress-date">' + p.date + '</div>' +
         '<div class="prog-progress-text">' + progEsc(p.text) + '</div>' +
@@ -22310,8 +22311,8 @@ function progBuildLedgerProfile() {
   PROG_LEDGER_PROFILE = {};
   if (typeof ITL_ALL_DATA === 'undefined' && typeof ITL_DATA_2026 === 'undefined') return PROG_LEDGER_PROFILE;
   const ledger = typeof ITL_ALL_DATA !== 'undefined' ? ITL_ALL_DATA : ITL_DATA_2026;
-  // 结构: {inst: {year: {asset: {share, spreadSum, spreadCount, details[]}}}}
-  // share 统计所有档位; spread 只统计优先档(与利差分析tab一致); details 保留项目级投资明细
+  // 结构: {inst: {year: {asset: {share, spreadSum, spreadCount}}}}
+  // share 统计所有档位; spread 只统计优先档(与利差分析tab一致)
   ledger.forEach(r => {
     const inst = r.inst;
     if (!inst) return;
@@ -22323,17 +22324,8 @@ function progBuildLedgerProfile() {
     const spread = (isPriority && r.spread != null) ? parseFloat(r.spread) : null;
     if (!PROG_LEDGER_PROFILE[inst]) PROG_LEDGER_PROFILE[inst] = {};
     if (!PROG_LEDGER_PROFILE[inst][year]) PROG_LEDGER_PROFILE[inst][year] = {};
-    if (!PROG_LEDGER_PROFILE[inst][year][asset]) PROG_LEDGER_PROFILE[inst][year][asset] = {share: 0, spreadSum: 0, spreadCount: 0, details: []};
+    if (!PROG_LEDGER_PROFILE[inst][year][asset]) PROG_LEDGER_PROFILE[inst][year][asset] = {share: 0, spreadSum: 0, spreadCount: 0};
     PROG_LEDGER_PROFILE[inst][year][asset].share += share;
-    PROG_LEDGER_PROFILE[inst][year][asset].details.push({
-      date: r.date || '',
-      project: r.proj || r.project || '',
-      asset: asset,
-      layer: layer,
-      share: share,
-      cost: r.cost != null ? parseFloat(r.cost) : null,
-      spread: spread
-    });
     if (spread != null && !isNaN(spread)) {
       PROG_LEDGER_PROFILE[inst][year][asset].spreadSum += spread * share;
       PROG_LEDGER_PROFILE[inst][year][asset].spreadCount += share;
@@ -22396,11 +22388,10 @@ function progBuildProfile(rec) {
         if (!yearAgg[year]) { yearAgg[year] = {}; yearTotal[year] = 0; }
         Object.keys(profile[ln][year]).forEach(asset => {
           const d = profile[ln][year][asset];
-          if (!yearAgg[year][asset]) yearAgg[year][asset] = {share: 0, spreadSum: 0, spreadCount: 0, details: []};
+          if (!yearAgg[year][asset]) yearAgg[year][asset] = {share: 0, spreadSum: 0, spreadCount: 0};
           yearAgg[year][asset].share += d.share;
           yearAgg[year][asset].spreadSum += d.spreadSum;
           yearAgg[year][asset].spreadCount += d.spreadCount;
-          yearAgg[year][asset].details = yearAgg[year][asset].details.concat(d.details || []);
           yearTotal[year] += d.share;
           if (d.share > 0) hasAnyData = true;
         });
@@ -22436,35 +22427,15 @@ function progBuildProfile(rec) {
         '<td class="pct-val">100.0%</td>' +
         '<td class="spread-val">' + (yearAvgSpread != null ? (yearAvgSpread * 10000).toFixed(0) + 'bp' : '—') + '</td>' +
         '</tr>';
-      const detailRows = assets.flatMap(([asset, d]) => (d.details || []).map(x => Object.assign({}, x, {asset: asset})))
-        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || (b.share || 0) - (a.share || 0));
-      let detailRowsHtml = '';
-      detailRows.forEach(d => {
-        detailRowsHtml += '<tr>' +
-          '<td class="asset-name">' + progEsc(d.date || '—') + '</td>' +
-          '<td class="asset-name">' + progEsc(d.project || '—') + '</td>' +
-          '<td class="asset-name">' + progEsc(d.asset || '—') + '</td>' +
-          '<td class="asset-name">' + progEsc(d.layer || '—') + '</td>' +
-          '<td class="num-val">' + (d.share || 0).toFixed(2) + '</td>' +
-          '<td class="num-val">' + (d.cost != null && !isNaN(d.cost) ? d.cost.toFixed(4) : '—') + '</td>' +
-          '<td class="spread-val">' + (d.spread != null && !isNaN(d.spread) ? (d.spread * 10000).toFixed(0) + 'bp' : '—') + '</td>' +
-          '</tr>';
-      });
-      const detailTable = detailRowsHtml ? (
-        '<div class="prog-profile-detail-title">投资明细（项目级）</div>' +
-        '<table class="prog-profile-table prog-profile-detail-table">' +
-          '<thead><tr><th>日期</th><th>项目</th><th>资产类型</th><th>分层</th><th class="num-col">规模(亿)</th><th class="num-col">成本</th><th class="num-col">利差</th></tr></thead>' +
-          '<tbody>' + detailRowsHtml + '</tbody>' +
-        '</table>') : '';
       yearsHtml += '<div class="prog-profile-year-block">' +
         '<div class="prog-profile-year-head">' +
           '<span class="prog-profile-year-title">' + year + '年</span>' +
-          '<span class="prog-profile-year-total">投资总额<span class="yt-num">' + total.toFixed(2) + '亿</span>·' + assets.length + '类资产 · ' + detailRows.length + '笔明细</span>' +
+          '<span class="prog-profile-year-total">投资总额<span class="yt-num">' + total.toFixed(2) + '亿</span>·' + assets.length + '类资产</span>' +
         '</div>' +
         '<table class="prog-profile-table">' +
           '<thead><tr><th>资产类型</th><th class="num-col">规模(亿)</th><th class="num-col">占比</th><th class="num-col">平均利差</th></tr></thead>' +
           '<tbody>' + rowsHtml + '</tbody>' +
-        '</table>' + detailTable +
+        '</table>' +
       '</div>';
     });
     yearsHtml += '<div class="prog-profile-source" style="margin-top:8px">利差口径：仅统计优先A/优先级/优先A1/优先A2（与发行定价·利差分析同步）· 规模含全部档位</div>';
