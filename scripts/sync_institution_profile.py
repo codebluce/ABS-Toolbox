@@ -31,8 +31,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT_DIR = ROOT / "data" / "joyspace_profile_sync"
 DEFAULT_OUTPUT = ROOT / "data" / "机构画像数据.json"
 DEFAULT_META = ROOT / "data" / "机构画像数据.meta.json"
-OWNER_SHEETS = ["吴沛智", "李亦非", "姜守园", "邓殷洁", "高雅"]
-BASE_HEADERS = {"机构名称", "部门-职位-联系人", "批复情况", "额度使用情况"}
+OWNER_SHEETS = ["吴沛智", "李亦非", "姜守园", "邓殷洁", "高雅", "李晨", "刘啸飞"]
+BASE_HEADERS = {"机构名称", "机构名称（管理人/主承销商/销售机构）", "管理人及销售机构", "部门-职位-联系人", "批复情况", "额度使用情况"}
 SKIP_NAMES = {"机构名称", "序号", "", "nan", "None"}
 
 
@@ -86,7 +86,7 @@ def is_date_header(value: str) -> bool:
 
 def is_name_header(value: str) -> bool:
     value = (value or "").strip()
-    return value == "机构名称" or value.startswith("机构名称（")
+    return value == "机构名称" or value.startswith("机构名称（") or value == "管理人及销售机构"
 
 
 def is_contact_header(value: str) -> bool:
