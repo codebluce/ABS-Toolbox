@@ -32,6 +32,7 @@ LAB_DIR = SCRIPT_DIR / 'lab'
 if str(LAB_DIR) not in sys.path:
     sys.path.insert(0, str(LAB_DIR))
 import fig7_wlz_panel
+import consumer_asset_panel
 
 # 非标额度监控模块
 import fig6_credit_panel
@@ -112,6 +113,9 @@ function selectModule(module) {
   const firstSub = document.querySelector('.sub-tabs-pane[data-module="' + module + '"] .sub-tab-button');
   if (firstSub) {
     selectSub(firstSub.dataset.sub);
+  } else {
+    document.querySelectorAll('.sub-tab-button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   }
 }
 
@@ -133,7 +137,7 @@ function selectSub(sub) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  selectModule('pricing');
+  selectModule('progress');
 });
 """
 
@@ -150,7 +154,7 @@ def build_integrated_html(panels, all_css):
     投资台账 > 2026年/2025年/2024年 三个年份子 Tab (各自独立筛选状态，多维筛选 + 分组/透视/明细 + 导出 CSV)
               智能问答悬浮球语料覆盖全部年份，不受当前激活子 Tab 限制
     """
-    MODULES = [('pricing', '发行定价'), ('progress', '机构画像'), ('ledger', '投资台账')]
+    MODULES = [('progress', '机构画像'), ('ledger', '投资台账'), ('asset_overview', '资产大盘'), ('pricing', '发行定价')]
     # 第一层 Tab 标签
     top_buttons = []
     for module, label in MODULES:
@@ -171,6 +175,9 @@ def build_integrated_html(panels, all_css):
             # 从 body 提取子 Tab 显示名（用 section-title 或 banner-title）
             if module == 'progress':
                 sub_label_map = {'quick': '机构速查', 'wlz': '理财子分析', 'credit': '非标额度', 'credit_total': '授信总额度'}
+                sub_label = sub_label_map.get(sub, sub)
+            elif module == 'asset_overview':
+                sub_label_map = {'consumer_asset': '消金资产'}
                 sub_label = sub_label_map.get(sub, sub)
             elif module == 'ledger':
                 sub_label_map = {'query_2026': '2026年', 'query_2025': '2025年', 'query_2024': '2024年'}
@@ -259,7 +266,12 @@ def main():
     parser = argparse.ArgumentParser(description='ABS 综合看板生成器（路径 C · 数据驱动）')
     parser.add_argument('xlsx_path', help='台账文件路径（.xlsx）')
     parser.add_argument('output_path', nargs='?', default=None, help='输出 HTML 路径（默认 01_latest/ABS综合看板_YYYYMMDD.html）')
+    parser.add_argument('--baitiao-xlsx', default=None, help='白条大盘余额原始 Excel（需与金条源成对传入）')
+    parser.add_argument('--jintiao-xlsx', default=None, help='金条大盘余额原始 Excel（需与白条源成对传入）')
     args = parser.parse_args()
+    if bool(args.baitiao_xlsx) != bool(args.jintiao_xlsx):
+        parser.error('--baitiao-xlsx 与 --jintiao-xlsx 必须成对传入')
+    consumer_asset_enabled = bool(args.baitiao_xlsx)
 
     xlsx_path = args.xlsx_path
     if args.output_path:
@@ -328,6 +340,13 @@ def main():
             print(f'[WARN] 非标额度面板跳过: {e}')
             panels.append(('progress', 'credit', '<div style="padding:40px;text-align:center;color:#9aa5b5;">非标额度数据暂不可用</div>'))
 
+        # 资产大盘模块:消金资产 panel（显式传入双源时严格生成，失败即阻断）
+        if consumer_asset_enabled:
+            print('\n[3.55/4] 生成资产大盘 > 消金资产 panel...')
+            consumer_asset_body = consumer_asset_panel.render_consumer_asset_panel(
+                args.baitiao_xlsx, args.jintiao_xlsx)
+            panels.append(('asset_overview', 'consumer_asset', consumer_asset_body))
+
         # 机构画像模块:总授信额度 panel
         print('\n[3.6/4] 生成机构画像 > 授信总额度 panel...')
         try:
@@ -364,6 +383,7 @@ def main():
         gen_pricing_insight.PRICING_INSIGHT_CSS,
         gen_compare_tool.INVEST_CSS,
         gen_institution_profile.PROFILE_CSS,
+        consumer_asset_panel.CONSUMER_ASSET_CSS,
         fig6_credit_panel.CREDIT_CSS,
         fig8_credit_total_panel.CREDIT_TOTAL_CSS,
         gen_investment_ledger.LEDGER_CSS,
@@ -375,18 +395,19 @@ def main():
 
     size_kb = os.path.getsize(out_path) / 1024
     print(f'\n[完成] {out_path} ({size_kb:.1f} KB)')
-    print(f'\n默认显示: 发行定价 / 定价测试')
+    print(f'\n默认显示: 机构画像 / 机构速查')
 
     # 轻量级最终检查
     with open(out_path, 'r', encoding='utf-8') as f:
         content = f.read()
     panel_count = content.count('<div class="panel"')
-    expected_panel_count = 8 + len(led_data['by_year'])  # 发行定价4 + 机构速查1 + 理财子/非标额度/授信总额度3 + 各年份投资台账
+    expected_panel_count = 8 + len(led_data['by_year']) + int(consumer_asset_enabled)  # 机构画像4 + 资产大盘可选1 + 发行定价4 + 各年份投资台账
     has_select_module = 'function selectModule' in content
     has_select_sub = 'function selectSub' in content
     ledger_years_str = '+'.join(sorted(led_data['by_year'].keys(), reverse=True))
     if panel_count == expected_panel_count and has_select_module and has_select_sub:
-        print(f'[QC] 综合看板结构检查通过：{panel_count} 个 panel(发行定价4 + 机构画像4 + 投资台账[{ledger_years_str}]) + Tab 切换 JS 齐全')
+        asset_overview_count = int(consumer_asset_enabled)
+        print(f'[QC] 综合看板结构检查通过：{panel_count} 个 panel(机构画像4 + 投资台账[{ledger_years_str}] + 资产大盘{asset_overview_count} + 发行定价4) + Tab 切换 JS 齐全')
     else:
         print(f'[QC WARN] 结构异常：panel={panel_count}(预期{expected_panel_count}), selectModule={has_select_module}, selectSub={has_select_sub}')
 

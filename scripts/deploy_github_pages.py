@@ -100,9 +100,12 @@ def dashboard_date(path: Path) -> str:
     return path.stem
 
 
-def generate_dashboard(ledger_path: Path) -> Path:
+def generate_dashboard(ledger_path: Path, baitiao_path: Path | None = None, jintiao_path: Path | None = None) -> Path:
     print(f"\n[1/4] 生成最新综合看板: {ledger_path}")
-    run([sys.executable, str(SCRIPTS_DIR / "gen_integrated_dashboard.py"), str(ledger_path)])
+    command = [sys.executable, str(SCRIPTS_DIR / "gen_integrated_dashboard.py"), str(ledger_path)]
+    if baitiao_path and jintiao_path:
+        command.extend(["--baitiao-xlsx", str(baitiao_path), "--jintiao-xlsx", str(jintiao_path)])
+    run(command)
     return latest_by_mtime(find_dashboard_files())
 
 
@@ -416,6 +419,8 @@ def publish_to_pages(site_dir: Path, remote: str, branch: str, message: str, no_
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="生成并发布 ABS 综合看板到 GitHub Pages")
     parser.add_argument("--ledger", type=Path, default=None, help="定稿台账路径。默认使用 03_final 下最新 2026 定稿")
+    parser.add_argument("--baitiao-xlsx", type=Path, default=None, help="白条大盘余额原始 Excel（需与金条源成对传入）")
+    parser.add_argument("--jintiao-xlsx", type=Path, default=None, help="金条大盘余额原始 Excel（需与白条源成对传入）")
     parser.add_argument("--skip-generate", action="store_true", help="跳过综合看板生成,直接用 01_latest 最新 HTML 组装站点")
     parser.add_argument("--no-push", action="store_true", help="只在本地更新 gh-pages worktree commit,不推送")
     parser.add_argument("--remote", default="github", help="Pages 远端名,默认 github")
@@ -430,6 +435,10 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if bool(args.baitiao_xlsx) != bool(args.jintiao_xlsx):
+        raise ValueError("--baitiao-xlsx 与 --jintiao-xlsx 必须成对传入")
+    if args.skip_generate and args.baitiao_xlsx:
+        raise ValueError("--skip-generate 不能与消金源 Excel 参数同时使用")
     if not args.allow_dirty:
         ensure_clean_main()
 
@@ -438,7 +447,7 @@ def main() -> None:
         print("[1/4] 跳过生成综合看板,使用现有 01_latest 最新 HTML")
     else:
         ledger = args.ledger or find_latest_ledger()
-        latest_dashboard = generate_dashboard(ledger)
+        latest_dashboard = generate_dashboard(ledger, args.baitiao_xlsx, args.jintiao_xlsx)
 
     password = os.environ.get(args.password_env) if args.protected else None
     site_dir = build_site(
