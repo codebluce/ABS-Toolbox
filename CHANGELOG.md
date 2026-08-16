@@ -12,6 +12,23 @@
 
 ---
 
+## v2.5.11 — 发布安全修复(2026-08-16)
+
+落实 v26 修复验收专项审计(NEEDS_REVISION)优先级 A 全部三项 + 优先级 B 三项:
+
+**优先级 A**
+- A1(P1-01): 生成器改临时文件写入,QC 通过后 `os.replace` 原子替换;失败只删临时文件,上一版正式产物内容与哈希不变
+- A2(P1-02): 新增 `--build-only` 真预览(零提交/零引用变更/零推送,与 `--no-push` 互斥);`--no-push` 不再执行 `update-ref` 移动本地分支引用
+- A3(P2-01): 无变化场景改为比较远端引用与 detached HEAD,一致即成功退出;确需推送改用 `HEAD:refs/heads/<branch>` 形式(无本地分支不再报 src refspec 错误)
+
+**优先级 B**
+- B1(P2-02): `latest_by_name_date(fallback_mtime=False)` 严格语义——无可解析业务日期时抛含候选清单的 FileNotFoundError
+- B2(P2-03): 提交消息日期直接取自本次实际发布产物,不再二次 mtime 扫描
+- B3(P2-04): `build_site` 入口统一 `resolve()`,相对路径调用不再抛 ValueError
+
+**测试**: 62→69(新增 build-only 零副作用/no-push 不动引用/真实 Git 集成:无本地分支无变化/QC 失败保旧产物哈希/fallback 严格语义)
+**未做**(审计 B4 浏览器兼容回退,属性能与兼容专项,留待后续)
+
 ## v2.5.10 — 审计工具收尾(2026-08-16)
 
 - `audit_validate.py` 的 `git()` 调用统一加 `-c core.quotepath=off`,关闭非 ASCII 路径八进制转义,消除 V6 对中文文件名的成对假阳性(修复 B1-v32 REV-01,实测 A1-v30 由 遗漏1/多报1 → PASS)

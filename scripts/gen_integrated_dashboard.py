@@ -427,20 +427,24 @@ def main():
     ])
     html = build_integrated_html(panels, all_css)
 
-    with open(out_path, 'w', encoding='utf-8') as f:
+    # 写入同目录临时文件,QC 通过后 os.replace 原子替换正式产物(v26-A1):
+    # 失败分支只删临时文件,上一版正式产物的内容与哈希保持不变。
+    out_path = str(out_path)
+    tmp_out = out_path + '.qc-tmp'
+    with open(tmp_out, 'w', encoding='utf-8') as f:
         f.write(html)
 
-    size_kb = os.path.getsize(out_path) / 1024
-    print(f'\n[完成] {out_path} ({size_kb:.1f} KB)')
-    print(f'\n默认显示: 首个模块的第一个子面板')
-
-    # 结构 QC(硬阻断):失败即删除本次异常产物并以非零退出,绝不覆盖上一版、绝不让异常页面进入发布链路
-    with open(out_path, 'r', encoding='utf-8') as f:
+    # 结构 QC(硬阻断):失败即删除临时产物并以非零退出,绝不覆盖上一版、绝不让异常页面进入发布链路
+    with open(tmp_out, 'r', encoding='utf-8') as f:
         content = f.read()
     expected_panel_count = 8 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled)  # 机构画像4 + 资产大盘可选1 + 发行定价4 + 同业发行可选1 + 各年份投资台账
     problems = verify_integrated_html(content, expected_panel_count)
     ledger_years_str = '+'.join(sorted(led_data['by_year'].keys(), reverse=True))
     if not problems:
+        os.replace(tmp_out, out_path)  # 原子替换:此瞬间之前正式产物始终是旧版
+        size_kb = os.path.getsize(out_path) / 1024
+        print(f'\n[完成] {out_path} ({size_kb:.1f} KB)')
+        print(f'\n默认显示: 首个模块的第一个子面板')
         asset_overview_count = int(consumer_asset_enabled)
         peer_issuance_count = int(peer_issuance_enabled)
         panel_count_ok = content.count('<div class="panel"')
@@ -448,8 +452,8 @@ def main():
     else:
         print(f'[QC FAILED] 综合看板结构异常: {"; ".join(problems)}')
         try:
-            os.remove(out_path)
-            print(f'[QC FAILED] 已删除异常产物 {out_path},上一版本未被覆盖')
+            os.remove(tmp_out)
+            print(f'[QC FAILED] 已删除临时产物 {tmp_out},上一版正式产物未被覆盖')
         except OSError:
             pass
         sys.exit(1)

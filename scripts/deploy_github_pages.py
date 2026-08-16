@@ -114,6 +114,12 @@ def latest_by_name_date(paths: Iterable[Path], fallback_mtime: bool = True) -> P
             print(f"[select] 文件名业务日期({best_date})与 mtime({mtime_pick.name})不一致,以文件名为准: {best.name}")
         return best
     if undated:
+        if not fallback_mtime:
+            # 严格语义(v26-B1):禁用回退时,无可解析业务日期必须明确失败
+            raise FileNotFoundError(
+                "所有候选文件均无可解析的业务日期,且 fallback_mtime=False 禁用了 mtime 回退。"
+                f"候选清单: {[str(p) for p in undated]}"
+            )
         return latest_by_mtime(undated)
     raise FileNotFoundError("没有找到可用文件")
 
@@ -419,6 +425,10 @@ def build_site(
     print("\n[2/4] 组装静态站点包...")
     dashboards = find_dashboard_files()
     latest_dashboard = latest_dashboard or latest_by_mtime(dashboards)
+    # 统一解析为绝对路径(v26-B3):调用方传相对路径时 relative_to(REPO_ROOT) 会抛 ValueError
+    latest_dashboard = latest_dashboard.resolve()
+    if not latest_dashboard.is_absolute():  # resolve 后必为绝对,防御性断言
+        raise ValueError(f"看板路径解析失败: {latest_dashboard}")
 
     if SITE_STAGING_DIR.exists():
         shutil.rmtree(SITE_STAGING_DIR)
@@ -519,7 +529,12 @@ def remove_worktree_contents(worktree: Path) -> None:
             child.unlink()
 
 
-def publish_to_pages(site_dir: Path, remote: str, branch: str, message: str, no_push: bool) -> bool:
+def publish_to_pages(site_dir: Path, remote: str, branch: str, message: str, no_push: bool, build_only: bool = False) -> bool:
+    """同步站点包到发布分支。
+
+    build_only=True: 真正的无副作用预览——只组装并对比,不创建提交、不更新任何本地引用、不推送(v26-A2)。
+    no_push=True:    在临时 worktree 提交但不推送;不移动本地分支引用(引用同步仅在真实 push 成功后执行)。
+    """
     print("\n[3/4] 同步到 gh-pages worktree...")
     tmp_parent = Path(tempfile.mkdtemp(prefix="abs_pages_"))
     worktree = tmp_parent / "worktree"
@@ -563,34 +578,41 @@ def publish_to_pages(site_dir: Path, remote: str, branch: str, message: str, no_
         diff_status = capture(["git", "status", "--short"], cwd=worktree)
         if not diff_status:
             print("[pages] gh-pages 无文件变化")
+            if build_only:
+                print("[pages] build-only 预览:无文件变化,未创建提交/未动引用/未推送")
+                return False
             if no_push:
                 print("[pages] --no-push 已设置,跳过推送")
+                return False
+            # 无变化:比较远端跟踪引用与 detached HEAD,一致即成功退出,
+            # 不再执行 gh-pages:gh-pages(无本地分支时 src refspec 不存在,v26-A3)
+            head_sha = capture(["git", "rev-parse", "HEAD"], cwd=worktree).strip()
+            remote_sha_now = capture(["git", "rev-parse", remote_ref]).strip()
+            if head_sha == remote_sha_now:
+                print("[pages] 远端 gh-pages 与本次产物一致,无需推送")
             else:
-                remote_sha_now = capture(["git", "rev-parse", remote_ref]).strip()
-                if has_local:
-                    local_sha_now = capture(["git", "rev-parse", f"refs/heads/{branch}"]).strip()
-                else:
-                    local_sha_now = ""
-                if local_sha_now == remote_sha_now:
-                    print("[pages] 本地与远端已一致,跳过推送")
-                else:
-                    print("[pages] 执行 git push,同步本地 gh-pages 到远端")
-                    run(["git", "push", remote, f"{branch}:{branch}"])
+                print("[pages] 本地引用落后于远端,执行同步推送")
+                run(["git", "push", remote, f"HEAD:refs/heads/{branch}"], cwd=worktree)
+            return False
+        if build_only:
+            print("[pages] build-only 预览:检测到文件变化(如正式发布将提交以下内容),未创建提交/未动引用/未推送")
+            print(diff_status)
             return False
         changed = True
         print(diff_status)
         run(["git", "commit", "-m", message], cwd=worktree)
         if no_push:
-            print("[pages] --no-push 已设置,未推送远端")
+            print("[pages] --no-push 已设置,未推送远端,本地引用保持不变")
         else:
             print("\n[4/4] 推送到 GitHub Pages...")
             run(
                 ["git", "push", remote, f"HEAD:refs/heads/{branch}"],
                 cwd=worktree,
             )
-        # 将本地分支指针对齐到刚提交的发布基线,保持本地/远端一致
-        committed_sha = capture(["git", "rev-parse", "HEAD"], cwd=worktree).strip()
-        run(["git", "update-ref", f"refs/heads/{branch}", committed_sha])
+            # 仅在真实推送成功后,才把本地分支指针对齐到刚发布的基线(v26-A2:
+            # no-push 不移动本地引用)
+            committed_sha = capture(["git", "rev-parse", "HEAD"], cwd=worktree).strip()
+            run(["git", "update-ref", f"refs/heads/{branch}", committed_sha])
         return True
     finally:
         try:
@@ -609,7 +631,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--peer-issuance-xlsx", type=Path, default=None, help="当期同业发行动态 Excel")
     parser.add_argument("--peer-issuance-baseline-xlsx", type=Path, default=None, help="同业发行同比基准 Excel（默认使用受控 2025 基准）")
     parser.add_argument("--skip-generate", action="store_true", help="跳过综合看板生成,直接用 01_latest 最新 HTML 组装站点")
-    parser.add_argument("--no-push", action="store_true", help="只在本地更新 gh-pages worktree commit,不推送")
+    parser.add_argument("--no-push", action="store_true", help="在临时 worktree 创建提交但不推送远端,且不移动本地分支引用")
+    parser.add_argument("--build-only", action="store_true", help="纯预览:只组装站点包并对比差异,不创建提交/不更新引用/不推送(与 --no-push 互斥)")
     parser.add_argument("--remote", default="github", help="Pages 远端名,默认 github")
     parser.add_argument("--branch", default="gh-pages", help="Pages 分支名,默认 gh-pages")
     parser.add_argument("--message", default=None, help="gh-pages commit message")
@@ -626,6 +649,8 @@ def main() -> None:
         raise ValueError("--baitiao-xlsx 与 --jintiao-xlsx 必须成对传入")
     if args.skip_generate and (args.baitiao_xlsx or args.peer_issuance_xlsx or args.peer_issuance_baseline_xlsx):
         raise ValueError("--skip-generate 不能与消金或同业源 Excel 参数同时使用")
+    if args.build_only and args.no_push:
+        raise ValueError("--build-only 与 --no-push 互斥:纯预览请用 --build-only")
     if not args.allow_dirty:
         ensure_clean_main()
 
@@ -649,10 +674,15 @@ def main() -> None:
         password=password,
         iterations=args.pbkdf2_iterations,
     )
-    date_tag = dashboard_date(latest_by_mtime(find_dashboard_files()))
+    # 提交消息日期直接取自本次实际发布的产物(v26-B2),不再二次 mtime 扫描,
+    # 避免"构建用 A 产物、消息记 B 日期"的错配
+    if latest_dashboard is not None:
+        date_tag = dashboard_date(latest_dashboard)
+    else:
+        date_tag = dashboard_date(latest_by_mtime(find_dashboard_files()))
     mode = "protected" if args.protected else "site"
     message = args.message or f"deploy: update ABS dashboard {mode} {date_tag}"
-    changed = publish_to_pages(site_dir, args.remote, args.branch, message, args.no_push)
+    changed = publish_to_pages(site_dir, args.remote, args.branch, message, args.no_push, getattr(args, "build_only", False))
 
     print("\n[完成] GitHub Pages 更新流程结束")
     print(f"站点包: {site_dir}")

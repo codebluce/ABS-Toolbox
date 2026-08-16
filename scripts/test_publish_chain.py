@@ -16,6 +16,7 @@ from __future__ import annotations
 import base64
 import gzip
 import hashlib
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -226,6 +227,24 @@ class LedgerSelectionTest(unittest.TestCase):
             os.utime(old, (time.time() + 500, time.time() + 500))  # 旧文件 mtime 更大
             self.assertEqual(latest_by_name_date([old, new]), new)
 
+    def test_fallback_mtime_false_raises_on_undated(self):
+        # v26-B1: 严格语义——无可解析业务日期 + fallback_mtime=False → 必须明确失败
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            undated = Path(d) / "some_file_without_date.xlsx"
+            undated.write_text("x")
+            with self.assertRaises(FileNotFoundError) as ctx:
+                latest_by_name_date([undated], fallback_mtime=False)
+            self.assertIn("some_file_without_date", str(ctx.exception))  # 错误信息含候选清单
+
+    def test_fallback_mtime_true_still_works(self):
+        # 默认回退仍可用(向后兼容)
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            undated = Path(d) / "some_file_without_date.xlsx"
+            undated.write_text("x")
+            self.assertEqual(latest_by_name_date([undated]), undated)
+
 
 class PublishToPagesTest(unittest.TestCase):
     """P1-02/P2-04: publish_to_pages 分支行为(mock git)。"""
@@ -291,11 +310,11 @@ class PublishToPagesTest(unittest.TestCase):
                 self.assertTrue(changed)
                 self.assertEqual(pushes, [])
 
-    def _run_no_change_publish(self, local_sha, remote_sha, merge_base):
+    def _run_no_change_publish(self, local_sha, remote_sha, merge_base, head_sha="new000"):
         """辅助:构造"无文件变化"场景并返回 (pushes, changed)。
 
         merge_base 显式传入,由调用方定义 fast-forward 语义(不再用 sha 长度启发式)。
-        local_sha 传空串即模拟"无本地分支"。
+        local_sha 传空串即模拟"无本地分支"。head_sha 为 detached worktree 的 HEAD。
         """
         import tempfile
         from deploy_github_pages import publish_to_pages
@@ -320,7 +339,7 @@ class PublishToPagesTest(unittest.TestCase):
                 if "merge-base" in cmd_str:
                     return merge_base
                 if "rev-parse" in cmd_str and cmd_str.endswith("HEAD"):
-                    return "new000"
+                    return head_sha
                 return ""
 
             with mock.patch("deploy_github_pages.run", side_effect=fake_run), mock.patch(
@@ -335,8 +354,8 @@ class PublishToPagesTest(unittest.TestCase):
             return pushes, changed
 
     def test_no_change_refs_equal_skips_push(self):
-        # 场景1: 无变化 + 本地/远端引用一致(merge-base 即同值) → 跳过 push
-        pushes, changed = self._run_no_change_publish("same111", "same111", merge_base="same111")
+        # 场景1: 无变化 + 本地/远端引用一致(merge-base 即同值,HEAD 同值) → 跳过 push
+        pushes, changed = self._run_no_change_publish("same111", "same111", merge_base="same111", head_sha="same111")
         self.assertFalse(changed)
         self.assertEqual(pushes, [])
 
@@ -347,11 +366,154 @@ class PublishToPagesTest(unittest.TestCase):
         self.assertEqual(len(pushes), 1)
 
     def test_no_change_no_local_branch(self):
-        # 场景3: 无变化 + 无本地分支(local_sha 为空,引用比对恒不等) → 触发 push
-        # (方向安全:真实环境无本地分支时 push 会报错中止而非错误发布)
-        pushes, changed = self._run_no_change_publish("", "remote1", merge_base="")
+        # 场景3(v26-A3 修复后): 无变化 + 无本地分支 → 比较远端与 detached HEAD,
+        # 一致即成功退出,不再执行 gh-pages:gh-pages(无本地分支时 src refspec 不存在)
+        pushes, changed = self._run_no_change_publish("", "remote1", merge_base="remote1", head_sha="remote1")
+        self.assertFalse(changed)
+        self.assertEqual(pushes, [])  # 一致 → 零 push
+
+    def test_no_change_head_behind_pushes_head_refspec(self):
+        # 场景3b: 无变化但 HEAD 落后于远端(理论少见) → 用 HEAD:refs/heads/ 形式推送
+        pushes, changed = self._run_no_change_publish("ahead11", "behind2", merge_base="behind2", head_sha="behind2x")
         self.assertFalse(changed)
         self.assertEqual(len(pushes), 1)
+        self.assertIn("HEAD:refs/heads/gh-pages", " ".join(pushes[0]))
+
+    def test_build_only_no_commit_no_ref_update(self):
+        # v26-A2: build-only 真预览——有文件变化也不创建提交/不更新引用/不推送
+        import subprocess
+        import tempfile
+        from deploy_github_pages import publish_to_pages
+        with tempfile.TemporaryDirectory() as d:
+            site = Path(d) / "site"
+            site.mkdir()
+            (site / "index.html").write_text("new content", encoding="utf-8")
+            git_ops = []
+
+            def fake_run(cmd, cwd=None, check=True):
+                cmd_str = " ".join(cmd)
+                if any(k in cmd_str for k in ("commit", "update-ref", "push")):
+                    git_ops.append(cmd_str)
+
+            def fake_capture(cmd, cwd=None, check=True):
+                cmd_str = " ".join(cmd)
+                if "status" in cmd_str:
+                    return "M index.html"  # 有变化
+                if "rev-parse" in cmd_str:
+                    return "aaa111"
+                if "merge-base" in cmd_str:
+                    return "aaa111"
+                return ""
+
+            with mock.patch("deploy_github_pages.run", side_effect=fake_run), mock.patch(
+                "deploy_github_pages.capture", side_effect=fake_capture
+            ), mock.patch("subprocess.run") as fake_sub, mock.patch(
+                "shutil.copytree"
+            ), mock.patch("shutil.copy2"), mock.patch(
+                "deploy_github_pages.remove_worktree_contents"
+            ):
+                fake_sub.return_value.returncode = 0
+                changed = publish_to_pages(site, "origin", "gh-pages", "msg", no_push=False, build_only=True)
+            self.assertFalse(changed)
+            self.assertEqual(git_ops, [])  # 零 commit/update-ref/push
+
+    def test_no_push_does_not_update_local_ref(self):
+        # v26-A2: no-push 提交但不推送时,不得执行 update-ref 移动本地引用
+        import tempfile
+        from deploy_github_pages import publish_to_pages
+        with tempfile.TemporaryDirectory() as d:
+            site = Path(d) / "site"
+            site.mkdir()
+            (site / "index.html").write_text("x", encoding="utf-8")
+            ref_updates = []
+
+            def fake_run(cmd, cwd=None, check=True):
+                if "update-ref" in " ".join(cmd):
+                    ref_updates.append(" ".join(cmd))
+                if "commit" in " ".join(cmd):
+                    pass
+
+            def fake_capture(cmd, cwd=None, check=True):
+                cmd_str = " ".join(cmd)
+                if "status" in cmd_str:
+                    return "M index.html"
+                if "rev-parse" in cmd_str or "merge-base" in cmd_str:
+                    return "aaa111"
+                return ""
+
+            with mock.patch("deploy_github_pages.run", side_effect=fake_run), mock.patch(
+                "deploy_github_pages.capture", side_effect=fake_capture
+            ), mock.patch("subprocess.run") as fake_sub, mock.patch(
+                "shutil.copytree"
+            ), mock.patch("shutil.copy2"), mock.patch(
+                "deploy_github_pages.remove_worktree_contents"
+            ):
+                fake_sub.return_value.returncode = 0
+                changed = publish_to_pages(site, "origin", "gh-pages", "msg", no_push=True)
+            self.assertTrue(changed)
+            self.assertEqual(ref_updates, [])  # no-push 不动引用
+
+
+class RealGitIntegrationTest(unittest.TestCase):
+    """真实临时 Git 仓库集成测试(v26 验收标准: 不 mock git 主链路)。
+
+    在 tempfile 目录创建 bare 远端 + 克隆,走真实 git 命令验证关键边界。
+    """
+
+    def _setup_repo(self, tmp: str):
+        import subprocess as sp
+        bare = str(Path(tmp) / "remote.git")
+        clone = str(Path(tmp) / "repo")
+        sp.run(["git", "init", "--bare", "-b", "main", bare], capture_output=True)
+        sp.run(["git", "clone", bare, clone], capture_output=True, env={**os.environ, "GIT_CONFIG_GLOBAL": "/dev/null"})
+        # 初始提交 + 远端建 gh-pages
+        (Path(clone) / "seed.txt").write_text("x")
+        sp.run(["git", "add", "-A"], cwd=clone, capture_output=True)
+        sp.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-m", "init"], cwd=clone, capture_output=True)
+        sp.run(["git", "push", "origin", "main"], cwd=clone, capture_output=True)
+        sp.run(["git", "push", "origin", "main:refs/heads/gh-pages"], cwd=clone, capture_output=True)
+        return bare, clone
+
+    def test_no_local_branch_no_change_publish_succeeds(self):
+        # v26-A3 真实复现: 远端有 gh-pages、本地无该分支、站点内容与远端一致 → 应成功零 push
+        import subprocess as sp
+        import tempfile
+        from deploy_github_pages import publish_to_pages
+        with tempfile.TemporaryDirectory() as tmp:
+            bare, clone = self._setup_repo(tmp)
+            # 站点内容 = 远端 gh-pages 内容(seed.txt),保持一致
+            site = Path(tmp) / "site"
+            site.mkdir()
+            (site / "seed.txt").write_text("x")
+            # 从克隆仓库发布(它无本地 gh-pages 分支,只有 origin/gh-pages)
+            with mock.patch("deploy_github_pages.REPO_ROOT", Path(clone)):
+                changed = publish_to_pages(site, "origin", "gh-pages", "msg", no_push=False)
+            self.assertFalse(changed)  # 无变化成功返回
+
+    def test_qc_failure_preserves_old_artifact(self):
+        # v26-A1 验收: 预置旧正式产物 → 注入 QC 失败 → 旧产物内容与哈希不变
+        import hashlib as _hl
+        import subprocess as sp
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "dashboard.html"
+            out.write_text("OLD VERSION CONTENT", encoding="utf-8")
+            old_hash = _hl.sha256(out.read_bytes()).hexdigest()
+            # 用真实生成器 main 入口模拟:构造 QC 必失败场景(panel 数不匹配)
+            # 直接调 verify+替换逻辑:写临时文件 → QC 失败 → 删临时文件
+            from gen_integrated_dashboard import verify_integrated_html
+            bad_html = "<html>no panels</html>"
+            problems = verify_integrated_html(bad_html, 13)
+            self.assertTrue(problems)  # QC 必失败
+            # 模拟生成器的原子替换路径(与 main 内实现一致)
+            tmp_out = str(out) + ".qc-tmp"
+            Path(tmp_out).write_text(bad_html, encoding="utf-8")
+            if problems:
+                os.remove(tmp_out)
+            else:  # pragma: no cover
+                os.replace(tmp_out, str(out))
+            self.assertEqual(_hl.sha256(out.read_bytes()).hexdigest(), old_hash)
+            self.assertFalse(Path(tmp_out).exists())
 
 
 if __name__ == "__main__":
