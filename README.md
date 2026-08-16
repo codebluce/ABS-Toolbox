@@ -43,6 +43,33 @@ PYTHONUTF8=1 python skills/ABS工具箱/scripts/abs_archive.py ledger
 PYTHONUTF8=1 python skills/ABS工具箱/scripts/abs_archive.py index
 ```
 
+## 同业发行周度更新
+
+综合看板已包含最后一个一级模块 **同业发行**。每周只需提供最新的当期同业发行明细 Excel；系统默认使用受控的 2025 历史基准文件完成同比计算。
+
+```bash
+PYTHONUTF8=1 .venv/bin/python scripts/gen_integrated_dashboard.py \
+  "deliverables/ledger/03_final/2026年ABS发行台账-0807-定稿.xlsx" \
+  --peer-issuance-xlsx "<本周同业发行明细.xlsx>"
+```
+
+如需替换同比基准，可额外传入 `--peer-issuance-baseline-xlsx "<2025历史明细.xlsx>"`；默认基准位于：
+
+```text
+deliverables/dashboards/04_reference/2025年互联网金融ABS同业发行明细.xlsx
+```
+
+加密发布时，将同业当期文件一起传入发布脚本：
+
+```bash
+ABS_DASHBOARD_PASSWORD="<访问密码>" PYTHONUTF8=1 .venv/bin/python scripts/deploy_github_pages.py \
+  --ledger "deliverables/ledger/03_final/2026年ABS发行台账-0807-定稿.xlsx" \
+  --peer-issuance-xlsx "<本周同业发行明细.xlsx>" \
+  --protected
+```
+
+源 Excel 仅用于本地生成，不会进入 GitHub Pages 或 Cloudflare Pages 站点包。
+
 ## 目录结构
 
 ```

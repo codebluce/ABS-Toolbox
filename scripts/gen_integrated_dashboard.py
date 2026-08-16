@@ -26,6 +26,7 @@ import gen_compare_tool
 import gen_investment_ledger
 import gen_pricing_insight
 import gen_institution_profile
+import peer_issuance_panel
 
 # 机构画像模块(lab 实验转正:fig7_wlz_panel 调 fig4_new + fig5 同步台账)
 LAB_DIR = SCRIPT_DIR / 'lab'
@@ -33,6 +34,7 @@ if str(LAB_DIR) not in sys.path:
     sys.path.insert(0, str(LAB_DIR))
 import fig7_wlz_panel
 import consumer_asset_panel
+import peer_issuance_panel
 
 # 非标额度监控模块
 import fig6_credit_panel
@@ -154,7 +156,7 @@ def build_integrated_html(panels, all_css):
     投资台账 > 2026年/2025年/2024年 三个年份子 Tab (各自独立筛选状态，多维筛选 + 分组/透视/明细 + 导出 CSV)
               智能问答悬浮球语料覆盖全部年份，不受当前激活子 Tab 限制
     """
-    MODULES = [('progress', '机构画像'), ('ledger', '投资台账'), ('asset_overview', '资产大盘'), ('pricing', '发行定价')]
+    MODULES = [('progress', '机构画像'), ('ledger', '投资台账'), ('asset_overview', '资产大盘'), ('pricing', '发行定价'), ('peer_issuance', '同业发行')]
     # 第一层 Tab 标签
     top_buttons = []
     for module, label in MODULES:
@@ -181,6 +183,9 @@ def build_integrated_html(panels, all_css):
                 sub_label = sub_label_map.get(sub, sub)
             elif module == 'ledger':
                 sub_label_map = {'query_2026': '2026年', 'query_2025': '2025年', 'query_2024': '2024年'}
+                sub_label = sub_label_map.get(sub, sub)
+            elif module == 'peer_issuance':
+                sub_label_map = {'overview': '发行动态'}
                 sub_label = sub_label_map.get(sub, sub)
             else:
                 # 发行定价的子 Tab 名固定
@@ -268,10 +273,13 @@ def main():
     parser.add_argument('output_path', nargs='?', default=None, help='输出 HTML 路径（默认 01_latest/ABS综合看板_YYYYMMDD.html）')
     parser.add_argument('--baitiao-xlsx', default=None, help='白条大盘余额原始 Excel（需与金条源成对传入）')
     parser.add_argument('--jintiao-xlsx', default=None, help='金条大盘余额原始 Excel（需与白条源成对传入）')
+    parser.add_argument('--peer-issuance-xlsx', default=None, help='当期同业发行动态 Excel（提供时展示同业发行一级模块）')
+    parser.add_argument('--peer-issuance-baseline-xlsx', default=None, help='同业发行同比基准 Excel（默认使用受控 2025 基准）')
     args = parser.parse_args()
     if bool(args.baitiao_xlsx) != bool(args.jintiao_xlsx):
         parser.error('--baitiao-xlsx 与 --jintiao-xlsx 必须成对传入')
     consumer_asset_enabled = bool(args.baitiao_xlsx)
+    peer_issuance_enabled = bool(args.peer_issuance_xlsx)
 
     xlsx_path = args.xlsx_path
     if args.output_path:
@@ -347,6 +355,13 @@ def main():
                 args.baitiao_xlsx, args.jintiao_xlsx)
             panels.append(('asset_overview', 'consumer_asset', consumer_asset_body))
 
+        # 同业发行模块：显式传入当期源时严格生成，默认使用受控 2025 同比基准。
+        if peer_issuance_enabled:
+            print('\n[3.58/4] 生成同业发行 > 发行动态 panel...')
+            peer_body = peer_issuance_panel.render_peer_issuance_panel(
+                args.peer_issuance_xlsx, args.peer_issuance_baseline_xlsx)
+            panels.append(('peer_issuance', 'overview', peer_body))
+
         # 机构画像模块:总授信额度 panel
         print('\n[3.6/4] 生成机构画像 > 授信总额度 panel...')
         try:
@@ -384,6 +399,7 @@ def main():
         gen_compare_tool.INVEST_CSS,
         gen_institution_profile.PROFILE_CSS,
         consumer_asset_panel.CONSUMER_ASSET_CSS,
+        peer_issuance_panel.PEER_ISSUANCE_COMPONENT_CSS,
         fig6_credit_panel.CREDIT_CSS,
         fig8_credit_total_panel.CREDIT_TOTAL_CSS,
         gen_investment_ledger.LEDGER_CSS,
@@ -401,13 +417,14 @@ def main():
     with open(out_path, 'r', encoding='utf-8') as f:
         content = f.read()
     panel_count = content.count('<div class="panel"')
-    expected_panel_count = 8 + len(led_data['by_year']) + int(consumer_asset_enabled)  # 机构画像4 + 资产大盘可选1 + 发行定价4 + 各年份投资台账
+    expected_panel_count = 8 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled)  # 机构画像4 + 资产大盘可选1 + 发行定价4 + 同业发行可选1 + 各年份投资台账
     has_select_module = 'function selectModule' in content
     has_select_sub = 'function selectSub' in content
     ledger_years_str = '+'.join(sorted(led_data['by_year'].keys(), reverse=True))
     if panel_count == expected_panel_count and has_select_module and has_select_sub:
         asset_overview_count = int(consumer_asset_enabled)
-        print(f'[QC] 综合看板结构检查通过：{panel_count} 个 panel(机构画像4 + 投资台账[{ledger_years_str}] + 资产大盘{asset_overview_count} + 发行定价4) + Tab 切换 JS 齐全')
+        peer_issuance_count = int(peer_issuance_enabled)
+        print(f'[QC] 综合看板结构检查通过：{panel_count} 个 panel(机构画像4 + 投资台账[{ledger_years_str}] + 资产大盘{asset_overview_count} + 发行定价4 + 同业发行{peer_issuance_count}) + Tab 切换 JS 齐全')
     else:
         print(f'[QC WARN] 结构异常：panel={panel_count}(预期{expected_panel_count}), selectModule={has_select_module}, selectSub={has_select_sub}')
 

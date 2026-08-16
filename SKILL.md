@@ -46,6 +46,7 @@ description: >
 | ABS 簿记录入 / 补充簿记数据 / 增量台账合并 | `scripts/increment_merge.py` | ✅ v2.1.0 |
 | ABS 发行定价 / 成本分析 / 利差分析 | `scripts/gen_abs_cost_report.py` + `gen_compare_tool.py` + `gen_spread_report.py` | ✅ v2.2.0 |
 | ABS 全流程 | 录入→统计→定价 串行 | ✅ v2.2.0 |
+| 同业发行 / 同业发行看板 / 市场发行动态 | `scripts/peer_issuance_panel.py` + 综合看板同业模块 | ✅ |
 
 ## 使用示例
 
@@ -111,7 +112,26 @@ PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_spread_report.py \
 - `YYYYMMDD_发行定价分析工具.html`(工具二:机构比对)
 - `YYYYMMDD_机构投标基准利差看板.html`(工具三:利差分析)
 
-### 6. ABS 全流程(录入→统计→定价串行)
+### 6. 同业发行周度更新
+
+```bash
+# 仅提供本周同业发行明细；同比自动使用受控 2025 历史基准。
+PYTHONUTF8=1 python scripts/peer_issuance_panel.py \
+  --xlsx-2026 "<本周同业发行明细.xlsx>" \
+  --strict-qc
+```
+
+将同业发行合入综合看板时传入：
+
+```bash
+PYTHONUTF8=1 python scripts/gen_integrated_dashboard.py \
+  "deliverables/ledger/03_final/2026年ABS发行台账-0807-定稿.xlsx" \
+  --peer-issuance-xlsx "<本周同业发行明细.xlsx>"
+```
+
+默认同比基准：`deliverables/dashboards/04_reference/2025年互联网金融ABS同业发行明细.xlsx`。如历史口径修订，可通过 `--xlsx-2025` 或 `--peer-issuance-baseline-xlsx` 显式覆盖。
+
+### 7. ABS 全流程(录入→统计→定价串行)
 
 ```bash
 # Step 1: 簿记录入(补充簿记明细)
