@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-08-16 14:02 (auto-refresh)",
+  "updated_at": "2026-08-16 14:36 (auto-refresh)",
   "slugs": {
     "v20-institution-stats": {
       "skill_version": "v2.0.0",
@@ -178,6 +178,18 @@
       "status": "COMPLETED",
       "verdict": "APPROVED_WITH_CONDITIONS",
       "closed": "C1-v31-publish-hardening-r1"
+    },
+    "v32-audit-tooling-fix": {
+      "submissions": [
+        "A1-v32-audit-tooling-fix-r1"
+      ],
+      "reviews": [
+        "B1-v32-audit-tooling-fix-r1"
+      ],
+      "current_round": 1,
+      "status": "COMPLETED",
+      "verdict": "APPROVED_WITH_CONDITIONS",
+      "closed": "C1-v32-audit-tooling-fix-r1"
     }
   },
   "issues": [
@@ -451,6 +463,9 @@
       "blocked_count": 0
     },
     "v31-publish-hardening": {
+      "max_round": 1
+    },
+    "v32-audit-tooling-fix": {
       "max_round": 1
     }
   }
