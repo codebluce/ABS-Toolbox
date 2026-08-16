@@ -501,9 +501,11 @@ def build_site(
 
 def ensure_clean_main() -> None:
     status = capture(["git", "status", "--short"])
-    if status:
+    # .venv/ 是常驻本地虚拟环境(不入库),不构成部署夹带风险,放行
+    lines = [ln for ln in status.split("\n") if ln.strip() and not ln.strip().endswith(".venv/")]
+    if lines:
         raise RuntimeError(
-            "main 工作树不干净。为避免部署夹带未提交改动,请先处理以下文件:\n" + status
+            "main 工作树不干净。为避免部署夹带未提交改动,请先处理以下文件:\n" + "\n".join(lines)
         )
 
 
