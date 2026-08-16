@@ -206,7 +206,7 @@ def _validate_a(name: str, fm: dict, rep: Report):
     tag = fm.get("git_tag")
     declared = fm.get("changed_files")
     if isinstance(declared, list) and tag and git("tag", "-l", str(tag)):
-        stat = git("show", str(tag), "--stat", "--format=")
+        stat = git("show", str(tag), "--stat=250", "--format=")
         actual = set()
         for ln in stat.split("\n"):
             m2 = re.match(r"^(.+?)\s+\|", ln)
