@@ -229,6 +229,20 @@ class TestHelpers(unittest.TestCase):
         # 每个数据点都有标记圆点
         self.assertEqual(svg.count("<circle"), 2)
 
+    def test_sparkline_alternating_labels(self):
+        # 9 个数据点 → 横轴日期标签与数值标注均为索引 0,2,4,6,8(隔一个标一个)
+        from datetime import date as _date
+        pts = [{"week": f"w{i}", "date": _date(2026, 1, 5 + i), "avg": D("0.017") + D("0.0001") * i} for i in range(9)]
+        svg = rate_sparkline(pts)
+        self.assertEqual(svg.count("<circle"), 9)  # 数据点全标记
+        # 横轴日期标签:0,2,4,6,8 共 5 个(末点 8 已在偶数序列,不重复)
+        date_labels = [t for t in ("01/05", "01/07", "01/09", "01/11", "01/13") if t in svg]
+        self.assertEqual(len(date_labels), 5)
+        # 数值标注同样隔点:0,2,4,6,8 → 1.70%/1.90%/2.10%(0.017+0.0001*k)等 5 个
+        for k in (0, 2, 4, 6, 8):
+            expected = f'{float(D("0.017") + D("0.0001") * k) * 100:.2f}%'
+            self.assertIn(expected, svg)
+
 
 class TestRender(unittest.TestCase):
     def test_body_fragment(self):

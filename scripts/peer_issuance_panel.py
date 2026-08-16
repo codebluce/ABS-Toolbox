@@ -603,16 +603,20 @@ def rate_sparkline(points: list[dict], width: int = 560, height: int = 150) -> s
         parts.append(f'<polyline points="{poly}" fill="none" stroke="#2a78d6" stroke-width="1.6"/>')
     for i, v in enumerate(values):
         parts.append(f'<circle cx="{float(x_at(i)):.1f}" cy="{float(y_at(v)):.1f}" r="2.2" fill="#2a78d6"/>')
-    # 横轴首/中/尾周标签
-    label_indexes = sorted({0, count // 2, count - 1})
-    for i in label_indexes:
+    # 横轴日期标签:每隔一个数据点标注一个(索引 0,2,4,...;末点强制包含避免尾部留白)
+    label_indexes = set(range(0, count, 2))
+    label_indexes.add(count - 1)
+    for i in sorted(label_indexes):
         label = points[i].get("date")
         text = label.strftime("%m/%d") if hasattr(label, "strftime") else points[i]["week"][:10]
         anchor = "start" if i == 0 else "end" if i == count - 1 else "middle"
         parts.append(f'<text x="{float(x_at(i)):.1f}" y="{float(bottom) + 14:.0f}" font-size="9" fill="#999" text-anchor="{anchor}">{text}</text>')
-    # 首尾数值标注
-    parts.append(f'<text x="{float(x_at(0)):.1f}" y="{max(float(y_at(values[0])) - 7, 9):.0f}" font-size="9" fill="#52514e">{rate_pct(values[0])}</text>')
-    parts.append(f'<text x="{float(x_at(count - 1)):.1f}" y="{max(float(y_at(values[-1])) - 7, 9):.0f}" font-size="9" fill="#52514e" text-anchor="end">{rate_pct(values[-1])}</text>')
+    # 数值标注:同样每隔一个数据点标注一个,与横轴标签索引对齐;位于点上方
+    for i in sorted(label_indexes):
+        v = values[i]
+        x = float(x_at(i))
+        anchor = "start" if i == 0 else "end" if i == count - 1 else "middle"
+        parts.append(f'<text x="{x:.1f}" y="{max(float(y_at(v)) - 7, 9):.0f}" font-size="9" fill="#52514e" text-anchor="{anchor}">{rate_pct(v)}</text>')
     parts.append('</svg>')
     return "".join(parts)
 
