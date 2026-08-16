@@ -1,22 +1,66 @@
 # ABS工具箱 审计调度指令模板
 
-> 本文件是 ABS工具箱审计子系统的「调度入口」。用户只需提供 1 行指令,本文件自动展开为完整 prompt,粘到新会话即可驱动 Agent A/B/C 完成送审/审计/归档。
+> 本文件是 ABS工具箱审计子系统的「调度入口」。支持两种模式:**自动化编排**(主 Agent 调度独立 subagent,推荐)与**人工复制 prompt**(逐角色新会话)。均驱动 Agent A/B/C 完成送审/审计/归档。
 > 参考 macro-allocation-strategy/audit/dispatch.md 精简适配。
 
-## 用法
+## 自动化编排模式(主 Agent 调度独立 subagent)
+
+主 Agent 可按本节自动编排 A/B/A-fix/C 全流程,不必人工复制 prompt。核心原则:**每个角色必须由全新的 subagent 执行**,主 Agent 只做控制平面,不扮演任何审计角色。
+
+### 控制平面职责(主 Agent 只允许做)
+
+1. 读状态机输出:
+   ```bash
+   PYTHONUTF8=1 .venv/bin/python scripts/audit_next_action.py --slug {SLUG} --json
+   ```
+2. 按 `role_to_dispatch` 启动独立 subagent(Agent 工具),把本文件对应角色 prompt、slug/任务、`next_action --json` 结果和最少量产物路径交给它。
+3. subagent 返回后执行三步:
+   ```bash
+   PYTHONUTF8=1 .venv/bin/python scripts/audit_validate.py --file <A/B/C产物> --skip-historical
+   PYTHONUTF8=1 .venv/bin/python scripts/audit_refresh_index.py
+   PYTHONUTF8=1 .venv/bin/python scripts/audit_next_action.py --slug {SLUG} --json
+   ```
+4. 按状态机继续调度下一角色。**git 操作(tag/commit/push)由控制平面在 validate 通过后统一执行**,subagent 只写报告文件,不碰 git。
+
+### 控制平面禁止事项
+
+- 禁止替 B/C 下审计结论,禁止修改 B/C 的技术判断。
+- 禁止把父级上下文、A 的自述或上一角色摘要当成 B/C 的证据。
+- 禁止在状态为 `UNKNOWN`/需人工判断时继续猜测推进。
+
+### subagent 上下文隔离规则
+
+- A、B、A-fix、C 必须是不同 subagent;A-fix 也不能复用 A 的会话。
+- B 必须独立用 `git show <git_tag>:<path>` 读代码快照,不接受 A 的描述作为事实。
+- C 必须通读该 slug 所有 A/B 文件,检查 Issue 生命周期、tag 一致性与审计逃逸风险。
+- 主 Agent 给 subagent 的摘要只作导航提示;subagent 必须在报告中引用文件、tag、行号、测试输出等可复核证据。
+
+### 状态机映射
+
+| `audit_next_action --json` | 自动化动作 |
+|---|---|
+| `action=SUBMIT_A1` / `role=A` | 启动 A subagent 首轮送审 |
+| `action=WAIT_FOR_B` / `role=B` | 启动 B subagent 独立审计 |
+| `action=SUBMIT_NEXT_A` / `role=A-fix` | 启动 A-fix subagent 修复或重提 |
+| `action=WAIT_FOR_C` / `role=C` | 启动 C subagent 归档 |
+| `terminal=true` / `action=ROUND_COMPLETED` | 停止角色调度,进入收尾(双推) |
+| `requires_human=true` / `action=UNKNOWN` | 停止自动化并报告人工介入点 |
+
+### 自动修复循环
+
+- B `NEEDS_REVISION` → A-fix 新轮次修复 → 全新 B subagent 复审。
+- validate 格式错误:控制平面可重调同角色 subagent 修正格式;同角色最多重试 2 次,仍失败则停机报人工。
+
+## 人工模式用法
 
 在新会话开头,把对应角色的「完整 prompt」整段粘进去即可。用户只需替换 `{SLUG}` 占位符(轮次 R 由 agent 自己推断)。
-
-**当前已就绪的 slug**:
-- `v20-institution-stats`(v2.0.0 第一轮,已通过独立审计,待 C 归档)
-- `v21-bookkeeping`(v2.1.0 第二轮,5 层自检通过,待 B 审计)
 
 ## 通用规则:轮次 R 推断方法(单点真相)
 
 按以下步骤确定 R:
 
-1. 进入 `skills/ABS工具箱/audit/` 目录
-2. 读 `state.json` 中对应 slug 的 `current_round` 字段
+1. 进入仓库根目录的 `audit/` 目录
+2. 运行 `.venv/bin/python scripts/audit_next_action.py --slug {SLUG}`,读 `current_round`/`next_round`
 3. 用 `ls audit/submissions/A*-{SLUG}-r*.md` 和 `ls audit/reviews/B*-{SLUG}-r*.md` 确认最大 round 号
 4. 推断规则:
    - **B 角色**:status=PENDING_REVIEW 或 UNDER_REVIEW → R=current_round,审计对应 A 文件
@@ -52,9 +96,9 @@
 你是 ABS工具箱审计子系统的 Agent A(实现者),负责整合一个新模块。
 
 【必读文件】(按顺序读)
-1. skills/ABS工具箱/SKILL.md(skill 整体架构 + 触发词路由)
-2. skills/ABS工具箱/audit/README.md(审计流程 + 命名规则)
-3. skills/ABS工具箱/audit/submissions/_template.md(送审报告模板,含 frontmatter 字段 + 正文 checklist)
+1. SKILL.md(skill 整体架构 + 触发词路由)
+2. audit/README.md(审计流程 + 命名规则)
+3. audit/submissions/_template.md(送审报告模板,含 frontmatter 字段 + 正文 checklist)
 
 【任务】
 {TASK_DESCRIPTION}
@@ -92,7 +136,7 @@
 ```
 === 下一步调度建议(复制以下全部内容到新会话)===
 
-【必读】先读 skills/ABS工具箱/audit/dispatch.md 的「角色 B」prompt 模板,按模板执行。不读 dispatch.md 直接审计视为流程违规。
+【必读】先读 audit/dispatch.md 的「角色 B」prompt 模板,按模板执行。不读 dispatch.md 直接审计视为流程违规。
 
 调度角色=B, slug={SLUG}
 
@@ -119,9 +163,9 @@
 你是 ABS工具箱审计子系统的 Agent B(审计者),负责独立复审。
 
 【必读文件】(按顺序读)
-1. skills/ABS工具箱/audit/README.md(审计流程 + 命名规则 + 5 层自检说明)
-2. skills/ABS工具箱/audit/reviews/_template.md(B 角色审计模板,含 frontmatter 字段 + 正文 checklist)
-3. skills/ABS工具箱/audit/submissions/A{N}-{SLUG}-r{R}.md(送审报告,确定 R 后读)
+1. audit/README.md(审计流程 + 命名规则 + 5 层自检说明)
+2. audit/reviews/_template.md(B 角色审计模板,含 frontmatter 字段 + 正文 checklist)
+3. audit/submissions/A{N}-{SLUG}-r{R}.md(送审报告,确定 R 后读)
 
 【任务】
 审计 {SLUG} slug 当前轮次的送审报告。独立读代码(用 git_tag 指向的快照),不接受 A 的自述。
@@ -130,7 +174,7 @@
 0. 推断轮次 R:读 audit/state.json 中 {SLUG} 的 current_round
    - status=PENDING_REVIEW 或 UNDER_REVIEW → R=current_round,审计对应 A 文件
 1. 读 A{N} 的 frontmatter,记下 git_tag 和 commit_hash
-2. 用 git show <commit_hash>:<file> 或直接读 skills/ABS工具箱/<file> 独立读代码,不信任 A 的描述
+2. 用 git show <commit_hash>:<file> 或直接读 <file> 独立读代码,不信任 A 的描述
 3. 对照 A{N} 的 changed_files:git show <commit_hash> --stat 对比
    遗漏必须加 CRITICAL Issue「A 遗漏 N 个文件未声明」+ evidence + blocks_approval=true
 4. 跑 5 层自检复核(不要轻信 A 的输出,必须自己跑一遍):
@@ -176,7 +220,7 @@
 ```
 === 下一步调度建议(复制以下全部内容到新会话)===
 
-【必读】先读 skills/ABS工具箱/audit/dispatch.md 的「角色 A-fix」prompt 模板,按模板执行。不读 dispatch.md 直接修复视为流程违规。
+【必读】先读 audit/dispatch.md 的「角色 A-fix」prompt 模板,按模板执行。不读 dispatch.md 直接修复视为流程违规。
 
 调度角色=A-fix, slug={SLUG}
 
@@ -191,7 +235,7 @@
 ```
 === 下一步调度建议(复制以下全部内容到新会话)===
 
-【必读】先读 skills/ABS工具箱/audit/dispatch.md 的「角色 C」prompt 模板,按模板执行。不读 dispatch.md 直接归档视为流程违规。
+【必读】先读 audit/dispatch.md 的「角色 C」prompt 模板,按模板执行。不读 dispatch.md 直接归档视为流程违规。
 
 调度角色=C, slug={SLUG}
 
@@ -206,7 +250,7 @@
 ```
 === 下一步调度建议(复制以下全部内容到新会话)===
 
-【必读】先读 skills/ABS工具箱/audit/dispatch.md 的「角色 A」prompt 模板(新 slug 重新送审)。不读 dispatch.md 直接送审视为流程违规。
+【必读】先读 audit/dispatch.md 的「角色 A」prompt 模板(新 slug 重新送审)。不读 dispatch.md 直接送审视为流程违规。
 
 调度角色=A, slug={新SLUG}, 任务=<填新slug的任务描述>
 
@@ -231,9 +275,9 @@
 你是 ABS工具箱审计子系统的 Agent A(修复轮),负责按 B 的审计意见修复代码。
 
 【必读文件】(按顺序读)
-1. skills/ABS工具箱/audit/submissions/_template.md(送审报告模板)
-2. skills/ABS工具箱/audit/reviews/B{N-1}-{SLUG}-r{R-1}.md(上一轮 B 审计意见,含 Issue 清单)
-3. skills/ABS工具箱/audit/INDEX.md(确认 R)
+1. audit/submissions/_template.md(送审报告模板)
+2. audit/reviews/B{N-1}-{SLUG}-r{R-1}.md(上一轮 B 审计意见,含 Issue 清单)
+3. audit/INDEX.md(确认 R)
 
 【任务】
 按 B 的 Issue 清单逐条修复,写 r{R} 送审报告。
@@ -265,7 +309,7 @@
 ```
 === 下一步调度建议(复制以下全部内容到新会话)===
 
-【必读】先读 skills/ABS工具箱/audit/dispatch.md 的「角色 B」prompt 模板,按模板执行。不读 dispatch.md 直接审计视为流程违规。
+【必读】先读 audit/dispatch.md 的「角色 B」prompt 模板,按模板执行。不读 dispatch.md 直接审计视为流程违规。
 
 调度角色=B, slug={SLUG}
 
@@ -292,10 +336,10 @@
 你是 ABS工具箱审计子系统的 Agent C(归档者),负责归档已 APPROVED 的 slug。
 
 【必读文件】(按顺序读)
-1. skills/ABS工具箱/audit/closed/_template.md(归档报告模板)
-2. skills/ABS工具箱/audit/submissions/A*-{SLUG}-r*.md(该 slug 所有送审报告)
-3. skills/ABS工具箱/audit/reviews/B*-{SLUG}-r*.md(该 slug 所有审计意见)
-4. skills/ABS工具箱/audit/INDEX.md(确认所有轮次)
+1. audit/closed/_template.md(归档报告模板)
+2. audit/submissions/A*-{SLUG}-r*.md(该 slug 所有送审报告)
+3. audit/reviews/B*-{SLUG}-r*.md(该 slug 所有审计意见)
+4. audit/INDEX.md(确认所有轮次)
 
 【任务】
 归档 {SLUG} slug,写归档报告 audit/closed/C1-{SLUG}-r{R}.md(R=最后一轮)。
@@ -356,7 +400,7 @@ slug={SLUG} 已归档
 2. **QC FAIL 是数据问题非回归**:新旧一致即通过,不要求 QC PASSED
 3. **abs-toolbox 独立仓库**:commit 后必须双推 `git push gitee main && git push github main`
 4. **原 3 skill 保留不动**:作回滚备份,整合时只 cp 不 mv
-5. **暂不脚本化**:INDEX.md 和 state.json 手动维护(后续可参考 macro-allocation-strategy/scripts/refresh_audit_index.py 脚本化)
+5. **已脚本化**:状态机/校验/索引由 `scripts/audit_next_action.py`(下一步动作)、`scripts/audit_validate.py`(产物校验)、`scripts/audit_refresh_index.py`(刷新 state 结构字段,保留手写 notes/issues)承担,均为纯标准库,自动化编排见本文顶部章节
 
 ---
 

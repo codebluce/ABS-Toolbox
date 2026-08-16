@@ -8,7 +8,9 @@
 ```
 audit/
 ├── README.md                # 本文件(人类参考手册)
-├── INDEX.md                 # 审计索引(手动维护,后续可脚本化)
+├── INDEX.md                 # 审计索引(历史表保留;结构字段由 scripts/audit_refresh_index.py 派生)
+├── dispatch.md              # 调度入口(自动化编排模式 + 人工模式角色 prompt)
+├── state.json               # 状态机数据(结构字段脚本派生,notes/issues 手写保留)
 ├── submissions/             # 送审报告(Agent A 写)
 │   ├── _template.md         # 送审报告模板
 │   └── A{N}-{slug}-r{R}.md
@@ -60,7 +62,7 @@ audit/
 | 审计对象 | 策略代码 + 回测指标 | skill 整合代码 + 功能等价性 |
 | 自检核心 | Sharpe/Drawdown/胜率 | 5 层自检(字节对比/逐 cell diff/QC 一致) |
 | frontmatter 字段 | 14 字段(含 strategy_version/blocker/rebase) | 精简 8 字段 |
-| 校验脚本 | validate_audit.py + refresh_audit_index.py + next_action.py | 暂手动维护 INDEX.md,第二轮稳定后再脚本化 |
+| 校验脚本 | validate_audit.py + refresh_audit_index.py + next_action.py | audit_validate.py + audit_refresh_index.py + audit_next_action.py(纯标准库,自动化编排见 dispatch.md 顶部章节) |
 | git tag 强制 | 是 | 是 |
 
 ## 5. 送审报告 frontmatter 字段(精简 8 字段)

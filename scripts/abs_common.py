@@ -168,12 +168,13 @@ def preprocess_xlsx_for_pandas(xlsx_path):
     for (r, c), val in wxy_values.items():
         ws.cell(row=r, column=c).value = val
 
-    # 5. 保存为临时文件
-    tmp_dir = tempfile.gettempdir()
-    tmp_name = f'abs_preprocessed_{os.getpid()}_{id(wb)}.xlsx'
-    tmp_path = os.path.join(tmp_dir, tmp_name)
-    wb.save(tmp_path)
-    wb.close()
+    # 5. 保存为临时文件(mkstemp 保证唯一性;save 异常时也确保关闭工作簿)
+    fd, tmp_path = tempfile.mkstemp(prefix=f'abs_preprocessed_{os.getpid()}_', suffix='.xlsx')
+    os.close(fd)  # 只借文件名,句柄交给 openpyxl
+    try:
+        wb.save(tmp_path)
+    finally:
+        wb.close()
     return tmp_path
 
 

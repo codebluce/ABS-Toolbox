@@ -53,33 +53,33 @@ description: >
 ### 1. 机构统计看板生成
 
 ```bash
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_institution_stats.py \
-  "skills/ABS工具箱/deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx"
+PYTHONUTF8=1 python scripts/gen_institution_stats.py \
+  "deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx"
 ```
 
-产出: `skills/ABS工具箱/deliverables/dashboards/01_latest/YYYYMMDD_机构统计看板.html`
+产出: `deliverables/dashboards/01_latest/YYYYMMDD_机构统计看板.html`
 
 ### 2. 产出归档
 
 ```bash
 # 看板归档:旧最新版本 → 历史版本
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/abs_archive.py dashboards
+PYTHONUTF8=1 python scripts/abs_archive.py dashboards
 
 # 台账归档:加工中 → 定稿,旧定稿 → 归档
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/abs_archive.py ledger
+PYTHONUTF8=1 python scripts/abs_archive.py ledger
 
 # 重建文件索引
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/abs_archive.py index
+PYTHONUTF8=1 python scripts/abs_archive.py index
 ```
 
 ### 3. 簿记录入(补充簿记模式)
 
 ```bash
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/increment_merge.py \
-  --processed "skills/ABS工具箱/deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx" \
+PYTHONUTF8=1 python scripts/increment_merge.py \
+  --processed "deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx" \
   --supplement \
-  --details skills/ABS工具箱/deliverables/ledger/05_bookkeeping_details/*.xlsx \
-  --output "skills/ABS工具箱/deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
+  --details deliverables/ledger/05_bookkeeping_details/*.xlsx \
+  --output "deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
 ```
 
 产出:`deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx`
@@ -87,7 +87,7 @@ PYTHONUTF8=1 python skills/ABS工具箱/scripts/increment_merge.py \
 ### 4. 簿记录入(增量合并模式)
 
 ```bash
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/increment_merge.py \
+PYTHONUTF8=1 python scripts/increment_merge.py \
   --processed "上周定稿.xlsx" \
   --new-raw "本周新原始台账.xlsx" \
   --details 簿记明细*.xlsx \
@@ -97,14 +97,14 @@ PYTHONUTF8=1 python skills/ABS工具箱/scripts/increment_merge.py \
 ### 5. 发行定价(三看板一次跑)
 
 ```bash
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_abs_cost_report.py \
-  "skills/ABS工具箱/deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx"
+PYTHONUTF8=1 python scripts/gen_abs_cost_report.py \
+  "deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx"
 
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_compare_tool.py \
-  "skills/ABS工具箱/deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx"
+PYTHONUTF8=1 python scripts/gen_compare_tool.py \
+  "deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx"
 
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_spread_report.py \
-  "skills/ABS工具箱/deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx"
+PYTHONUTF8=1 python scripts/gen_spread_report.py \
+  "deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx"
 ```
 
 产出 3 份 HTML 到 `deliverables/dashboards/01_latest/`:
@@ -135,28 +135,28 @@ PYTHONUTF8=1 python scripts/gen_integrated_dashboard.py \
 
 ```bash
 # Step 1: 簿记录入(补充簿记明细)
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/increment_merge.py \
+PYTHONUTF8=1 python scripts/increment_merge.py \
   --processed "deliverables/ledger/03_final/2026年ABS发行台账-0626-定稿.xlsx" \
   --supplement --details deliverables/ledger/05_bookkeeping_details/*.xlsx \
   --output "deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
 
 # Step 2: 机构统计(用补充簿记后的台账)
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_institution_stats.py \
+PYTHONUTF8=1 python scripts/gen_institution_stats.py \
   "deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
 
 # Step 3: 发行定价(3 看板,用补充簿记后的台账)
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_abs_cost_report.py \
+PYTHONUTF8=1 python scripts/gen_abs_cost_report.py \
   "deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_compare_tool.py \
+PYTHONUTF8=1 python scripts/gen_compare_tool.py \
   "deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_spread_report.py \
+PYTHONUTF8=1 python scripts/gen_spread_report.py \
   "deliverables/ledger/02_processing/2026年ABS发行台账-0626-补充簿记v1.xlsx"
 ```
 
 ## 目录结构
 
 ```
-skills/ABS工具箱/
+(仓库根目录 abs-toolbox/)
 ├── SKILL.md                       (本文件)
 ├── README.md                      (同事入门)
 ├── CHANGELOG.md                   (版本历史)
@@ -386,4 +386,4 @@ diff <merge包里的新文件> <本地当前文件>
 
 - 送审报告归档在 `audit/submissions/`(不再散落 Inbox)
 - skill 长期审计基线见 `AUDIT_REPORT.md`
-- 回滚:`git rm -r skills/ABS工具箱/` + `git mv` 还原产出目录即可,原 3 skill 完整保留
+- 回滚:仓库已从 `skills/ABS工具箱/` 迁移为仓库根目录,历史回滚说明见 git 历史

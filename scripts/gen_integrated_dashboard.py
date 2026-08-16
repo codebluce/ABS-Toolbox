@@ -29,12 +29,12 @@ import gen_institution_profile
 import peer_issuance_panel
 
 # 机构画像模块(lab 实验转正:fig7_wlz_panel 调 fig4_new + fig5 同步台账)
+# 消金资产/同业发行已从 lab 转正到 scripts/,与上方顶层导入共用
 LAB_DIR = SCRIPT_DIR / 'lab'
 if str(LAB_DIR) not in sys.path:
     sys.path.insert(0, str(LAB_DIR))
 import fig7_wlz_panel
 import consumer_asset_panel
-import peer_issuance_panel
 
 # 非标额度监控模块
 import fig6_credit_panel
@@ -139,7 +139,8 @@ function selectSub(sub) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  selectModule('progress');
+  const first = document.querySelector('.tab-button');
+  if (first) selectModule(first.dataset.module);
 });
 """
 
@@ -149,14 +150,18 @@ def build_integrated_html(panels, all_css):
     """构建综合看板完整 HTML
 
     panels: List[(module, sub, body_html)]
-    all_css: 4 份原始 CSS + TAB_CSS 拼接的字符串
+    all_css: 各面板原始 CSS + TAB_CSS 拼接的字符串
 
-    3 个 top tab: 发行定价 / 机构画像 / 投资台账
+    top tab 按实际 panels 动态推导（固定顺序），无 panel 的模块不渲染一级 Tab:
+      机构画像 / 投资台账 / 资产大盘(可选) / 发行定价 / 同业发行(可选)
     机构画像 > 机构速查 + 理财子分析 + 非标额度 + 授信总额度
-    投资台账 > 2026年/2025年/2024年 三个年份子 Tab (各自独立筛选状态，多维筛选 + 分组/透视/明细 + 导出 CSV)
+    投资台账 > 按年份子 Tab (各自独立筛选状态，多维筛选 + 分组/透视/明细 + 导出 CSV)
               智能问答悬浮球语料覆盖全部年份，不受当前激活子 Tab 限制
     """
-    MODULES = [('progress', '机构画像'), ('ledger', '投资台账'), ('asset_overview', '资产大盘'), ('pricing', '发行定价'), ('peer_issuance', '同业发行')]
+    # 固定展示顺序；仅渲染实际有 panel 的模块，避免空 Tab
+    MODULE_ORDER = [('progress', '机构画像'), ('ledger', '投资台账'), ('asset_overview', '资产大盘'), ('pricing', '发行定价'), ('peer_issuance', '同业发行')]
+    present_modules = {p[0] for p in panels}
+    MODULES = [(m, label) for m, label in MODULE_ORDER if m in present_modules]
     # 第一层 Tab 标签
     top_buttons = []
     for module, label in MODULES:
@@ -265,6 +270,22 @@ def _assert_shared_tmp_structure(tmp_path):
     if len(raw) < 3:
         raise ValueError(f'[shared_tmp] 行数 {len(raw)} < 3,无有效数据行')
     print(f'[shared_tmp] 结构断言通过: {raw.shape[1]} 列 / {len(raw)} 行 / 关键列名齐全')
+
+
+def verify_integrated_html(content: str, expected_panel_count: int) -> list:
+    """纯函数:校验综合看板 HTML 结构,返回问题列表(空列表 = 通过)。
+
+    供生成器最终检查与部署脚本产物验证共用。
+    """
+    problems = []
+    panel_count = content.count('<div class="panel"')
+    if panel_count != expected_panel_count:
+        problems.append(f'panel 数 {panel_count} != 预期 {expected_panel_count}')
+    if 'function selectModule' not in content:
+        problems.append('缺少 selectModule 切换函数')
+    if 'function selectSub' not in content:
+        problems.append('缺少 selectSub 切换函数')
+    return problems
 
 
 def main():
@@ -411,22 +432,27 @@ def main():
 
     size_kb = os.path.getsize(out_path) / 1024
     print(f'\n[完成] {out_path} ({size_kb:.1f} KB)')
-    print(f'\n默认显示: 机构画像 / 机构速查')
+    print(f'\n默认显示: 首个模块的第一个子面板')
 
-    # 轻量级最终检查
+    # 结构 QC(硬阻断):失败即删除本次异常产物并以非零退出,绝不覆盖上一版、绝不让异常页面进入发布链路
     with open(out_path, 'r', encoding='utf-8') as f:
         content = f.read()
-    panel_count = content.count('<div class="panel"')
     expected_panel_count = 8 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled)  # 机构画像4 + 资产大盘可选1 + 发行定价4 + 同业发行可选1 + 各年份投资台账
-    has_select_module = 'function selectModule' in content
-    has_select_sub = 'function selectSub' in content
+    problems = verify_integrated_html(content, expected_panel_count)
     ledger_years_str = '+'.join(sorted(led_data['by_year'].keys(), reverse=True))
-    if panel_count == expected_panel_count and has_select_module and has_select_sub:
+    if not problems:
         asset_overview_count = int(consumer_asset_enabled)
         peer_issuance_count = int(peer_issuance_enabled)
-        print(f'[QC] 综合看板结构检查通过：{panel_count} 个 panel(机构画像4 + 投资台账[{ledger_years_str}] + 资产大盘{asset_overview_count} + 发行定价4 + 同业发行{peer_issuance_count}) + Tab 切换 JS 齐全')
+        panel_count_ok = content.count('<div class="panel"')
+        print(f'[QC] 综合看板结构检查通过：{panel_count_ok} 个 panel(机构画像4 + 投资台账[{ledger_years_str}] + 资产大盘{asset_overview_count} + 发行定价4 + 同业发行{peer_issuance_count}) + Tab 切换 JS 齐全')
     else:
-        print(f'[QC WARN] 结构异常：panel={panel_count}(预期{expected_panel_count}), selectModule={has_select_module}, selectSub={has_select_sub}')
+        print(f'[QC FAILED] 综合看板结构异常: {"; ".join(problems)}')
+        try:
+            os.remove(out_path)
+            print(f'[QC FAILED] 已删除异常产物 {out_path},上一版本未被覆盖')
+        except OSError:
+            pass
+        sys.exit(1)
 
 
 if __name__ == '__main__':

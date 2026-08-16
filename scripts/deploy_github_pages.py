@@ -78,12 +78,55 @@ def latest_by_mtime(paths: Iterable[Path]) -> Path:
     return max(items, key=lambda p: p.stat().st_mtime)
 
 
+def latest_by_name_date(paths: Iterable[Path], fallback_mtime: bool = True) -> Path:
+    """优先按受控文件名中的业务日期(YYYYMMDD)选择,避免 mtime 被复制/解压/触碰干扰。
+
+    支持「2026年...-0807-定稿」(年份+4位月日拼合)与「...-20260807-...」(完整8位)两种命名。
+    无可解析日期时回退 mtime;日期与 mtime 结论冲突时打印提示并以文件名为准。
+    """
+    import re
+
+    def name_date(p: Path) -> str | None:
+        # 优先完整 8 位日期;再尝试「YYYY年...-MMDD-」拼合
+        m = re.search(r"(20\d{6})", p.name)
+        if m:
+            return m.group(1)
+        m2 = re.search(r"^(20\d{2})\S*?-(\d{4})(?!\d)", p.name)
+        if m2:
+            return f"{m2.group(1)}{m2.group(2)}"
+        return None
+
+    dated: list[tuple[str, Path]] = []
+    undated: list[Path] = []
+    for p in paths:
+        if not p.exists():
+            continue
+        d = name_date(p)
+        if d:
+            dated.append((d, p))
+        else:
+            undated.append(p)
+    if dated:
+        dated.sort(key=lambda x: x[0], reverse=True)
+        best_date, best = dated[0]
+        mtime_pick = latest_by_mtime([p for _, p in dated] or undated)
+        if mtime_pick != best:
+            print(f"[select] 文件名业务日期({best_date})与 mtime({mtime_pick.name})不一致,以文件名为准: {best.name}")
+        return best
+    if undated:
+        return latest_by_mtime(undated)
+    raise FileNotFoundError("没有找到可用文件")
+
+
 def find_latest_ledger() -> Path:
     candidates = sorted(FINAL_LEDGER_DIR.glob("2026年ABS发行台账-*-定稿.xlsx"))
     if not candidates:
         raise FileNotFoundError(f"未找到定稿台账: {FINAL_LEDGER_DIR}")
-    # Prefer newest by modification time so manually refreshed files are picked up.
-    return latest_by_mtime(candidates)
+    # 优先按文件名业务日期(如 0807)选择,人工复制/触碰旧文件不会改变业务日期
+    try:
+        return latest_by_name_date(candidates)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"未找到定稿台账: {FINAL_LEDGER_DIR}")
 
 
 def find_dashboard_files() -> list[Path]:
@@ -100,6 +143,25 @@ def dashboard_date(path: Path) -> str:
     return path.stem
 
 
+def ledger_date_tag(ledger_path: Path) -> str:
+    """从受控台账文件名提取业务日期标签(YYYYMMDD)。
+
+    例: 2026年ABS发行台账-0807-定稿.xlsx -> 20260807;
+        2026年ABS发行台账-20260807-定稿.xlsx -> 20260807。
+    无法解析时回退当天日期,保证输出文件名始终可控。
+    """
+    import re
+
+    m = re.search(r"^(20\d{2})年ABS发行台账-(\d{4})(?!\d)", ledger_path.name)
+    if m:
+        return f"{m.group(1)}{m.group(2)}"
+    m2 = re.search(r"(20\d{6})", ledger_path.name)
+    if m2:
+        return m2.group(1)
+    print(f"[select] 台账文件名无法解析业务日期,回退当天: {ledger_path.name}")
+    return datetime.now().strftime("%Y%m%d")
+
+
 def generate_dashboard(
     ledger_path: Path,
     baitiao_path: Path | None = None,
@@ -108,7 +170,10 @@ def generate_dashboard(
     peer_issuance_baseline_path: Path | None = None,
 ) -> Path:
     print(f"\n[1/4] 生成最新综合看板: {ledger_path}")
-    command = [sys.executable, str(SCRIPTS_DIR / "gen_integrated_dashboard.py"), str(ledger_path)]
+    # 显式指定输出路径,生成后直接使用该产物,不再按 mtime 重扫目录(避免误选旧文件)
+    ledger_date = ledger_date_tag(ledger_path)
+    out_path = LATEST_DIR / f"{DASHBOARD_PREFIX}{ledger_date}{DASHBOARD_SUFFIX}"
+    command = [sys.executable, str(SCRIPTS_DIR / "gen_integrated_dashboard.py"), str(ledger_path), str(out_path)]
     if baitiao_path and jintiao_path:
         command.extend(["--baitiao-xlsx", str(baitiao_path), "--jintiao-xlsx", str(jintiao_path)])
     if peer_issuance_path:
@@ -116,7 +181,25 @@ def generate_dashboard(
         if peer_issuance_baseline_path:
             command.extend(["--peer-issuance-baseline-xlsx", str(peer_issuance_baseline_path)])
     run(command)
-    return latest_by_mtime(find_dashboard_files())
+    if not out_path.exists():
+        raise RuntimeError(f"生成器已退出但未找到产物: {out_path}")
+    # 产物结构验证:QC 失败时生成器非零退出,这里再校验一次关键结构双保险
+    verify_dashboard_artifact(out_path)
+    return out_path
+
+
+def verify_dashboard_artifact(dashboard_path: Path) -> None:
+    """部署侧产物验证:关键结构缺失即中止发布(P1-01 双保险)。"""
+    content = dashboard_path.read_text(encoding="utf-8")
+    problems = []
+    if '<div class="panel"' not in content:
+        problems.append("缺少 panel 容器")
+    if "function selectModule" not in content:
+        problems.append("缺少 selectModule")
+    if "function selectSub" not in content:
+        problems.append("缺少 selectSub")
+    if problems:
+        raise RuntimeError(f"综合看板产物结构异常: {'; '.join(problems)}")
 
 
 def encrypt_dashboard_html(dashboard_path: Path, password: str, iterations: int) -> dict:
@@ -191,7 +274,11 @@ def protected_shell_html(latest_dashboard: Path, payload: dict) -> str:
       return crypto.subtle.deriveKey({{name:'PBKDF2', salt:b64(PAYLOAD.salt), iterations:PAYLOAD.iterations, hash:'SHA-256'}}, base, {{name:'AES-GCM', length:256}}, false, ['decrypt']);
     }}
     async function ungzip(bytes) {{
-      if (!('DecompressionStream' in window)) throw new Error('当前浏览器不支持 DecompressionStream,请升级浏览器。');
+      if (!('DecompressionStream' in window)) {{
+        const e = new Error('unsupported');
+        e.unsupported = true;
+        throw e;
+      }}
       const ds = new DecompressionStream('gzip');
       const stream = new Blob([bytes]).stream().pipeThrough(ds);
       const buf = await new Response(stream).arrayBuffer();
@@ -215,7 +302,11 @@ def protected_shell_html(latest_dashboard: Path, payload: dict) -> str:
         $('gate').style.display = 'none';
       }} catch (err) {{
         console.error(err);
-        msg('密码错误或浏览器不支持解密。', 'err');
+        if (err && err.unsupported) {{
+          msg('当前浏览器不支持解压(DecompressionStream),请使用 Chrome 80+/Edge 80+/Safari 16.4+ 或更新浏览器。', 'err');
+        }} else {{
+          msg('密码错误,解密失败。', 'err');
+        }}
       }} finally {{
         $('unlock').disabled = false;
       }}
@@ -230,12 +321,18 @@ def protected_shell_html(latest_dashboard: Path, payload: dict) -> str:
 
 
 def write_archive_index(archive_dir: Path, dashboards: list[Path]) -> None:
+    import html as _html
+    from urllib.parse import quote as _urlquote
+
     rows = []
     for p in sorted(dashboards, key=dashboard_date, reverse=True):
         size_mb = p.stat().st_size / 1024 / 1024
         date = dashboard_date(p)
+        # 文件名同时做 HTML 转义(显示)与 URL 编码(href),防注入(P3-3)
+        safe_name = _html.escape(p.name)
+        safe_href = _urlquote(p.name)
         rows.append(
-            f'<tr><td>{date}</td><td><a href="{p.name}">{p.name}</a></td><td>{size_mb:.2f} MB</td></tr>'
+            f'<tr><td>{_html.escape(date)}</td><td><a href="{safe_href}">{safe_name}</a></td><td>{size_mb:.2f} MB</td></tr>'
         )
     html = f"""<!doctype html>
 <html lang="zh-CN">
@@ -278,6 +375,40 @@ def write_archive_index(archive_dir: Path, dashboards: list[Path]) -> None:
     (archive_dir / "index.html").write_text(html, encoding="utf-8")
 
 
+def audit_protected_site(site_dir: Path, latest_dashboard: Path) -> None:
+    """protected 站点包泄露自检:发现明文特征立即失败,阻断发布。
+
+    检查项:
+    1. 站点包不含源 Excel/簿记明细等敏感文件;
+    2. 站点包内任何文件都不含明文看板 HTML 的特征串(取源文件头部长片段);
+    3. manifest 中不得出现明文 HTML 文件本体。
+    """
+    problems: list[str] = []
+    banned_suffixes = {".xlsx", ".xls", ".csv", ".env", ".py"}
+    for p in sorted(site_dir.rglob("*")):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() in banned_suffixes:
+            problems.append(f"敏感文件泄露: {p.relative_to(site_dir)}")
+            continue
+        # manifest.json / README.md 是受控生成的文本,允许存在;二进制与 HTML 需检查明文特征
+        try:
+            blob = p.read_bytes()
+        except OSError as exc:
+            problems.append(f"读取失败: {p.relative_to(site_dir)} ({exc})")
+            continue
+        # 明文看板特征片段:源 HTML 中必然存在且唯一的 UTF-8 字节串
+        probe = "<!DOCTYPE html>".encode("utf-8")
+        if p.name not in {"manifest.json", "README.md", ".nojekyll"} and probe in blob:
+            # index.html 解锁壳本身也是 HTML,需进一步用源文件特征串区分
+            src_probe = latest_dashboard.read_bytes()[:2048]
+            if src_probe and src_probe in blob:
+                problems.append(f"疑似明文看板泄露: {p.relative_to(site_dir)}")
+    if problems:
+        raise RuntimeError("protected 站点包泄露自检失败:\n  " + "\n  ".join(problems))
+    print("[site] protected 泄露自检通过: 无源 Excel/明文看板特征")
+
+
 def build_site(
     latest_dashboard: Path | None = None,
     *,
@@ -312,6 +443,9 @@ def build_site(
 
     (SITE_STAGING_DIR / ".nojekyll").write_text("", encoding="utf-8")
 
+    if protected:
+        audit_protected_site(SITE_STAGING_DIR, latest_dashboard)
+
     # Keep the site package deterministic for the same dashboard HTML.
     # Otherwise every dry run changes manifest/README timestamps and creates noisy gh-pages commits.
     packaged_at = datetime.fromtimestamp(latest_dashboard.stat().st_mtime).isoformat(timespec="seconds")
@@ -335,7 +469,12 @@ def build_site(
     (SITE_STAGING_DIR / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
     archive_line = "- 历史归档：已下线（protected 模式不发布明文历史版本）" if protected else "- 历史归档：`archive/index.html`"
-    security_line = "安全说明：站点包为加密门禁版本，`index.html` 只包含密文和本地解密逻辑，不包含明文看板。" if protected else "安全说明：站点包只包含静态 HTML，不包含源 Excel、簿记明细、脚本、`.env` 等文件。"
+    security_line = (
+        "安全说明：站点包为**客户端加密**门禁版本，`index.html` 只包含密文和本地解密逻辑，不包含明文看板。\n"
+        "注意：这是客户端加密而非服务端鉴权——密文、salt、IV 均随页面下发，访问者可离线尝试口令，无身份校验、撤销与审计能力。请使用高熵口令并定期轮换；若需身份级管控请迁移至 Cloudflare Access 等方案。"
+        if protected
+        else "安全说明：站点包只包含静态 HTML，不包含源 Excel、簿记明细、脚本、`.env` 等文件。"
+    )
     readme = f"""# ABS综合看板静态站点包
 
 本目录由 `scripts/deploy_github_pages.py` 自动生成，用于发布到 GitHub Pages。
@@ -384,11 +523,31 @@ def publish_to_pages(site_dir: Path, remote: str, branch: str, message: str, no_
     worktree = tmp_parent / "worktree"
     changed = False
     try:
-        # Ensure local branch exists. If not, create it from remote branch.
-        has_local = subprocess.run(["git", "show-ref", "--verify", f"refs/heads/{branch}"], cwd=REPO_ROOT).returncode == 0
-        if not has_local:
-            run(["git", "fetch", remote, f"{branch}:{branch}"])
-        run(["git", "worktree", "add", str(worktree), branch])
+        # 始终 fetch 并从 remote/gh-pages 创建一次性 detached worktree,
+        # 避免本地陈旧分支导致非快进失败或基于过期历史发布(P1-02)。
+        run(["git", "fetch", remote, branch])
+        remote_ref = f"refs/remotes/{remote}/{branch}"
+        has_remote = subprocess.run(
+            ["git", "show-ref", "--verify", remote_ref], cwd=REPO_ROOT
+        ).returncode == 0
+        if not has_remote:
+            raise RuntimeError(
+                f"远端 {remote} 不存在分支 {branch},请先确认发布仓库与分支配置"
+            )
+        # 本地分支若与远端分叉,明确中止,不自动覆盖
+        has_local = subprocess.run(
+            ["git", "show-ref", "--verify", f"refs/heads/{branch}"], cwd=REPO_ROOT
+        ).returncode == 0
+        if has_local:
+            local_sha = capture(["git", "rev-parse", f"refs/heads/{branch}"]).strip()
+            remote_sha = capture(["git", "rev-parse", remote_ref]).strip()
+            base_sha = capture(["git", "merge-base", f"refs/heads/{branch}", remote_ref]).strip()
+            if local_sha != remote_sha and base_sha not in (local_sha, remote_sha):
+                raise RuntimeError(
+                    f"本地 {branch} 与远端已分叉(local={local_sha[:8]} remote={remote_sha[:8]}),"
+                    "请人工确认后处理,发布中止"
+                )
+        run(["git", "worktree", "add", "--detach", str(worktree), remote_ref])
 
         remove_worktree_contents(worktree)
         for item in site_dir.iterdir():
@@ -405,8 +564,16 @@ def publish_to_pages(site_dir: Path, remote: str, branch: str, message: str, no_
             if no_push:
                 print("[pages] --no-push 已设置,跳过推送")
             else:
-                print("[pages] 仍执行 git push,确保本地 gh-pages 已同步到远端")
-                run(["git", "push", remote, f"{branch}:{branch}"], cwd=worktree)
+                remote_sha_now = capture(["git", "rev-parse", remote_ref]).strip()
+                if has_local:
+                    local_sha_now = capture(["git", "rev-parse", f"refs/heads/{branch}"]).strip()
+                else:
+                    local_sha_now = ""
+                if local_sha_now == remote_sha_now:
+                    print("[pages] 本地与远端已一致,跳过推送")
+                else:
+                    print("[pages] 执行 git push,同步本地 gh-pages 到远端")
+                    run(["git", "push", remote, f"{branch}:{branch}"])
             return False
         changed = True
         print(diff_status)
@@ -415,7 +582,13 @@ def publish_to_pages(site_dir: Path, remote: str, branch: str, message: str, no_
             print("[pages] --no-push 已设置,未推送远端")
         else:
             print("\n[4/4] 推送到 GitHub Pages...")
-            run(["git", "push", remote, f"{branch}:{branch}"], cwd=worktree)
+            run(
+                ["git", "push", remote, f"HEAD:refs/heads/{branch}"],
+                cwd=worktree,
+            )
+        # 将本地分支指针对齐到刚提交的发布基线,保持本地/远端一致
+        committed_sha = capture(["git", "rev-parse", "HEAD"], cwd=worktree).strip()
+        run(["git", "update-ref", f"refs/heads/{branch}", committed_sha])
         return True
     finally:
         try:

@@ -12,6 +12,28 @@
 
 ---
 
+## v2.5.8 — 发布链路加固与自动化审计流程(2026-08-16)
+
+修复 v25 端到端专项审计(NEEDS_REVISION)的全部 P1/P2/P3 问题:
+
+**P1 发布门禁**
+- 综合看板结构 QC 硬阻断:失败时删除异常产物并非零退出,不覆盖上一版(`gen_integrated_dashboard.py`)
+- gh-pages 发布基线:始终 fetch,从 remote 创建一次性 detached worktree,本地/远端分叉即中止(`deploy_github_pages.py`)
+- protected 站点包泄露自检:扫描源 Excel/明文看板特征,命中阻断发布;README 增加客户端加密边界说明
+
+**P2 正确性与可测试性**
+- 一级 Tab 按实际 panels 动态推导,无数据不再渲染空 Tab
+- 产物选择去 mtime 化:台账按文件名业务日期选择,生成器显式返回输出路径
+- 统一测试入口 `run_tests.py`(根目录一条命令,0 测试发现即失败)
+- 新增 `scripts/test_publish_chain.py` 17 个链路测试(动态 Tab/QC 阻断/加密 roundtrip/泄露检出/分叉中止)
+
+**P3 清理**
+- 删除重复导入与漂移注释;预处理临时文件改 mkstemp;archive 索引 html.escape;解锁壳拆分密码错误与浏览器不支持两种报错;SKILL.md 24 处旧路径修正
+
+**自动化审计流程**
+- 移植 macro-allocation-strategy 自动化编排:新增 `scripts/audit_next_action.py`(状态机)、`scripts/audit_validate.py`(产物校验)、`scripts/audit_refresh_index.py`(索引刷新),纯标准库
+- dispatch.md 增加自动化编排模式章节(主 Agent 控制平面 + 独立 subagent 角色)
+
 ## Unreleased — 同业发行面板转正
 
 - 将已验收的同业发行实验面板迁移为 `scripts/peer_issuance_panel.py`，作为综合看板最后一个一级模块“同业发行”。
