@@ -73,10 +73,15 @@ def parse_frontmatter(text: str) -> dict:
                 item = line[2:].strip()
                 if ":" in item:
                     k, _, v = item.partition(":")
-                    entry = {k.strip(): _scalar(v.strip())}
-                    container.append(entry)
+                    container.append({k.strip(): _scalar(v.strip())})
                 else:
                     container.append(_scalar(item))
+            elif isinstance(container, list) and not is_list_item and ":" in line:
+                # list-of-dict 的后续字段行(如 "- id: X" 之后的 severity: WARNING):
+                # 附加到容器最后一个 dict 条目,不再静默丢弃(REV-03)
+                k, _, v = line.partition(":")
+                if container and isinstance(container[-1], dict):
+                    container[-1][k.strip()] = _scalar(v.strip())
             continue
         m = re.match(r"^([A-Za-z0-9_]+):\s*(.*)$", raw)
         if m:
@@ -192,6 +197,25 @@ def _validate_a(name: str, fm: dict, rep: Report):
             rep.crit(f"{name}: self_review.{bk} 缺失(4 bool 必填)")
     if any(sr.get(bk) is False for bk in BOOL_KEYS if bk in sr) and fm.get("status") != "BLOCKED":
         rep.crit(f"{name}: self_review 任一 false 时 status 必须 BLOCKED(当前 {fm.get('status')})")
+    # V6: changed_files 与 git show <tag> --stat 对比(遗漏/多报 → WARNING)(REV-02 实现)
+    tag = fm.get("git_tag")
+    declared = fm.get("changed_files")
+    if isinstance(declared, list) and tag and git("tag", "-l", str(tag)):
+        stat = git("show", str(tag), "--stat", "--format=")
+        actual = set()
+        for ln in stat.split("\n"):
+            m2 = re.match(r"^(.+?)\s+\|", ln)
+            if m2:
+                candidate = m2.group(1).strip()
+                # 跳过汇总行(纯数字统计)与重命名箭头外的目录文件
+                if candidate and not candidate.isdigit() and "|" not in candidate:
+                    actual.add(candidate)
+        missing = actual - set(map(str, declared))
+        extra = set(map(str, declared)) - actual
+        if missing:
+            rep.warn(f"{name}: changed_files 遗漏 {len(missing)} 个文件未声明: {sorted(missing)}")
+        if extra:
+            rep.warn(f"{name}: changed_files 多报 {len(extra)} 个不在 commit 中: {sorted(extra)}")
 
 
 def _validate_b(name: str, fm: dict, rep: Report):

@@ -277,15 +277,9 @@ class PublishToPagesTest(unittest.TestCase):
                     pushes.append(cmd)
 
             with mock.patch("deploy_github_pages.run", side_effect=fake_run), mock.patch(
-                "deploy_github_pages.capture",
-                side_effect=self._patch_capture([
-                    ("git rev-parse refs/heads/gh-pages", "aaa111"),
-                    ("git rev-parse refs/remotes/origin/gh-pages", "aaa111"),
-                    ("git merge-base", "aaa111"),
-                ]),
-            ), mock.patch("subprocess.run") as fake_sub, mock.patch(
-                "shutil.copytree"
-            ), mock.patch("shutil.copy2"
+                "subprocess.run"
+            ) as fake_sub, mock.patch("shutil.copytree"), mock.patch(
+                "shutil.copy2"
             ), mock.patch("deploy_github_pages.remove_worktree_contents"):
                 fake_sub.return_value.returncode = 0
                 # diff_status 非空 → 走 commit 分支,但 no_push=True 不得 push
@@ -296,6 +290,64 @@ class PublishToPagesTest(unittest.TestCase):
                     changed = publish_to_pages(site, "origin", "gh-pages", "msg", no_push=True)
                 self.assertTrue(changed)
                 self.assertEqual(pushes, [])
+
+    def _run_no_change_publish(self, local_sha, remote_sha, has_local=True):
+        """辅助:构造"无文件变化"场景并返回 (pushes, changed)。"""
+        import tempfile
+        from deploy_github_pages import publish_to_pages
+        with tempfile.TemporaryDirectory() as d:
+            site = Path(d) / "site"
+            site.mkdir()
+            (site / "index.html").write_text("x", encoding="utf-8")
+            pushes = []
+
+            def fake_run(cmd, cwd=None, check=True):
+                if "push" in cmd:
+                    pushes.append(cmd)
+
+            def fake_capture(cmd, cwd=None, check=True):
+                cmd_str = " ".join(cmd)
+                if "status" in cmd_str:
+                    return ""  # 无文件变化
+                if "rev-parse" in cmd_str and "refs/heads/gh-pages" in cmd_str:
+                    return local_sha
+                if "rev-parse" in cmd_str and "refs/remotes/origin/gh-pages" in cmd_str:
+                    return remote_sha
+                if "merge-base" in cmd_str:
+                    # fast-forward 关系: base 取两端之一(local 领先→base=remote,反之亦然)
+                    return local_sha if local_sha != remote_sha and len(local_sha) <= len(remote_sha) else remote_sha
+                if "rev-parse" in cmd_str and cmd_str.endswith("HEAD"):
+                    return "new000"
+                return ""
+
+            with mock.patch("deploy_github_pages.run", side_effect=fake_run), mock.patch(
+                "deploy_github_pages.capture", side_effect=fake_capture
+            ), mock.patch("subprocess.run") as fake_sub, mock.patch(
+                "shutil.copytree"
+            ), mock.patch("shutil.copy2"), mock.patch(
+                "deploy_github_pages.remove_worktree_contents"
+            ):
+                fake_sub.return_value.returncode = 0
+                changed = publish_to_pages(site, "origin", "gh-pages", "msg", no_push=False)
+            return pushes, changed
+
+    def test_no_change_refs_equal_skips_push(self):
+        # REV-04 场景1: 无变化 + 本地/远端引用一致 → 跳过 push
+        pushes, changed = self._run_no_change_publish("same111", "same111", has_local=True)
+        self.assertFalse(changed)
+        self.assertEqual(pushes, [])
+
+    def test_no_change_local_ahead_pushes(self):
+        # REV-04 场景2: 无变化 + 本地领先(引用不等但 merge-base=local) → 执行 push
+        pushes, changed = self._run_no_change_publish("ahead11", "behind2", has_local=True)
+        self.assertFalse(changed)
+        self.assertEqual(len(pushes), 1)
+
+    def test_no_change_no_local_branch(self):
+        # REV-04 场景3: 无变化 + 无本地分支(引用比对 local_sha='') → 触发 push(方向安全,真实环境无本地分支时 push 会报错中止而非错误发布)
+        pushes, changed = self._run_no_change_publish("", "remote1", has_local=False)
+        self.assertFalse(changed)
+        self.assertEqual(len(pushes), 1)
 
 
 if __name__ == "__main__":
