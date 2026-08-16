@@ -107,7 +107,12 @@ def _scalar(v: str):
 
 def git(*args: str) -> str | None:
     try:
-        proc = subprocess.run(["git", *args], cwd=SKILL_ROOT, capture_output=True, text=True)
+        # core.quotepath=off: 关闭非 ASCII 路径的八进制转义,中文文件名原样输出
+        # (REV-v2.5.9-v32-r01-01: 转义导致 V6 对中文名产生成对假阳性)
+        proc = subprocess.run(
+            ["git", "-c", "core.quotepath=off", *args],
+            cwd=SKILL_ROOT, capture_output=True, text=True,
+        )
         return proc.stdout.strip() if proc.returncode == 0 else None
     except OSError:
         return None

@@ -291,8 +291,12 @@ class PublishToPagesTest(unittest.TestCase):
                 self.assertTrue(changed)
                 self.assertEqual(pushes, [])
 
-    def _run_no_change_publish(self, local_sha, remote_sha, has_local=True):
-        """辅助:构造"无文件变化"场景并返回 (pushes, changed)。"""
+    def _run_no_change_publish(self, local_sha, remote_sha, merge_base):
+        """辅助:构造"无文件变化"场景并返回 (pushes, changed)。
+
+        merge_base 显式传入,由调用方定义 fast-forward 语义(不再用 sha 长度启发式)。
+        local_sha 传空串即模拟"无本地分支"。
+        """
         import tempfile
         from deploy_github_pages import publish_to_pages
         with tempfile.TemporaryDirectory() as d:
@@ -314,8 +318,7 @@ class PublishToPagesTest(unittest.TestCase):
                 if "rev-parse" in cmd_str and "refs/remotes/origin/gh-pages" in cmd_str:
                     return remote_sha
                 if "merge-base" in cmd_str:
-                    # fast-forward 关系: base 取两端之一(local 领先→base=remote,反之亦然)
-                    return local_sha if local_sha != remote_sha and len(local_sha) <= len(remote_sha) else remote_sha
+                    return merge_base
                 if "rev-parse" in cmd_str and cmd_str.endswith("HEAD"):
                     return "new000"
                 return ""
@@ -332,20 +335,21 @@ class PublishToPagesTest(unittest.TestCase):
             return pushes, changed
 
     def test_no_change_refs_equal_skips_push(self):
-        # REV-04 场景1: 无变化 + 本地/远端引用一致 → 跳过 push
-        pushes, changed = self._run_no_change_publish("same111", "same111", has_local=True)
+        # 场景1: 无变化 + 本地/远端引用一致(merge-base 即同值) → 跳过 push
+        pushes, changed = self._run_no_change_publish("same111", "same111", merge_base="same111")
         self.assertFalse(changed)
         self.assertEqual(pushes, [])
 
     def test_no_change_local_ahead_pushes(self):
-        # REV-04 场景2: 无变化 + 本地领先(引用不等但 merge-base=local) → 执行 push
-        pushes, changed = self._run_no_change_publish("ahead11", "behind2", has_local=True)
+        # 场景2: 无变化 + 本地领先(local 是 remote 的祖先,merge-base=remote) → 执行 push
+        pushes, changed = self._run_no_change_publish("ahead11", "behind2", merge_base="behind2")
         self.assertFalse(changed)
         self.assertEqual(len(pushes), 1)
 
     def test_no_change_no_local_branch(self):
-        # REV-04 场景3: 无变化 + 无本地分支(引用比对 local_sha='') → 触发 push(方向安全,真实环境无本地分支时 push 会报错中止而非错误发布)
-        pushes, changed = self._run_no_change_publish("", "remote1", has_local=False)
+        # 场景3: 无变化 + 无本地分支(local_sha 为空,引用比对恒不等) → 触发 push
+        # (方向安全:真实环境无本地分支时 push 会报错中止而非错误发布)
+        pushes, changed = self._run_no_change_publish("", "remote1", merge_base="")
         self.assertFalse(changed)
         self.assertEqual(len(pushes), 1)
 

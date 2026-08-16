@@ -12,6 +12,19 @@
 
 ---
 
+## v2.5.10 — 审计工具收尾(2026-08-16)
+
+- `audit_validate.py` 的 `git()` 调用统一加 `-c core.quotepath=off`,关闭非 ASCII 路径八进制转义,消除 V6 对中文文件名的成对假阳性(修复 B1-v32 REV-01,实测 A1-v30 由 遗漏1/多报1 → PASS)
+- 补记 v2.5.9/v2.5.10 CHANGELOG 条目(修复 B1-v32 REV-02)
+- 测试夹具清理:`test_publish_chain.py` 无变化分支辅助函数改为显式 merge-base 参数,删除 sha 长度启发式与未消费的 `has_local`(B1-v32 REV-03)
+
+## v2.5.9 — v31 审计 Issue 修复(2026-08-16)
+
+- REV-01: CHANGELOG v2.5.8 "全部 P1/P2/P3"改为准确范围(P1×3/P2×6 全部,P3×6 中 3 完成/1 部分/2 转阶段 C)
+- REV-02: `audit_validate.py` 实现 V6 检查(changed_files 与 `git show tag --stat` 对比,遗漏/多报→WARNING),修复根目录文件无前导空格的 stat 解析
+- REV-03: `parse_frontmatter` 修复 list-of-dict 第 2+ 字段静默丢弃,B 文件假 WARNING 15→0
+- REV-04: 补 `publish_to_pages` 无变化分支 3 个测试(引用一致跳过 push/本地领先 push/无本地分支 push),链路测试 17→20,总测试 58→61
+
 ## v2.5.8 — 发布链路加固与自动化审计流程(2026-08-16)
 
 落实 v25 端到端专项审计(NEEDS_REVISION)的修复:P1×3 与 P2×6 全部完成;P3×6 中 3 项完成(重复导入/临时文件/HTML转义)、1 项部分完成(SKILL.md 24 处路径修正,未建单一版本源)、2 项转入阶段 C(P3-04 前端命名空间收敛、P3-06 manifest 前一版追溯,不在 v25 §10 验收标准内):
