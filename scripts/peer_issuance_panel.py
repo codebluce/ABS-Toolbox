@@ -22,7 +22,7 @@ HUNDRED = Decimal("100")
 
 # 资产类型固定展示顺序
 ASSET_TYPE_ORDER = ("消金分期类", "消金提现类", "小微toB", "小微toC")
-TOP_N = 8
+TOP_N = 12
 TRUST_TOP_N = 5
 BAR_BLUE = "#2a78d6"
 ASSET_FAMILY_ORDER = ("蚂蚁系", "网商系", "腾讯系", "微众系", "字节系", "美团系")
@@ -205,6 +205,27 @@ def asset_family(base_asset: str) -> str:
     return UNKNOWN_ASSET_FAMILY
 
 
+def cluster_by_family(selected: list[tuple[str, Decimal]]) -> list[str]:
+    """同集团基础资产相邻展示的稳定聚类排序。
+
+    入参为按 2026 累计规模降序选出的 Top N [(资产名, 规模), ...]。
+    规则：集团间按其内部最高规模降序（未知资产集团沉底），集团内按规模降序；
+    返回仅含资产名的展示顺序，入围集合与入参完全一致。
+    """
+    groups: dict[str, list[tuple[str, Decimal]]] = {}
+    for name, amount in selected:
+        groups.setdefault(asset_family(name), []).append((name, amount))
+    for family in groups:
+        groups[family].sort(key=lambda item: -item[1])
+
+    def group_rank(family: str):
+        head = groups[family][0][1]
+        return (1 if family == UNKNOWN_ASSET_FAMILY else 0, -head, family)
+
+    families = sorted(groups.keys(), key=group_rank)
+    return [name for family in families for name, _ in groups[family]]
+
+
 def is_trust_channel(record: dict[str, Any]) -> bool:
     """信托渠道分布仅纳入名称含“信托”的原始权益人。"""
     return "信托" in record["originator"]
@@ -348,7 +369,9 @@ def build_dashboard(records_2026: list[dict[str, Any]], records_2025: list[dict[
     base_totals: dict[str, Decimal] = {}
     for r in market_2026:
         base_totals[r["base_asset"]] = base_totals.get(r["base_asset"], ZERO) + r["amount"]
-    top_bases = [name for name, _ in sorted(base_totals.items(), key=lambda item: -item[1])[:TOP_N]]
+    # 入围口径：严格按 2026 累计规模降序取 Top N；展示顺序：同集团相邻聚类
+    selected = sorted(base_totals.items(), key=lambda item: -item[1])[:TOP_N]
+    top_bases = cluster_by_family(selected)
 
     latest_month = latest_date.month
     previous_month = latest_month - 1

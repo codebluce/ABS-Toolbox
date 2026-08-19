@@ -15,6 +15,7 @@ from peer_issuance_panel import (  # noqa: E402
     UNKNOWN_ASSET_FAMILY,
     asset_family,
     build_dashboard,
+    cluster_by_family,
     is_jd,
     is_trust_channel,
     parse_rate,
@@ -90,6 +91,28 @@ class TestAssetFamilies(unittest.TestCase):
     def test_trust_channel_uses_originator_only(self):
         self.assertTrue(is_trust_channel(make_record(originator="外贸信托", base_asset="网商贷")))
         self.assertFalse(is_trust_channel(make_record(originator="财付通小贷", base_asset="腾讯分付")))
+
+
+class TestClusterByFamily(unittest.TestCase):
+    def test_same_family_adjacent_and_sets_unchanged(self):
+        selected = [
+            ("蚂蚁花呗", D("500")), ("网商贷", D("400")), ("蚂蚁借呗", D("300")),
+            ("腾讯分付", D("200")), ("微众银行微粒贷", D("150")), ("度小满满易贷", D("10")),
+        ]
+        ordered = cluster_by_family(selected)
+        # 入围集合与入参完全一致
+        self.assertEqual(sorted(ordered), sorted(name for name, _ in selected))
+        # 蚂蚁系两个资产相邻
+        self.assertEqual(abs(ordered.index("蚂蚁花呗") - ordered.index("蚂蚁借呗")), 1)
+        # 未知资产集团沉底
+        self.assertEqual(ordered[-1], "度小满满易贷")
+        # 集团间按头部规模降序：蚂蚁系(500) 在 网商系(400) 前
+        self.assertLess(ordered.index("蚂蚁花呗"), ordered.index("网商贷"))
+
+    def test_single_item_families_keep_descending(self):
+        selected = [("腾讯分付", D("50")), ("网商贷", D("100")), ("美团月付", D("80"))]
+        ordered = cluster_by_family(selected)
+        self.assertEqual(ordered, ["网商贷", "美团月付", "腾讯分付"])
 
 
 class TestAggregation(unittest.TestCase):
