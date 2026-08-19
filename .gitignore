@@ -27,3 +27,6 @@ deliverables/ledger/03_final/tmp*.xlsx
 # 真实发布内容进入 gh-pages 分支。
 deliverables/dashboard_site/
 deliverables/dashboard_site_test/
+
+# 本地预览/开发服务器配置(每台机器路径不同，不进版本库；见 SKILL.md 多 Agent 版本管理规范)
+.claude/
