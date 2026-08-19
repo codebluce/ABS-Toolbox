@@ -488,7 +488,12 @@ def build_site(
 ) -> Path:
     print("\n[2/4] 组装静态站点包...")
     dashboards = find_dashboard_files()
-    latest_dashboard = latest_dashboard or latest_by_mtime(dashboards)
+    # 按文件名业务日期选择(与 find_latest_ledger 同一套逻辑)，不用 mtime——
+    # git checkout/pull 会把签出文件的 mtime 统一盖成拉取时刻，与文件名里的
+    # 真实业务日期无关；--skip-generate 场景下这会导致误选到"刚拉下来但业务
+    # 日期更早"的文件而不是真正最新的看板(实测复现:0814 因刚被 pull 签出、
+    # mtime 是今天，反而排在 0816 之前)。
+    latest_dashboard = latest_dashboard or latest_by_name_date(dashboards)
     # 统一解析为绝对路径(v26-B3):调用方传相对路径时 relative_to(REPO_ROOT) 会抛 ValueError
     latest_dashboard = latest_dashboard.resolve()
     if not latest_dashboard.is_absolute():  # resolve 后必为绝对,防御性断言
@@ -756,7 +761,9 @@ def main() -> None:
     if latest_dashboard is not None:
         date_tag = dashboard_date(latest_dashboard)
     else:
-        date_tag = dashboard_date(latest_by_mtime(find_dashboard_files()))
+        # 与 build_site() 内部选择逻辑保持一致(同用 latest_by_name_date)，
+        # 否则 commit message 里的日期可能和实际打包进站点包的文件对不上。
+        date_tag = dashboard_date(latest_by_name_date(find_dashboard_files()))
     mode = "protected" if args.protected else "site"
     message = args.message or f"deploy: update ABS dashboard {mode} {date_tag}"
     changed = publish_to_pages(site_dir, args.remote, args.branch, message, args.no_push, getattr(args, "build_only", False))
