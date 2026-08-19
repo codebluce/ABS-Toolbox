@@ -281,8 +281,8 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
     .eyebrow{{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}} h1{{margin:10px 0 8px;font-size:30px;line-height:1.12}} p{{margin:0;color:var(--muted);line-height:1.7;font-size:14px}} .meta{{margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfcfe;font-size:13px;color:#475467;display:grid;gap:6px}}
     label{{display:block;margin:22px 0 8px;font-weight:700;font-size:14px}} .row{{display:flex;gap:10px}} input{{flex:1;border:1px solid #cfd4dc;border-radius:12px;padding:13px 14px;font-size:16px;outline:none}} input:focus{{border-color:#344054;box-shadow:0 0 0 4px rgba(52,64,84,.08)}} button{{border:0;border-radius:12px;background:var(--brand);color:white;font-weight:800;padding:0 18px;font-size:15px;cursor:pointer}} button:disabled{{opacity:.6;cursor:not-allowed}} .msg{{min-height:22px;margin-top:12px;font-size:14px}} .err{{color:var(--danger)}} .ok{{color:var(--ok)}} .hint{{margin-top:18px;font-size:12px;color:#98a2b3}}
     .load{{color:var(--load);display:inline-flex;align-items:center;gap:8px;font-weight:600}}
-    .load::before{{content:"";width:14px;height:14px;border:2px solid #dbe4ff;border-top-color:var(--load);border-radius:50%;animation:abs-spin .8s linear infinite;flex:none}}
-    @keyframes abs-spin{{to{{transform:rotate(360deg)}}}}
+    .load::before{{content:"";width:14px;height:14px;border-radius:50%;border:2px solid transparent;border-top-color:var(--load);border-right-color:var(--load);animation:abs-spin .9s cubic-bezier(.5,.2,.5,.8) infinite;flex:none;box-shadow:0 0 0 2px #eef2ff inset}}
+    @keyframes abs-spin{{0%{{transform:rotate(0deg) scale(1)}}50%{{transform:rotate(180deg) scale(.82)}}100%{{transform:rotate(360deg) scale(1)}}}}
     #viewer{{display:none;position:fixed;inset:0;border:0;width:100vw;height:100vh;background:white}}
     #flip{{display:none;position:fixed;z-index:9;right:14px;bottom:14px;padding:8px 14px;border:1px solid #d8dee8;border-radius:18px;background:rgba(255,255,255,.94);color:#1a3a5c;font:600 12px/1 'PingFang SC',Helvetica,Arial,sans-serif;box-shadow:0 4px 14px rgba(15,23,42,.12);cursor:pointer}}
   </style>
@@ -290,7 +290,7 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
 <body>
   <main class="card" id="gate">
     <div class="eyebrow">ABS Dashboard Protected</div>
-    <h1>📊 ABS 综合看板</h1>
+    <h1>ABS 综合看板</h1>
     <p>请输入访问密码。看板数据已在发布前加密,密码只在本机浏览器中用于解密,不会发送到服务器。</p>
     <div class="meta">
       <div><strong>版本</strong>：{latest_date}</div>
