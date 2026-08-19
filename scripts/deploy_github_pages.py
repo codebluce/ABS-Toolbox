@@ -31,6 +31,10 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
+# 手机版生成器与本脚本同目录,导入前先把 scripts/ 挂进 sys.path
+sys.path.insert(0, str(SCRIPTS_DIR))
+
+from gen_mobile_dashboard import build_mobile_html  # noqa: E402  (需在 sys.path 配置之后导入)
 LATEST_DIR = REPO_ROOT / "deliverables" / "dashboards" / "01_latest"
 SITE_STAGING_DIR = REPO_ROOT / "deliverables" / "dashboard_site"
 FINAL_LEDGER_DIR = REPO_ROOT / "deliverables" / "ledger" / "03_final"
@@ -234,15 +238,16 @@ def encrypt_dashboard_html(dashboard_path: Path, password: str, iterations: int)
     }
 
 
-def protected_shell_html(latest_dashboard: Path, payload: dict) -> str:
+def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: dict) -> str:
     latest_name = latest_dashboard.name
     latest_date = dashboard_date(latest_dashboard)
     payload_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    mobile_json = json.dumps(mobile_payload, ensure_ascii=False, separators=(",", ":"))
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow">
   <title>ABS 综合看板 · 访问验证</title>
   <style>
@@ -252,6 +257,7 @@ def protected_shell_html(latest_dashboard: Path, payload: dict) -> str:
     .eyebrow{{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}} h1{{margin:10px 0 8px;font-size:30px;line-height:1.12}} p{{margin:0;color:var(--muted);line-height:1.7;font-size:14px}} .meta{{margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfcfe;font-size:13px;color:#475467;display:grid;gap:6px}}
     label{{display:block;margin:22px 0 8px;font-weight:700;font-size:14px}} .row{{display:flex;gap:10px}} input{{flex:1;border:1px solid #cfd4dc;border-radius:12px;padding:13px 14px;font-size:16px;outline:none}} input:focus{{border-color:#344054;box-shadow:0 0 0 4px rgba(52,64,84,.08)}} button{{border:0;border-radius:12px;background:var(--brand);color:white;font-weight:800;padding:0 18px;font-size:15px;cursor:pointer}} button:disabled{{opacity:.6;cursor:not-allowed}} .msg{{min-height:22px;margin-top:12px;font-size:14px}} .err{{color:var(--danger)}} .ok{{color:var(--ok)}} .hint{{margin-top:18px;font-size:12px;color:#98a2b3}}
     #viewer{{display:none;position:fixed;inset:0;border:0;width:100vw;height:100vh;background:white}}
+    #flip{{display:none;position:fixed;z-index:9;right:14px;bottom:14px;padding:8px 14px;border:1px solid #d8dee8;border-radius:18px;background:rgba(255,255,255,.94);color:#1a3a5c;font:600 12px/1 'PingFang SC',Helvetica,Arial,sans-serif;box-shadow:0 4px 14px rgba(15,23,42,.12);cursor:pointer}}
   </style>
 </head>
 <body>
@@ -263,6 +269,7 @@ def protected_shell_html(latest_dashboard: Path, payload: dict) -> str:
       <div><strong>版本</strong>：{latest_date}</div>
       <div><strong>来源</strong>：{latest_name}</div>
       <div><strong>加密</strong>：PBKDF2-SHA256 / AES-GCM / gzip</div>
+      <div><strong>终端</strong>：<span id="term">识别中…</span></div>
     </div>
     <label for="password">访问密码</label>
     <div class="row"><input id="password" type="password" autocomplete="current-password" placeholder="输入密码后按 Enter"><button id="unlock">解锁</button></div>
@@ -270,14 +277,40 @@ def protected_shell_html(latest_dashboard: Path, payload: dict) -> str:
     <div class="hint">提示：首次解锁会在浏览器本地完成密钥派生、解密和解压；请使用强密码并避免在公共设备保存。</div>
   </main>
   <iframe id="viewer" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups allow-forms"></iframe>
+  <button id="flip" type="button"></button>
   <script>
-    const PAYLOAD = {payload_json};
+    const PAYLOADS = {{ desktop: {payload_json}, mobile: {mobile_json} }};
+    const VIEW_KEY = 'abs_dash_view';
     const $ = (id) => document.getElementById(id);
     const msg = (text, cls='') => {{ $('msg').className = 'msg ' + cls; $('msg').textContent = text; }};
     const b64 = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
-    async function deriveKey(password) {{
+
+    function detect() {{
+      const ua = navigator.userAgent || '';
+      if (/iPad|Android(?!.*Mobile)|Tablet/i.test(ua)) return 'desktop';
+      if (/iPhone|iPod|Android.*Mobile|Windows Phone|HarmonyOS/i.test(ua)) return 'mobile';
+      const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      const narrow = Math.min(window.innerWidth, window.innerHeight) <= 520;
+      if (coarse && narrow) return 'mobile';
+      return window.innerWidth <= 768 ? 'mobile' : 'desktop';
+    }}
+    function resolveView() {{
+      const q = (location.search.match(/[?&]view=(mobile|desktop)/i) || [])[1];
+      if (q) {{ try {{ localStorage.setItem(VIEW_KEY, q.toLowerCase()); }} catch (e) {{}} return q.toLowerCase(); }}
+      let saved = null;
+      try {{ saved = localStorage.getItem(VIEW_KEY); }} catch (e) {{}}
+      return (saved === 'mobile' || saved === 'desktop') ? saved : detect();
+    }}
+
+    let VIEW = resolveView();
+    const AUTO = detect();
+    let KEYS = {{}};   // 每份密文的 salt 不同,派生出的 key 分开缓存
+    let PASSWORD = null;
+    $('term').textContent = VIEW === 'mobile' ? '手机版' : '电脑版';
+
+    async function deriveKey(password, p) {{
       const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
-      return crypto.subtle.deriveKey({{name:'PBKDF2', salt:b64(PAYLOAD.salt), iterations:PAYLOAD.iterations, hash:'SHA-256'}}, base, {{name:'AES-GCM', length:256}}, false, ['decrypt']);
+      return crypto.subtle.deriveKey({{name:'PBKDF2', salt:b64(p.salt), iterations:p.iterations, hash:'SHA-256'}}, base, {{name:'AES-GCM', length:256}}, false, ['decrypt']);
     }}
     async function ungzip(bytes) {{
       if (!('DecompressionStream' in window)) {{
@@ -290,6 +323,29 @@ def protected_shell_html(latest_dashboard: Path, payload: dict) -> str:
       const buf = await new Response(stream).arrayBuffer();
       return new TextDecoder('utf-8').decode(buf);
     }}
+    async function decryptView(view, password) {{
+      const p = PAYLOADS[view];
+      if (!KEYS[view]) KEYS[view] = await deriveKey(password, p);
+      const plain = await crypto.subtle.decrypt({{name:'AES-GCM', iv:b64(p.iv)}}, KEYS[view], b64(p.ciphertext));
+      return ungzip(new Uint8Array(plain));
+    }}
+    function showFlip() {{
+      // 判断可能不合适时才给手动开关:被覆盖过,或窗口很宽却在手机版
+      if (VIEW !== AUTO || window.innerWidth > 900) {{
+        flip.textContent = VIEW === 'mobile' ? '切换到电脑版' : '切换到手机版';
+        flip.style.display = 'block';
+      }} else {{
+        flip.style.display = 'none';
+      }}
+    }}
+    async function render(view) {{
+      const html = await decryptView(view, PASSWORD);
+      $('viewer').srcdoc = html;
+      $('viewer').style.display = 'block';
+      $('gate').style.display = 'none';
+      VIEW = view;
+      showFlip();
+    }}
     async function unlock() {{
       const password = $('password').value;
       if (!password) {{ msg('请输入密码。', 'err'); return; }}
@@ -297,17 +353,12 @@ def protected_shell_html(latest_dashboard: Path, payload: dict) -> str:
       const t0 = performance.now();
       try {{
         msg('正在解密看板...', '');
-        const key = await deriveKey(password);
-        const plain = await crypto.subtle.decrypt({{name:'AES-GCM', iv:b64(PAYLOAD.iv)}}, key, b64(PAYLOAD.ciphertext));
-        const html = await ungzip(new Uint8Array(plain));
-        const elapsed = Math.round(performance.now() - t0);
-        msg('解锁成功,正在打开看板... ' + elapsed + 'ms', 'ok');
-        const viewer = $('viewer');
-        viewer.srcdoc = html;
-        viewer.style.display = 'block';
-        $('gate').style.display = 'none';
+        PASSWORD = password;
+        await render(VIEW);
+        msg('解锁成功,正在打开看板... ' + Math.round(performance.now() - t0) + 'ms', 'ok');
       }} catch (err) {{
         console.error(err);
+        PASSWORD = null; KEYS = {{}};
         if (err && err.unsupported) {{
           msg('当前浏览器不支持解压(DecompressionStream),请使用 Chrome 80+/Edge 80+/Safari 16.4+ 或更新浏览器。', 'err');
         }} else {{
@@ -317,6 +368,14 @@ def protected_shell_html(latest_dashboard: Path, payload: dict) -> str:
         $('unlock').disabled = false;
       }}
     }}
+    const flip = $('flip');
+    flip.addEventListener('click', async () => {{
+      const next = VIEW === 'mobile' ? 'desktop' : 'mobile';
+      try {{ localStorage.setItem(VIEW_KEY, next); }} catch (e) {{}}
+      if (!PASSWORD) {{ location.replace(location.pathname + '?view=' + next); return; }}
+      flip.disabled = true;
+      try {{ await render(next); }} finally {{ flip.disabled = false; }}
+    }});
     $('unlock').addEventListener('click', unlock);
     $('password').addEventListener('keydown', e => {{ if (e.key === 'Enter') unlock(); }});
     $('password').focus();
@@ -381,12 +440,15 @@ def write_archive_index(archive_dir: Path, dashboards: list[Path]) -> None:
     (archive_dir / "index.html").write_text(html, encoding="utf-8")
 
 
-def audit_protected_site(site_dir: Path, latest_dashboard: Path) -> None:
+def audit_protected_site(
+    site_dir: Path, latest_dashboard: Path, mobile_probe: bytes | None = None
+) -> None:
     """protected 站点包泄露自检:发现明文特征立即失败,阻断发布。
 
     检查项:
     1. 站点包不含源 Excel/簿记明细等敏感文件;
     2. 站点包内任何文件都不含明文看板 HTML 的特征串(取源文件头部长片段);
+       双端模式下同时校验手机版明文特征串;
     3. manifest 中不得出现明文 HTML 文件本体。
     """
     problems: list[str] = []
@@ -410,6 +472,8 @@ def audit_protected_site(site_dir: Path, latest_dashboard: Path) -> None:
             src_probe = latest_dashboard.read_bytes()[:2048]
             if src_probe and src_probe in blob:
                 problems.append(f"疑似明文看板泄露: {p.relative_to(site_dir)}")
+            if mobile_probe and mobile_probe in blob:
+                problems.append(f"疑似明文手机版泄露: {p.relative_to(site_dir)}")
     if problems:
         raise RuntimeError("protected 站点包泄露自检失败:\n  " + "\n  ".join(problems))
     print("[site] protected 泄露自检通过: 无源 Excel/明文看板特征")
@@ -435,14 +499,25 @@ def build_site(
     SITE_STAGING_DIR.mkdir(parents=True, exist_ok=True)
 
     protected_payload = None
+    mobile_payload = None
+    mobile_probe = None
     if protected:
         if not password:
             raise RuntimeError("--protected 需要通过环境变量提供密码")
         print("[site] protected 模式: gzip(html) + AES-GCM, 不发布明文 archive")
-        protected_payload = encrypt_dashboard_html(latest_dashboard, password, iterations)
-        (SITE_STAGING_DIR / "index.html").write_text(
-            protected_shell_html(latest_dashboard, protected_payload), encoding="utf-8"
-        )
+        # 手机版明文只落在站点包之外的临时目录,用完即删——泄露自检与站点包都不会碰到它
+        mobile_tmp = Path(tempfile.mkdtemp(prefix="abs_mobile_"))
+        try:
+            mobile_path = build_mobile_html(latest_dashboard, mobile_tmp / "mobile.html")
+            protected_payload = encrypt_dashboard_html(latest_dashboard, password, iterations)
+            mobile_payload = encrypt_dashboard_html(mobile_path, password, iterations)
+            (SITE_STAGING_DIR / "index.html").write_text(
+                protected_shell_html(latest_dashboard, protected_payload, mobile_payload),
+                encoding="utf-8",
+            )
+            mobile_probe = mobile_path.read_bytes()[:2048]
+        finally:
+            shutil.rmtree(mobile_tmp, ignore_errors=True)
     else:
         archive_dir = SITE_STAGING_DIR / "archive"
         archive_dir.mkdir(parents=True, exist_ok=True)
@@ -454,7 +529,7 @@ def build_site(
     (SITE_STAGING_DIR / ".nojekyll").write_text("", encoding="utf-8")
 
     if protected:
-        audit_protected_site(SITE_STAGING_DIR, latest_dashboard)
+        audit_protected_site(SITE_STAGING_DIR, latest_dashboard, mobile_probe)
 
     # Keep the site package deterministic for the same dashboard HTML.
     # Otherwise every dry run changes manifest/README timestamps and creates noisy gh-pages commits.
@@ -476,6 +551,8 @@ def build_site(
             "gzipBytes": protected_payload["gzipBytes"],
             "cipherBytes": protected_payload["cipherBytes"],
         }
+        if mobile_payload:
+            manifest["encryption"]["mobileCipherBytes"] = mobile_payload["cipherBytes"]
     (SITE_STAGING_DIR / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
     archive_line = "- 历史归档：已下线（protected 模式不发布明文历史版本）" if protected else "- 历史归档：`archive/index.html`"
