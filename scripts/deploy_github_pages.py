@@ -250,12 +250,39 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow">
   <title>ABS 综合看板 · 访问验证</title>
+  <script>
+    // 终端检测提前到 <head>：不依赖下方的大 PAYLOAD,页面一加载立即识别,避免"识别中…"长时间停留
+    (function(){{
+      window.__absDetectedView = null;
+      try {{
+        const ua = navigator.userAgent || '';
+        let v = 'desktop';
+        if (/iPad|Android(?!.*Mobile)|Tablet/i.test(ua)) v = 'desktop';
+        else if (/iPhone|iPod|Android.*Mobile|Windows Phone|HarmonyOS/i.test(ua)) v = 'mobile';
+        else {{
+          const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+          const narrow = Math.min(window.innerWidth, window.innerHeight) <= 520;
+          v = (coarse && narrow) ? 'mobile' : (window.innerWidth <= 768 ? 'mobile' : 'desktop');
+        }}
+        window.__absDetectedView = v;
+      }} catch (e) {{}}
+      const fill = function(){{
+        const el = document.getElementById('term');
+        if (el) el.textContent = window.__absDetectedView === 'mobile' ? '手机版' : '电脑版';
+      }};
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fill);
+      else fill();
+    }})();
+  </script>
   <style>
-    :root{{color-scheme:light;--ink:#111827;--muted:#667085;--line:#e5e7eb;--bg:#f6f7f9;--card:#fff;--brand:#172033;--danger:#b42318;--ok:#067647;}}
+    :root{{color-scheme:light;--ink:#111827;--muted:#667085;--line:#e5e7eb;--bg:#f6f7f9;--card:#fff;--brand:#172033;--danger:#b42318;--ok:#067647;--load:#1d4ed8;}}
     *{{box-sizing:border-box}} body{{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 20% 20%,#eef4ff,transparent 30%),var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;color:var(--ink)}}
     .card{{width:min(560px,calc(100vw - 32px));background:rgba(255,255,255,.92);border:1px solid rgba(229,231,235,.9);border-radius:24px;padding:30px;box-shadow:0 24px 80px rgba(15,23,42,.12);backdrop-filter:blur(14px)}}
     .eyebrow{{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}} h1{{margin:10px 0 8px;font-size:30px;line-height:1.12}} p{{margin:0;color:var(--muted);line-height:1.7;font-size:14px}} .meta{{margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfcfe;font-size:13px;color:#475467;display:grid;gap:6px}}
     label{{display:block;margin:22px 0 8px;font-weight:700;font-size:14px}} .row{{display:flex;gap:10px}} input{{flex:1;border:1px solid #cfd4dc;border-radius:12px;padding:13px 14px;font-size:16px;outline:none}} input:focus{{border-color:#344054;box-shadow:0 0 0 4px rgba(52,64,84,.08)}} button{{border:0;border-radius:12px;background:var(--brand);color:white;font-weight:800;padding:0 18px;font-size:15px;cursor:pointer}} button:disabled{{opacity:.6;cursor:not-allowed}} .msg{{min-height:22px;margin-top:12px;font-size:14px}} .err{{color:var(--danger)}} .ok{{color:var(--ok)}} .hint{{margin-top:18px;font-size:12px;color:#98a2b3}}
+    .load{{color:var(--load);display:inline-flex;align-items:center;gap:8px;font-weight:600}}
+    .load::before{{content:"";width:14px;height:14px;border:2px solid #dbe4ff;border-top-color:var(--load);border-radius:50%;animation:abs-spin .8s linear infinite;flex:none}}
+    @keyframes abs-spin{{to{{transform:rotate(360deg)}}}}
     #viewer{{display:none;position:fixed;inset:0;border:0;width:100vw;height:100vh;background:white}}
     #flip{{display:none;position:fixed;z-index:9;right:14px;bottom:14px;padding:8px 14px;border:1px solid #d8dee8;border-radius:18px;background:rgba(255,255,255,.94);color:#1a3a5c;font:600 12px/1 'PingFang SC',Helvetica,Arial,sans-serif;box-shadow:0 4px 14px rgba(15,23,42,.12);cursor:pointer}}
   </style>
@@ -263,13 +290,13 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
 <body>
   <main class="card" id="gate">
     <div class="eyebrow">ABS Dashboard Protected</div>
-    <h1>ABS 综合看板</h1>
+    <h1>📊 ABS 综合看板</h1>
     <p>请输入访问密码。看板数据已在发布前加密,密码只在本机浏览器中用于解密,不会发送到服务器。</p>
     <div class="meta">
       <div><strong>版本</strong>：{latest_date}</div>
       <div><strong>来源</strong>：{latest_name}</div>
       <div><strong>加密</strong>：PBKDF2-SHA256 / AES-GCM / gzip</div>
-      <div><strong>终端</strong>：<span id="term">识别中…</span></div>
+      <div><strong>终端</strong>：<span id="term"><span class="load">识别中</span></span></div>
     </div>
     <label for="password">访问密码</label>
     <div class="row"><input id="password" type="password" autocomplete="current-password" placeholder="输入密码后按 Enter"><button id="unlock">解锁</button></div>
@@ -282,10 +309,15 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
     const PAYLOADS = {{ desktop: {payload_json}, mobile: {mobile_json} }};
     const VIEW_KEY = 'abs_dash_view';
     const $ = (id) => document.getElementById(id);
-    const msg = (text, cls='') => {{ $('msg').className = 'msg ' + cls; $('msg').textContent = text; }};
+    const msg = (text, cls='', html=false) => {{
+      const m = $('msg'); m.className = 'msg ' + cls;
+      if (html) m.innerHTML = text; else m.textContent = text;
+    }};
     const b64 = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 
     function detect() {{
+      // 优先用 <head> 里已计算的结果(页面加载即识别);异常或未执行时才回退重新计算
+      if (window.__absDetectedView === 'mobile' || window.__absDetectedView === 'desktop') return window.__absDetectedView;
       const ua = navigator.userAgent || '';
       if (/iPad|Android(?!.*Mobile)|Tablet/i.test(ua)) return 'desktop';
       if (/iPhone|iPod|Android.*Mobile|Windows Phone|HarmonyOS/i.test(ua)) return 'mobile';
@@ -306,7 +338,8 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
     const AUTO = detect();
     let KEYS = {{}};   // 每份密文的 salt 不同,派生出的 key 分开缓存
     let PASSWORD = null;
-    $('term').textContent = VIEW === 'mobile' ? '手机版' : '电脑版';
+    // <head> 脚本已填过终端;此处兜底(仅当 VIEW 被 URL/storage 覆盖成与 AUTO 不一致时无需重填 term,term 表示当前终端类型)
+    if ($('term')) $('term').textContent = AUTO === 'mobile' ? '手机版' : '电脑版';
 
     async function deriveKey(password, p) {{
       const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
@@ -352,10 +385,10 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
       $('unlock').disabled = true;
       const t0 = performance.now();
       try {{
-        msg('正在解密看板...', '');
+        msg('<span class="load">载入中 · 解密解压约 6.6MB,请稍候</span>', '', true);
         PASSWORD = password;
         await render(VIEW);
-        msg('解锁成功,正在打开看板... ' + Math.round(performance.now() - t0) + 'ms', 'ok');
+        msg('✅ 解锁成功,正在打开看板... ' + Math.round(performance.now() - t0) + 'ms', 'ok');
       }} catch (err) {{
         console.error(err);
         PASSWORD = null; KEYS = {{}};
