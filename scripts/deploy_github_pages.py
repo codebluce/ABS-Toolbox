@@ -266,12 +266,6 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
         }}
         window.__absDetectedView = v;
       }} catch (e) {{}}
-      const fill = function(){{
-        const el = document.getElementById('term');
-        if (el) el.textContent = window.__absDetectedView === 'mobile' ? '手机版' : '电脑版';
-      }};
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fill);
-      else fill();
     }})();
   </script>
   <style>
@@ -297,6 +291,7 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
       <div><strong>来源</strong>：{latest_name}</div>
       <div><strong>加密</strong>：PBKDF2-SHA256 / AES-GCM / gzip</div>
       <div><strong>终端</strong>：<span id="term"><span class="load">识别中</span></span></div>
+      <script>document.getElementById('term').textContent=window.__absDetectedView==='mobile'?'手机版':'电脑版';</script>
     </div>
     <label for="password">访问密码</label>
     <div class="row"><input id="password" type="password" autocomplete="current-password" placeholder="输入密码后按 Enter"><button id="unlock">解锁</button></div>
