@@ -140,27 +140,23 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 # 对齐机构速查/理财子分析：统一留白、白底卡片、浅蓝标题区和浅色表头。
 INST_STATS_EMBED_CSS = """
 .inst-stats-dashboard { max-width:1400px; margin:0 auto; padding:20px 20px 32px; }
-.inst-stats-card { background:#fff; border-radius:8px; overflow:hidden;
-  box-shadow:0 1px 3px rgba(0,0,0,.07); }
-.inst-stats-card-header { display:flex; justify-content:space-between; align-items:center;
-  gap:16px; padding:12px 16px 10px;
-  background:linear-gradient(135deg,#1a3a5c 0%,#0d1b2e 100%); color:#fff; }
-.inst-stats-card-title { font-size:16px; font-weight:700; letter-spacing:.5px; }
-.inst-stats-card-sub { font-size:11px; color:rgba(255,255,255,.75); font-variant-numeric:tabular-nums;
-  text-align:right; line-height:1.5; white-space:nowrap; }
-.inst-stats-embed { padding:12px; background:#fdfbf7; }
-.inst-stats-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
-.inst-stats-embed .inst-stats-block { background:#fff; border:1px solid #eaeef4; border-radius:6px;
-  padding:12px; min-width:0; }
-.inst-stats-embed .inst-stats-block--custodian { grid-column:1 / -1; }
-.inst-stats-embed .inst-stats-block-title { font-size:13px; font-weight:700;
-  color:#1a3a5c; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+.inst-stats-embed { padding:0; background:transparent; }
+
+.inst-stats-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
+/* 三表均为独立卡片；各自沿用原机构统计的管理人/销售/托管配色。 */
+.inst-stats-embed .inst-stats-block { background:#fff; border-radius:8px; overflow:hidden;
+  min-width:0; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.inst-stats-embed .inst-stats-block--custodian { grid-column:auto; }
+.inst-stats-embed .inst-stats-block-title { font-size:14px; font-weight:700; color:#fff;
+  padding:11px 12px 10px; margin:0; display:flex; align-items:center; gap:8px; }
 .inst-stats-embed .inst-stats-block-meta { font-size:10px; font-weight:400;
-  color:#6b7a95; margin-left:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.inst-stats-embed .inst-stats-block-title::before { content:''; width:3px; height:14px;
-  background:#2563a8; border-radius:2px; flex:none; }
-.inst-stats-embed .inst-stats-table-wrap { max-height:320px; overflow:auto;
-  border:1px solid #e1e8f0; border-radius:5px; }
+  color:rgba(255,255,255,.75); margin-left:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.inst-stats-embed .inst-stats-summary { margin-left:auto; font-size:10px; font-weight:400;
+  color:rgba(255,255,255,.78); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.inst-stats-embed .inst-stats-block--manager .inst-stats-block-title { background:linear-gradient(135deg,#0d1b2e,#1a3a5c); }
+.inst-stats-embed .inst-stats-block--sales .inst-stats-block-title { background:linear-gradient(135deg,#1c3a2a,#2d7a4f); }
+.inst-stats-embed .inst-stats-block--custodian .inst-stats-block-title { background:linear-gradient(135deg,#3a2010,#c05a20); }
+.inst-stats-embed .inst-stats-table-wrap { max-height:320px; overflow:auto; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table { font-size:12px; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table.cols-5 thead th,
 .inst-stats-embed .inst-stats-table-wrap .stat-table.cols-5 thead th.col-name,
@@ -187,7 +183,7 @@ INST_STATS_EMBED_CSS = """
   border-bottom:1px solid #e9ecef; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.name { text-align:center; padding-left:8px;
   color:#0d1b2e; font-weight:500; }
-.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.cnt,
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.cnt { text-align:center; color:#1d1d1f; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.num,
 .inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.pct { text-align:right; color:#1d1d1f; }
 @media (max-width:960px) {
@@ -196,11 +192,9 @@ INST_STATS_EMBED_CSS = """
 }
 @media (max-width:720px) {
   .inst-stats-dashboard { padding:12px 10px 24px; }
-  .inst-stats-card-header { align-items:flex-start; flex-direction:column; gap:3px; }
-  .inst-stats-card-sub { text-align:left; white-space:normal; }
-  .inst-stats-embed { padding:10px; }
   .inst-stats-embed .inst-stats-block { padding:10px; }
   .inst-stats-embed .inst-stats-block-meta { display:block; margin:4px 0 0; }
+  .inst-stats-embed .inst-stats-summary { white-space:normal; text-align:right; }
   .inst-stats-embed .inst-stats-table-wrap { max-height:300px; }
   .inst-stats-embed .inst-stats-table-wrap .stat-table { min-width:620px; }
 }
@@ -837,9 +831,10 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename):
     date_min = meta['date_min']
     date_max = meta['date_max']
 
-    def _block(title, subtitle, table_html, anchor_id, extra_class=''):
+    def _block(title, subtitle, table_html, anchor_id, extra_class='', summary=''):
+        summary_html = f'<span class="inst-stats-summary">{summary}</span>' if summary else ''
         return f'''<div class="inst-stats-block {extra_class}" id="{anchor_id}">
-  <div class="inst-stats-block-title">{title}<span class="inst-stats-block-meta">{subtitle}</span></div>
+  <div class="inst-stats-block-title">{title}<span class="inst-stats-block-meta">{subtitle}</span>{summary_html}</div>
   <div class="inst-stats-table-wrap">{table_html}</div>
 </div>'''
 
@@ -865,21 +860,16 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename):
     cust_table = _extract_table(cust_section)
 
     blocks = '\n'.join([
-        _block('管理人统计', f'{len(mgr)}家券商', mgr_table, 'stats-manager'),
-        _block('销售机构统计', f'{len(sales)}家券商', sales_table, 'stats-sales'),
+        _block('管理人统计', f'{len(mgr)}家券商', mgr_table, 'stats-manager', 'inst-stats-block--manager',
+               f'{date_min} ~ {date_max} · {project_count}个项目 · {total_scale:.2f}亿'),
+        _block('销售机构统计', f'{len(sales)}家券商', sales_table, 'stats-sales', 'inst-stats-block--sales'),
         _block('托管行统计', f'{len(custody)}家银行', cust_table, 'stats-custodian', 'inst-stats-block--custodian'),
     ])
 
     return f'''<div class="inst-stats-dashboard">
-  <div class="inst-stats-card">
-    <div class="inst-stats-card-header">
-      <span class="inst-stats-card-title">机构统计</span>
-      <span class="inst-stats-card-sub">{date_min} ~ {date_max} · {project_count}个项目 · {total_scale:.2f}亿</span>
-    </div>
-    <div class="inst-stats-embed">
-      <div class="inst-stats-grid">
+  <div class="inst-stats-embed">
+    <div class="inst-stats-grid">
 {blocks}
-      </div>
     </div>
   </div>
 </div>'''
