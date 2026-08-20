@@ -28,20 +28,14 @@ import gen_pricing_insight
 import gen_institution_profile
 import gen_institution_stats
 import peer_issuance_panel
+# 总授信额度监控模块必须在 lab 路径加入前导入，避免误加载旧实验版。
+import fig8_credit_total_panel
 
-# 机构画像模块(lab 实验转正:fig7_wlz_panel 调 fig4_new + fig5 同步台账)
-# 消金资产/同业发行已从 lab 转正到 scripts/,与上方顶层导入共用
+# 消金资产模块仍位于 lab 目录。
 LAB_DIR = SCRIPT_DIR / 'lab'
 if str(LAB_DIR) not in sys.path:
     sys.path.insert(0, str(LAB_DIR))
-import fig7_wlz_panel
 import consumer_asset_panel
-
-# 非标额度监控模块
-import fig6_credit_panel
-
-# 总授信额度监控模块
-import fig8_credit_total_panel
 
 
 # ── 综合看板的 Tab 框架 CSS（独立于 4 份原始 CSS）──────────────
@@ -155,7 +149,7 @@ def build_integrated_html(panels, all_css):
 
     top tab 按实际 panels 动态推导（固定顺序），无 panel 的模块不渲染一级 Tab:
       机构画像 / 投资台账 / 资产大盘(可选) / 发行定价 / 同业发行(可选)
-    机构画像 > 机构速查 + 理财子分析 + 非标额度 + 授信总额度
+    机构画像 > 机构速查 + 机构统计 + 授信总额度
     投资台账 > 按年份子 Tab (各自独立筛选状态，多维筛选 + 分组/透视/明细 + 导出 CSV)
               智能问答悬浮球语料覆盖全部年份，不受当前激活子 Tab 限制
     """
@@ -182,7 +176,7 @@ def build_integrated_html(panels, all_css):
         for m, sub, body in module_panels:
             # 从 body 提取子 Tab 显示名（用 section-title 或 banner-title）
             if module == 'progress':
-                sub_label_map = {'quick': '机构速查', 'inst_stats': '机构统计', 'wlz': '理财子分析', 'credit': '非标额度', 'credit_total': '授信总额度'}
+                sub_label_map = {'quick': '机构速查', 'inst_stats': '机构统计', 'credit_total': '授信总额度'}
                 sub_label = sub_label_map.get(sub, sub)
             elif module == 'asset_overview':
                 sub_label_map = {'consumer_asset': '消金资产'}
@@ -361,25 +355,6 @@ def main():
             print(f'[WARN] 机构统计面板跳过: {e}')
             panels.append(('progress', 'inst_stats', '<div style="padding:40px;text-align:center;color:#9aa5b5;">机构统计数据暂不可用</div>'))
 
-        # 机构画像模块:理财子分析 panel(fig4 矩阵 + fig5 画像 并排,同步最新台账)
-        print('\n[3/4] 生成机构画像 > 理财子分析 panel...')
-        try:
-            wlz_body = fig7_wlz_panel.render_wlz_panel(regenerate=True, preprocessed_path=shared_tmp)
-            panels.append(('progress', 'wlz', wlz_body))
-        except Exception as e:
-            print(f'[WARN] 理财子分析面板跳过: {e}')
-            panels.append(('progress', 'wlz', '<div style="padding:40px;text-align:center;color:#9aa5b5;">理财子分析数据暂不可用</div>'))
-
-        # 机构画像模块:非标额度 panel
-        print('\n[3.5/4] 生成机构画像 > 非标额度 panel...')
-        try:
-            credit_body = fig6_credit_panel.render_credit_panel(
-                ledger_path=xlsx_path, preprocessed_path=shared_tmp)
-            panels.append(('progress', 'credit', credit_body))
-        except Exception as e:
-            print(f'[WARN] 非标额度面板跳过: {e}')
-            panels.append(('progress', 'credit', '<div style="padding:40px;text-align:center;color:#9aa5b5;">非标额度数据暂不可用</div>'))
-
         # 资产大盘模块:消金资产 panel（显式传入双源时严格生成，失败即阻断）
         if consumer_asset_enabled:
             print('\n[3.55/4] 生成资产大盘 > 消金资产 panel...')
@@ -433,7 +408,6 @@ def main():
         gen_institution_stats.INST_STATS_EMBED_CSS,
         consumer_asset_panel.CONSUMER_ASSET_CSS,
         peer_issuance_panel.PEER_ISSUANCE_COMPONENT_CSS,
-        fig6_credit_panel.CREDIT_CSS,
         fig8_credit_total_panel.CREDIT_TOTAL_CSS,
         gen_investment_ledger.LEDGER_CSS,
     ])
@@ -449,7 +423,7 @@ def main():
     # 结构 QC(硬阻断):失败即删除临时产物并以非零退出,绝不覆盖上一版、绝不让异常页面进入发布链路
     with open(tmp_out, 'r', encoding='utf-8') as f:
         content = f.read()
-    expected_panel_count = 9 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled)  # 机构画像5 + 资产大盘可选1 + 发行定价4 + 同业发行可选1 + 各年份投资台账
+    expected_panel_count = 7 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled)  # 机构画像3 + 资产大盘可选1 + 发行定价4 + 同业发行可选1 + 各年份投资台账
     problems = verify_integrated_html(content, expected_panel_count)
     ledger_years_str = '+'.join(sorted(led_data['by_year'].keys(), reverse=True))
     if not problems:
@@ -460,7 +434,7 @@ def main():
         asset_overview_count = int(consumer_asset_enabled)
         peer_issuance_count = int(peer_issuance_enabled)
         panel_count_ok = content.count('<div class="panel"')
-        print(f'[QC] 综合看板结构检查通过：{panel_count_ok} 个 panel(机构画像5 + 投资台账[{ledger_years_str}] + 资产大盘{asset_overview_count} + 发行定价4 + 同业发行{peer_issuance_count}) + Tab 切换 JS 齐全')
+        print(f'[QC] 综合看板结构检查通过：{panel_count_ok} 个 panel(机构画像3 + 投资台账[{ledger_years_str}] + 资产大盘{asset_overview_count} + 发行定价4 + 同业发行{peer_issuance_count}) + Tab 切换 JS 齐全')
     else:
         print(f'[QC FAILED] 综合看板结构异常: {"; ".join(problems)}')
         try:
