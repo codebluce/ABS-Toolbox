@@ -137,26 +137,59 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 """
 
 # 嵌入综合看板「机构画像」子面板专用样式（不影响独立看板）
-# 特点：无 page-banner/note-bar/footer 全局样式，三表共享 section 容器，
-#       每张表独立 480px 滚动 + sticky thead，表间细分隔条，顶部迷你锚点。
+# 对齐机构速查/理财子分析：统一留白、白底卡片、浅蓝标题区和浅色表头。
 INST_STATS_EMBED_CSS = """
-.inst-stats-embed { padding:16px 20px; background:#fff; }
-.inst-stats-embed .inst-stats-anchors { display:flex; gap:14px; margin-bottom:14px;
-  font-size:12px; }
-.inst-stats-embed .inst-stats-anchors a { color:#2563a8; text-decoration:none;
-  padding:3px 10px; border:1px solid #dbe4ff; border-radius:14px; background:#f6f8ff;
-  transition:background .15s ease; }
-.inst-stats-embed .inst-stats-anchors a:hover { background:#e8efff; }
-.inst-stats-embed .inst-stats-block + .inst-stats-block { margin-top:20px;
-  border-top:1px dashed #eaeef4; padding-top:16px; }
+.inst-stats-dashboard { max-width:1400px; margin:0 auto; padding:20px 20px 32px; }
+.inst-stats-card { background:#fff; border-radius:8px; overflow:hidden;
+  box-shadow:0 1px 3px rgba(0,0,0,.07); }
+.inst-stats-card-header { display:flex; justify-content:space-between; align-items:center;
+  gap:16px; padding:12px 16px 10px;
+  background:linear-gradient(135deg,#1a3a5c 0%,#0d1b2e 100%); color:#fff; }
+.inst-stats-card-title { font-size:16px; font-weight:700; letter-spacing:.5px; }
+.inst-stats-card-sub { font-size:11px; color:rgba(255,255,255,.75); font-variant-numeric:tabular-nums;
+  text-align:right; line-height:1.5; white-space:nowrap; }
+.inst-stats-embed { padding:16px; background:#fdfbf7; }
+.inst-stats-embed .inst-stats-anchors { display:flex; gap:12px; margin:0 0 14px; font-size:12px; }
+.inst-stats-embed .inst-stats-anchors a { color:#2563a8; text-decoration:none; padding:2px 0;
+  border-bottom:1px solid transparent; transition:color .15s ease,border-color .15s ease; }
+.inst-stats-embed .inst-stats-anchors a:hover { color:#1a3a5c; border-color:#2563a8; }
+.inst-stats-embed .inst-stats-block { background:#fff; border:1px solid #eaeef4; border-radius:6px;
+  padding:14px; }
+.inst-stats-embed .inst-stats-block + .inst-stats-block { margin-top:16px; }
 .inst-stats-embed .inst-stats-block-title { font-size:13px; font-weight:700;
   color:#1a3a5c; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.inst-stats-embed .inst-stats-block-meta { font-size:11px; font-weight:400;
+  color:#6b7a95; margin-left:2px; }
 .inst-stats-embed .inst-stats-block-title::before { content:''; width:3px; height:14px;
   background:#2563a8; border-radius:2px; flex:none; }
-.inst-stats-embed .inst-stats-table-wrap { max-height:480px; overflow-y:auto;
-  border-radius:6px; border:1px solid #eaeef4; }
-.inst-stats-embed .inst-stats-table-wrap .stat-table thead th { position:sticky;
-  top:0; z-index:1; }
+.inst-stats-embed .inst-stats-table-wrap { max-height:360px; overflow:auto;
+  border:1px solid #e1e8f0; border-radius:5px; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table { font-size:12px; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead { background:#f8f9fa !important; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th { position:sticky; top:0; z-index:1;
+  background:#f8f9fa !important; color:#495057; padding:10px 8px;
+  border-bottom:2px solid #dee2e6; font-size:11px; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th:first-child { text-align:left; padding-left:12px; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-num,
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-pct { text-align:right; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody tr:nth-child(even) { background:#fafbfc; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody tr:hover { background:#f8f9fa; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td { padding:8px; color:#1d1d1f;
+  border-bottom:1px solid #e9ecef; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.name { text-align:left; padding-left:12px;
+  color:#0d1b2e; font-weight:500; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.num,
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.pct { text-align:right; color:#1d1d1f; }
+@media (max-width:720px) {
+  .inst-stats-dashboard { padding:12px 10px 24px; }
+  .inst-stats-card-header { align-items:flex-start; flex-direction:column; gap:3px; }
+  .inst-stats-card-sub { text-align:left; white-space:normal; }
+  .inst-stats-embed { padding:12px; }
+  .inst-stats-embed .inst-stats-block { padding:10px; }
+  .inst-stats-embed .inst-stats-block-meta { display:block; margin:4px 0 0; }
+  .inst-stats-embed .inst-stats-table-wrap { max-height:320px; }
+  .inst-stats-embed .inst-stats-table-wrap .stat-table { min-width:650px; }
+}
 """
 
 # ═══════════════════════════════════════════════════════════════
@@ -790,10 +823,9 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename):
     date_min = meta['date_min']
     date_max = meta['date_max']
 
-    def _block(key, title, subtitle, table_html, anchor_id):
-        c = SECTION_COLORS[key]
+    def _block(title, subtitle, table_html, anchor_id):
         return f'''<div class="inst-stats-block" id="{anchor_id}">
-  <div class="inst-stats-block-title">{title}<span style="font-size:11px;font-weight:500;color:#8894a4;margin-left:6px">{subtitle}</span></div>
+  <div class="inst-stats-block-title">{title}<span class="inst-stats-block-meta">{subtitle}</span></div>
   <div class="inst-stats-table-wrap">{table_html}</div>
 </div>'''
 
@@ -819,23 +851,25 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename):
     cust_table = _extract_table(cust_section)
 
     blocks = '\n'.join([
-        _block('manager', '表一：管理人统计表', f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 申万宏源系合并', mgr_table, 'stats-manager'),
-        _block('sales', '表二：销售机构统计表', f'{len(sales)}家券商 · 联席承销商=销售机构 · 申万宏源系合并', sales_table, 'stats-sales'),
-        _block('custodian', '表三：托管行统计表', f'{len(custody)}家银行 · 分行归并至总行 · 同名合并', cust_table, 'stats-custodian'),
+        _block('管理人统计', f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 申万宏源系合并', mgr_table, 'stats-manager'),
+        _block('销售机构统计', f'{len(sales)}家券商 · 联席承销商=销售机构 · 申万宏源系合并', sales_table, 'stats-sales'),
+        _block('托管行统计', f'{len(custody)}家银行 · 分行归并至总行 · 同名合并', cust_table, 'stats-custodian'),
     ])
 
-    return f'''<div class="section">
-  <div class="section-header" style="background:linear-gradient(135deg,#1a3a5c,#0d1b2e)">
-    <span class="section-title">机构统计（管理人 / 销售机构 / 托管行）</span>
-    <span class="section-sub">{date_min} ~ {date_max} · {project_count}个 · {total_scale:.2f}亿</span>
-  </div>
-  <div class="inst-stats-embed">
-    <div class="inst-stats-anchors">
-      <a href="#stats-manager">管理人</a>
-      <a href="#stats-sales">销售机构</a>
-      <a href="#stats-custodian">托管行</a>
+    return f'''<div class="inst-stats-dashboard">
+  <div class="inst-stats-card">
+    <div class="inst-stats-card-header">
+      <span class="inst-stats-card-title">机构统计</span>
+      <span class="inst-stats-card-sub">{date_min} ~ {date_max} · {project_count}个项目 · {total_scale:.2f}亿</span>
     </div>
+    <div class="inst-stats-embed">
+      <div class="inst-stats-anchors">
+        <a href="#stats-manager">管理人</a>
+        <a href="#stats-sales">销售机构</a>
+        <a href="#stats-custodian">托管行</a>
+      </div>
 {blocks}
+    </div>
   </div>
 </div>'''
 
