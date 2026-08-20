@@ -763,23 +763,57 @@ select#tenorSelect { min-width:120px; }
 }
 
 
-.inst-stats-embed { padding:16px 20px; background:#fff; }
-.inst-stats-embed .inst-stats-anchors { display:flex; gap:14px; margin-bottom:14px;
-  font-size:12px; }
-.inst-stats-embed .inst-stats-anchors a { color:#2563a8; text-decoration:none;
-  padding:3px 10px; border:1px solid #dbe4ff; border-radius:14px; background:#f6f8ff;
-  transition:background .15s ease; }
-.inst-stats-embed .inst-stats-anchors a:hover { background:#e8efff; }
-.inst-stats-embed .inst-stats-block + .inst-stats-block { margin-top:20px;
-  border-top:1px dashed #eaeef4; padding-top:16px; }
+.inst-stats-dashboard { max-width:1400px; margin:0 auto; padding:20px 20px 32px; }
+.inst-stats-card { background:#fff; border-radius:8px; overflow:hidden;
+  box-shadow:0 1px 3px rgba(0,0,0,.07); }
+.inst-stats-card-header { display:flex; justify-content:space-between; align-items:center;
+  gap:16px; padding:12px 16px 10px;
+  background:linear-gradient(135deg,#1a3a5c 0%,#0d1b2e 100%); color:#fff; }
+.inst-stats-card-title { font-size:16px; font-weight:700; letter-spacing:.5px; }
+.inst-stats-card-sub { font-size:11px; color:rgba(255,255,255,.75); font-variant-numeric:tabular-nums;
+  text-align:right; line-height:1.5; white-space:nowrap; }
+.inst-stats-embed { padding:16px; background:#fdfbf7; }
+.inst-stats-embed .inst-stats-anchors { display:flex; gap:12px; margin:0 0 14px; font-size:12px; }
+.inst-stats-embed .inst-stats-anchors a { color:#2563a8; text-decoration:none; padding:2px 0;
+  border-bottom:1px solid transparent; transition:color .15s ease,border-color .15s ease; }
+.inst-stats-embed .inst-stats-anchors a:hover { color:#1a3a5c; border-color:#2563a8; }
+.inst-stats-embed .inst-stats-block { background:#fff; border:1px solid #eaeef4; border-radius:6px;
+  padding:14px; }
+.inst-stats-embed .inst-stats-block + .inst-stats-block { margin-top:16px; }
 .inst-stats-embed .inst-stats-block-title { font-size:13px; font-weight:700;
   color:#1a3a5c; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.inst-stats-embed .inst-stats-block-meta { font-size:11px; font-weight:400;
+  color:#6b7a95; margin-left:2px; }
 .inst-stats-embed .inst-stats-block-title::before { content:''; width:3px; height:14px;
   background:#2563a8; border-radius:2px; flex:none; }
-.inst-stats-embed .inst-stats-table-wrap { max-height:480px; overflow-y:auto;
-  border-radius:6px; border:1px solid #eaeef4; }
-.inst-stats-embed .inst-stats-table-wrap .stat-table thead th { position:sticky;
-  top:0; z-index:1; }
+.inst-stats-embed .inst-stats-table-wrap { max-height:360px; overflow:auto;
+  border:1px solid #e1e8f0; border-radius:5px; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table { font-size:12px; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead { background:#f8f9fa !important; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th { position:sticky; top:0; z-index:1;
+  background:#f8f9fa !important; color:#495057; padding:10px 8px;
+  border-bottom:2px solid #dee2e6; font-size:11px; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th:first-child { text-align:left; padding-left:12px; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-num,
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-pct { text-align:right; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody tr:nth-child(even) { background:#fafbfc; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody tr:hover { background:#f8f9fa; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td { padding:8px; color:#1d1d1f;
+  border-bottom:1px solid #e9ecef; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.name { text-align:left; padding-left:12px;
+  color:#0d1b2e; font-weight:500; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.num,
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.pct { text-align:right; color:#1d1d1f; }
+@media (max-width:720px) {
+  .inst-stats-dashboard { padding:12px 10px 24px; }
+  .inst-stats-card-header { align-items:flex-start; flex-direction:column; gap:3px; }
+  .inst-stats-card-sub { text-align:left; white-space:normal; }
+  .inst-stats-embed { padding:12px; }
+  .inst-stats-embed .inst-stats-block { padding:10px; }
+  .inst-stats-embed .inst-stats-block-meta { display:block; margin:4px 0 0; }
+  .inst-stats-embed .inst-stats-table-wrap { max-height:320px; }
+  .inst-stats-embed .inst-stats-table-wrap .stat-table { min-width:650px; }
+}
 
 
 .consumer-asset-root{--ink:#0d1b2e;--paper:#FDFBF7;--muted:#666;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#0b0b0b;background:#f4f5f7;min-height:100vh;padding:24px;box-sizing:border-box}.consumer-asset-shell{max-width:1420px;margin:auto}.consumer-asset-hero{background:linear-gradient(135deg,#1a3a5c,#0d1b2e);color:#fff;padding:24px 28px;border-radius:10px 10px 0 0}.consumer-asset-hero h1{margin:0;font-size:25px}.consumer-asset-hero p{margin:7px 0 0;color:#dce7f2;font-size:13px}.consumer-asset-date-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.consumer-asset-date{background:rgba(255,255,255,.13);padding:7px 10px;border-radius:5px;font-size:12px}.consumer-asset-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}.consumer-asset-kpi,.consumer-asset-section{background:var(--paper);border:1px solid rgba(11,11,11,.1);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.05)}.consumer-asset-kpi{padding:17px}.consumer-asset-kpi p{color:#52514e;font-size:13px;margin:0 0 8px}.consumer-asset-kpi strong{font-size:27px;line-height:1;font-variant-numeric:tabular-nums}.consumer-asset-kpi em{font-style:normal;font-size:13px;margin-left:4px;font-weight:500}.consumer-asset-kpi small{display:block;color:#777;margin-top:8px;font-size:11px}.consumer-asset-delta{display:block;font-size:12px;margin-top:9px;font-weight:600}.consumer-asset-delta.up{color:#006300}.consumer-asset-delta.down{color:#d03b3b}.consumer-asset-delta.flat{color:#52514e}.consumer-asset-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}.consumer-asset-section{padding:18px;margin-bottom:16px;min-width:0}.consumer-asset-section h2{font-size:16px;color:var(--ink);margin:0 0 4px}.consumer-asset-section h3{font-size:15px;color:#52514e;margin:16px 0 7px}.consumer-asset-section h3 + .consumer-asset-bar-row{margin-top:7px}.consumer-asset-bar-row + h3{margin-top:32px}.consumer-asset-section>p{margin:0 0 15px;font-size:12px;color:var(--muted)}.consumer-asset-bar-row{display:grid;grid-template-columns:92px 1fr 182px;gap:10px;align-items:center;margin:11px 0}.consumer-asset-label{font-size:13px;font-weight:600;color:#52514e}.consumer-asset-track{height:11px;border-radius:7px;background:#edf0f2;overflow:hidden}.consumer-asset-track span{height:100%;display:block;border-radius:7px;min-width:2px}.consumer-asset-value{display:flex;flex-direction:column;align-items:flex-end;font-size:14px;line-height:1.12;text-align:right;font-variant-numeric:tabular-nums}.consumer-asset-value small{font-size:10px;line-height:1.15;margin-top:1px}.consumer-asset-foot{font-size:12px;line-height:1.4;color:#52514e}.consumer-asset-foot p{margin:2px 0}.consumer-asset-foot h2{margin-bottom:5px}@media(max-width:900px){.consumer-asset-kpis,.consumer-asset-grid{grid-template-columns:1fr 1fr}}@media(max-width:620px){.consumer-asset-root{padding:12px}.consumer-asset-kpis,.consumer-asset-grid{grid-template-columns:1fr}.consumer-asset-bar-row{grid-template-columns:76px 1fr 125px}.consumer-asset-hero{padding:20px}}
@@ -1846,29 +1880,31 @@ setTimeout(progInit, 100);
 </script>
       </div>
       <div class="panel" data-module="progress" data-sub="inst_stats">
-<div class="section">
-  <div class="section-header" style="background:linear-gradient(135deg,#1a3a5c,#0d1b2e)">
-    <span class="section-title">机构统计（管理人 / 销售机构 / 托管行）</span>
-    <span class="section-sub">2026-01-08 ~ 2026-08-13 · 130个 · 1270.76亿</span>
-  </div>
-  <div class="inst-stats-embed">
-    <div class="inst-stats-anchors">
-      <a href="#stats-manager">管理人</a>
-      <a href="#stats-sales">销售机构</a>
-      <a href="#stats-custodian">托管行</a>
+<div class="inst-stats-dashboard">
+  <div class="inst-stats-card">
+    <div class="inst-stats-card-header">
+      <span class="inst-stats-card-title">机构统计</span>
+      <span class="inst-stats-card-sub">2026-01-08 ~ 2026-08-13 · 130个项目 · 1270.76亿</span>
     </div>
+    <div class="inst-stats-embed">
+      <div class="inst-stats-anchors">
+        <a href="#stats-manager">管理人</a>
+        <a href="#stats-sales">销售机构</a>
+        <a href="#stats-custodian">托管行</a>
+      </div>
 <div class="inst-stats-block" id="stats-manager">
-  <div class="inst-stats-block-title">表一：管理人统计表<span style="font-size:11px;font-weight:500;color:#8894a4;margin-left:6px">15家券商 · 剔除信托/银行/保险 · 申万宏源系合并</span></div>
+  <div class="inst-stats-block-title">管理人统计<span class="inst-stats-block-meta">15家券商 · 剔除信托/银行/保险 · 申万宏源系合并</span></div>
   <div class="inst-stats-table-wrap"><table class="stat-table cols-5"><thead style="background:#0d1b2e"><tr><th class="col-name">机构名称</th><th class="col-cnt">管理项目数</th><th class="col-num">管理规模(亿)</th><th class="col-pct">规模占比</th><th class="col-num">投行认购规模(亿)</th></tr></thead><tbody><tr><td class="name">招商证券</td><td class="cnt">14</td><td class="num">137.35</td><td class="pct">10.81%</td><td class="num">1.25</td></tr><tr><td class="name">中信证券</td><td class="cnt">14</td><td class="num">128.60</td><td class="pct">10.12%</td><td class="num">3.08</td></tr><tr><td class="name">国泰海通</td><td class="cnt">14</td><td class="num">128.36</td><td class="pct">10.10%</td><td class="num">4.12</td></tr><tr><td class="name">中信建投</td><td class="cnt">11</td><td class="num">117.45</td><td class="pct">9.24%</td><td class="num">2.15</td></tr><tr><td class="name">财通资管</td><td class="cnt">10</td><td class="num">109.00</td><td class="pct">8.58%</td><td class="num">0.00</td></tr><tr><td class="name">华泰资管</td><td class="cnt">11</td><td class="num">103.00</td><td class="pct">8.11%</td><td class="num">0.00</td></tr><tr><td class="name">兴业证券</td><td class="cnt">5</td><td class="num">50.00</td><td class="pct">3.93%</td><td class="num">0.75</td></tr><tr><td class="name">首创证券</td><td class="cnt">4</td><td class="num">40.00</td><td class="pct">3.15%</td><td class="num">0.03</td></tr><tr><td class="name">申万宏源</td><td class="cnt">4</td><td class="num">35.00</td><td class="pct">2.75%</td><td class="num">0.04</td></tr><tr><td class="name">国投证券</td><td class="cnt">3</td><td class="num">30.00</td><td class="pct">2.36%</td><td class="num">0.00</td></tr><tr><td class="name">天风证券</td><td class="cnt">1</td><td class="num">15.00</td><td class="pct">1.18%</td><td class="num">0.00</td></tr><tr><td class="name">光大证券</td><td class="cnt">1</td><td class="num">10.00</td><td class="pct">0.79%</td><td class="num">1.85</td></tr><tr><td class="name">国信证券</td><td class="cnt">1</td><td class="num">10.00</td><td class="pct">0.79%</td><td class="num">1.93</td></tr><tr><td class="name">天风资管</td><td class="cnt">1</td><td class="num">10.00</td><td class="pct">0.79%</td><td class="num">0.00</td></tr><tr><td class="name">国证资管</td><td class="cnt">1</td><td class="num">5.00</td><td class="pct">0.39%</td><td class="num">0.00</td></tr></tbody></table></div>
 </div>
 <div class="inst-stats-block" id="stats-sales">
-  <div class="inst-stats-block-title">表二：销售机构统计表<span style="font-size:11px;font-weight:500;color:#8894a4;margin-left:6px">19家券商 · 联席承销商=销售机构 · 申万宏源系合并</span></div>
+  <div class="inst-stats-block-title">销售机构统计<span class="inst-stats-block-meta">19家券商 · 联席承销商=销售机构 · 申万宏源系合并</span></div>
   <div class="inst-stats-table-wrap"><table class="stat-table cols-5"><thead style="background:#1c3a2a"><tr><th class="col-name">机构名称</th><th class="col-cnt">销售项目数</th><th class="col-num">参与项目规模(亿)</th><th class="col-pct">规模占比</th><th class="col-num">投行认购规模(亿)</th></tr></thead><tbody><tr><td class="name">中信证券</td><td class="cnt">14</td><td class="num">143.75</td><td class="pct">11.31%</td><td class="num">3.08</td></tr><tr><td class="name">光大证券</td><td class="cnt">13</td><td class="num">138.00</td><td class="pct">10.86%</td><td class="num">1.85</td></tr><tr><td class="name">国信证券</td><td class="cnt">13</td><td class="num">120.00</td><td class="pct">9.44%</td><td class="num">1.93</td></tr><tr><td class="name">国泰海通</td><td class="cnt">9</td><td class="num">99.00</td><td class="pct">7.79%</td><td class="num">4.12</td></tr><tr><td class="name">兴业证券</td><td class="cnt">10</td><td class="num">92.50</td><td class="pct">7.28%</td><td class="num">0.75</td></tr><tr><td class="name">信达证券</td><td class="cnt">8</td><td class="num">84.30</td><td class="pct">6.63%</td><td class="num">0.55</td></tr><tr><td class="name">华福证券</td><td class="cnt">8</td><td class="num">75.41</td><td class="pct">5.93%</td><td class="num">1.29</td></tr><tr><td class="name">东方证券</td><td class="cnt">6</td><td class="num">59.30</td><td class="pct">4.67%</td><td class="num">0.30</td></tr><tr><td class="name">中信建投</td><td class="cnt">6</td><td class="num">54.11</td><td class="pct">4.26%</td><td class="num">2.15</td></tr><tr><td class="name">招商证券</td><td class="cnt">5</td><td class="num">49.45</td><td class="pct">3.89%</td><td class="num">1.25</td></tr><tr><td class="name">国开证券</td><td class="cnt">5</td><td class="num">49.00</td><td class="pct">3.86%</td><td class="num">0.00</td></tr><tr><td class="name">国联证券</td><td class="cnt">4</td><td class="num">35.00</td><td class="pct">2.75%</td><td class="num">0.24</td></tr><tr><td class="name">申万宏源</td><td class="cnt">4</td><td class="num">34.30</td><td class="pct">2.70%</td><td class="num">0.04</td></tr><tr><td class="name">平安证券</td><td class="cnt">3</td><td class="num">30.00</td><td class="pct">2.36%</td><td class="num">0.15</td></tr><tr><td class="name">长城证券</td><td class="cnt">2</td><td class="num">20.00</td><td class="pct">1.57%</td><td class="num">0.00</td></tr><tr><td class="name">国金证券</td><td class="cnt">2</td><td class="num">19.30</td><td class="pct">1.52%</td><td class="num">0.00</td></tr><tr><td class="name">中泰证券</td><td class="cnt">1</td><td class="num">10.00</td><td class="pct">0.79%</td><td class="num">0.00</td></tr><tr><td class="name">首创证券</td><td class="cnt">1</td><td class="num">10.00</td><td class="pct">0.79%</td><td class="num">0.03</td></tr><tr><td class="name">财通资管</td><td class="cnt">1</td><td class="num">9.45</td><td class="pct">0.74%</td><td class="num">0.00</td></tr></tbody></table></div>
 </div>
 <div class="inst-stats-block" id="stats-custodian">
-  <div class="inst-stats-block-title">表三：托管行统计表<span style="font-size:11px;font-weight:500;color:#8894a4;margin-left:6px">22家银行 · 分行归并至总行 · 同名合并</span></div>
+  <div class="inst-stats-block-title">托管行统计<span class="inst-stats-block-meta">22家银行 · 分行归并至总行 · 同名合并</span></div>
   <div class="inst-stats-table-wrap"><table class="stat-table cols-4"><thead style="background:#3a2010"><tr><th class="col-name">机构名称</th><th class="col-cnt">托管项目数</th><th class="col-num">托管规模(亿)</th><th class="col-pct">规模占比</th></tr></thead><tbody><tr><td class="name">建设银行</td><td class="cnt">11</td><td class="num">129.00</td><td class="pct">10.15%</td></tr><tr><td class="name">江苏银行</td><td class="cnt">13</td><td class="num">115.30</td><td class="pct">9.07%</td></tr><tr><td class="name">民生银行</td><td class="cnt">10</td><td class="num">109.30</td><td class="pct">8.60%</td></tr><tr><td class="name">邮储银行</td><td class="cnt">11</td><td class="num">105.00</td><td class="pct">8.26%</td></tr><tr><td class="name">中国银行</td><td class="cnt">11</td><td class="num">96.30</td><td class="pct">7.58%</td></tr><tr><td class="name">招商银行</td><td class="cnt">10</td><td class="num">96.00</td><td class="pct">7.55%</td></tr><tr><td class="name">兴业银行</td><td class="cnt">9</td><td class="num">89.45</td><td class="pct">7.04%</td></tr><tr><td class="name">南京银行</td><td class="cnt">8</td><td class="num">85.00</td><td class="pct">6.69%</td></tr><tr><td class="name">青岛银行</td><td class="cnt">9</td><td class="num">82.50</td><td class="pct">6.49%</td></tr><tr><td class="name">光大银行</td><td class="cnt">8</td><td class="num">79.30</td><td class="pct">6.24%</td></tr><tr><td class="name">工商银行</td><td class="cnt">4</td><td class="num">45.00</td><td class="pct">3.54%</td></tr><tr><td class="name">平安银行</td><td class="cnt">4</td><td class="num">44.45</td><td class="pct">3.50%</td></tr><tr><td class="name">工银天分</td><td class="cnt">4</td><td class="num">40.00</td><td class="pct">3.15%</td></tr><tr><td class="name">交通银行</td><td class="cnt">4</td><td class="num">29.86</td><td class="pct">2.35%</td></tr><tr><td class="name">广发银行</td><td class="cnt">3</td><td class="num">26.00</td><td class="pct">2.05%</td></tr><tr><td class="name">中信银行</td><td class="cnt">3</td><td class="num">25.00</td><td class="pct">1.97%</td></tr><tr><td class="name">渤海银行</td><td class="cnt">2</td><td class="num">20.00</td><td class="pct">1.57%</td></tr><tr><td class="name">上海银行</td><td class="cnt">2</td><td class="num">14.30</td><td class="pct">1.13%</td></tr><tr><td class="name">华夏银行</td><td class="cnt">1</td><td class="num">10.00</td><td class="pct">0.79%</td></tr><tr><td class="name">北京银行</td><td class="cnt">1</td><td class="num">10.00</td><td class="pct">0.79%</td></tr><tr><td class="name">浦发银行</td><td class="cnt">1</td><td class="num">10.00</td><td class="pct">0.79%</td></tr><tr><td class="name">浙商上分</td><td class="cnt">1</td><td class="num">9.00</td><td class="pct">0.71%</td></tr></tbody></table></div>
 </div>
+    </div>
   </div>
 </div>
       </div>
