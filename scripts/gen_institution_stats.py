@@ -136,6 +136,29 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 .footer { text-align:center; padding:16px 0 24px; font-size:11px; color:#9aa5b5; }
 """
 
+# 嵌入综合看板「机构画像」子面板专用样式（不影响独立看板）
+# 特点：无 page-banner/note-bar/footer 全局样式，三表共享 section 容器，
+#       每张表独立 480px 滚动 + sticky thead，表间细分隔条，顶部迷你锚点。
+INST_STATS_EMBED_CSS = """
+.inst-stats-embed { padding:16px 20px; background:#fff; }
+.inst-stats-embed .inst-stats-anchors { display:flex; gap:14px; margin-bottom:14px;
+  font-size:12px; }
+.inst-stats-embed .inst-stats-anchors a { color:#2563a8; text-decoration:none;
+  padding:3px 10px; border:1px solid #dbe4ff; border-radius:14px; background:#f6f8ff;
+  transition:background .15s ease; }
+.inst-stats-embed .inst-stats-anchors a:hover { background:#e8efff; }
+.inst-stats-embed .inst-stats-block + .inst-stats-block { margin-top:20px;
+  border-top:1px dashed #eaeef4; padding-top:16px; }
+.inst-stats-embed .inst-stats-block-title { font-size:13px; font-weight:700;
+  color:#1a3a5c; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.inst-stats-embed .inst-stats-block-title::before { content:''; width:3px; height:14px;
+  background:#2563a8; border-radius:2px; flex:none; }
+.inst-stats-embed .inst-stats-table-wrap { max-height:480px; overflow-y:auto;
+  border-radius:6px; border:1px solid #eaeef4; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th { position:sticky;
+  top:0; z-index:1; }
+"""
+
 # ═══════════════════════════════════════════════════════════════
 # §2  业务规则配置
 # ═══════════════════════════════════════════════════════════════
@@ -365,17 +388,21 @@ def internal_merge_bookkeeping(xlsx_path, detail_paths):
 # §4  数据加载
 # ═══════════════════════════════════════════════════════════════
 
-def load_data(xlsx_path, detail_paths=None):
+def load_data(xlsx_path, detail_paths=None, preprocessed_path=None):
     """读取台账（支持22列原始表或25列总表），返回原始df和去重项目df
 
     detail_paths: 簿记明细文件路径列表。若传入，且台账为22列原始表，
                   则先执行内部簿记合并，再读取统计。
+    preprocessed_path: 已预处理的共享临时文件路径（可选）。传入则跳过 preprocess，
+                  直接读该文件（对齐 abs_common.load_and_filter 的共享 tmp 协议）。
     """
     # 若提供了明细文件且台账列数不足25，先内部合并
     if detail_paths:
         xlsx_path = internal_merge_bookkeeping(xlsx_path, detail_paths)
 
-    df_raw = pd.read_excel(xlsx_path, engine='openpyxl', header=None)
+    # 共享 tmp:跳过 preprocess,由创建方统一删
+    read_path = preprocessed_path if preprocessed_path is not None else xlsx_path
+    df_raw = pd.read_excel(read_path, engine='openpyxl', header=None)
     n_cols = df_raw.shape[1]
     if n_cols < 22:
         raise ValueError(
@@ -688,6 +715,9 @@ def render_body(data, section_key=None):
 
     section_key=None：渲染完整 body（3 sections，独立看板用）
     section_key='manager'/'sales'/'custodian'：只渲染对应 section（综合看板用）
+    section_key='embedded'：嵌入综合看板「机构画像」子面板模式——
+        单个 section 容器 + 三表垂直堆叠（480px 滚动 + sticky thead + 锚点），
+        无 page-banner/note-bar/footer。
     """
     mgr = data['mgr']
     sales = data['sales']
@@ -699,6 +729,9 @@ def render_body(data, section_key=None):
     project_count = meta['project_count']
     date_min = meta['date_min']
     date_max = meta['date_max']
+
+    if section_key == 'embedded':
+        return _render_embedded_body(mgr, sales, custody, meta, xlsx_basename)
 
     if section_key is None:
         sections_html = '\n'.join(
@@ -746,6 +779,67 @@ def render_body(data, section_key=None):
 </div>'''
 
 
+def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename):
+    """嵌入综合看板「机构画像」子面板模式：单 section + 三表垂直堆叠。
+
+    与独立看板差异：无 page-banner/note-bar/footer，每张表 480px 滚动 + sticky thead，
+    表间细分隔条，顶部迷你锚点。
+    """
+    total_scale = meta['total_scale']
+    project_count = meta['project_count']
+    date_min = meta['date_min']
+    date_max = meta['date_max']
+
+    def _block(key, title, subtitle, table_html, anchor_id):
+        c = SECTION_COLORS[key]
+        return f'''<div class="inst-stats-block" id="{anchor_id}">
+  <div class="inst-stats-block-title">{title}<span style="font-size:11px;font-weight:500;color:#8894a4;margin-left:6px">{subtitle}</span></div>
+  <div class="inst-stats-table-wrap">{table_html}</div>
+</div>'''
+
+    # 复用 _build_section_by_key 的 table_html（剥离其外层 section/header）
+    mgr_section = _build_section_by_key('manager', mgr, sales, custody)
+    sales_section = _build_section_by_key('sales', mgr, sales, custody)
+    cust_section = _build_section_by_key('custodian', mgr, sales, custody)
+
+    # 从 build_section 输出中提取 table_html（去掉外层 <div class="section"> 和 header）
+    def _extract_table(section_html):
+        # build_section 结构: <div class="section">...<div class="section-header">...</div>\n  {table_html}\n</div>
+        # 找 </div>\n  后的内容到 </div> 前
+        marker = '</span>\n  </div>\n  '
+        idx = section_html.find(marker)
+        if idx == -1:
+            return section_html  # fallback: 原样返回
+        start = idx + len(marker)
+        end = section_html.rfind('\n</div>')
+        return section_html[start:end] if end > start else section_html
+
+    mgr_table = _extract_table(mgr_section)
+    sales_table = _extract_table(sales_section)
+    cust_table = _extract_table(cust_section)
+
+    blocks = '\n'.join([
+        _block('manager', '表一：管理人统计表', f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 申万宏源系合并', mgr_table, 'stats-manager'),
+        _block('sales', '表二：销售机构统计表', f'{len(sales)}家券商 · 联席承销商=销售机构 · 申万宏源系合并', sales_table, 'stats-sales'),
+        _block('custodian', '表三：托管行统计表', f'{len(custody)}家银行 · 分行归并至总行 · 同名合并', cust_table, 'stats-custodian'),
+    ])
+
+    return f'''<div class="section">
+  <div class="section-header" style="background:linear-gradient(135deg,#1a3a5c,#0d1b2e)">
+    <span class="section-title">机构统计（管理人 / 销售机构 / 托管行）</span>
+    <span class="section-sub">{date_min} ~ {date_max} · {project_count}个 · {total_scale:.2f}亿</span>
+  </div>
+  <div class="inst-stats-embed">
+    <div class="inst-stats-anchors">
+      <a href="#stats-manager">管理人</a>
+      <a href="#stats-sales">销售机构</a>
+      <a href="#stats-custodian">托管行</a>
+    </div>
+{blocks}
+  </div>
+</div>'''
+
+
 def render_html(data, section_key=None):
     """渲染完整 HTML 文档（含 <!DOCTYPE>/<html>/<head>）
 
@@ -779,13 +873,16 @@ def generate_html(xlsx_path, mgr, sales, custody, meta):
 # §6.5  数据计算层（供综合看板调用）
 # ═══════════════════════════════════════════════════════════════
 
-def compute_data(xlsx_path, detail_paths=None):
+def compute_data(xlsx_path, detail_paths=None, preprocessed_path=None):
     """读取台账 + 计算三表 + 跑 QC precheck，返回数据 dict
 
     供综合看板和独立看板共用。QC precheck 失败时抛 RuntimeError。
+
+    preprocessed_path: 已预处理的共享临时文件路径（可选）。传入则跳过自身 preprocess，
+        直接读该文件（对齐 abs_common.load_and_filter 的共享 tmp 协议）。
     """
     print(f'Loading: {xlsx_path}')
-    df, projects = load_data(xlsx_path, detail_paths=detail_paths)
+    df, projects = load_data(xlsx_path, detail_paths=detail_paths, preprocessed_path=preprocessed_path)
 
     total_scale = projects['规模'].sum()
     project_count = len(projects)
