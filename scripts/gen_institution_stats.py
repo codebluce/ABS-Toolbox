@@ -156,8 +156,9 @@ INST_STATS_EMBED_CSS = """
 .inst-stats-embed .inst-stats-block--manager .inst-stats-block-title { background:linear-gradient(135deg,#0d1b2e,#1a3a5c); }
 .inst-stats-embed .inst-stats-block--sales .inst-stats-block-title { background:linear-gradient(135deg,#1c3a2a,#2d7a4f); }
 .inst-stats-embed .inst-stats-block--custodian .inst-stats-block-title { background:linear-gradient(135deg,#3a2010,#c05a20); }
-.inst-stats-embed .inst-stats-table-wrap { max-height:320px; overflow:auto; }
-.inst-stats-embed .inst-stats-table-wrap .stat-table { font-size:12px; }
+.inst-stats-embed .inst-stats-table-wrap { width:100%; max-height:320px; overflow:auto; }
+/* 桌面端表格填满各自统计卡片；窄屏仅在必要时横向滚动。 */
+.inst-stats-embed .inst-stats-table-wrap .stat-table { width:100%; min-width:0; table-layout:fixed; font-size:12px; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table.cols-5 thead th,
 .inst-stats-embed .inst-stats-table-wrap .stat-table.cols-5 thead th.col-name,
 .inst-stats-embed .inst-stats-table-wrap .stat-table.cols-5 thead th.col-cnt,
