@@ -148,47 +148,61 @@ INST_STATS_EMBED_CSS = """
 .inst-stats-card-title { font-size:16px; font-weight:700; letter-spacing:.5px; }
 .inst-stats-card-sub { font-size:11px; color:rgba(255,255,255,.75); font-variant-numeric:tabular-nums;
   text-align:right; line-height:1.5; white-space:nowrap; }
-.inst-stats-embed { padding:16px; background:#fdfbf7; }
-.inst-stats-embed .inst-stats-anchors { display:flex; gap:12px; margin:0 0 14px; font-size:12px; }
-.inst-stats-embed .inst-stats-anchors a { color:#2563a8; text-decoration:none; padding:2px 0;
-  border-bottom:1px solid transparent; transition:color .15s ease,border-color .15s ease; }
-.inst-stats-embed .inst-stats-anchors a:hover { color:#1a3a5c; border-color:#2563a8; }
+.inst-stats-embed { padding:12px; background:#fdfbf7; }
+.inst-stats-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
 .inst-stats-embed .inst-stats-block { background:#fff; border:1px solid #eaeef4; border-radius:6px;
-  padding:14px; }
-.inst-stats-embed .inst-stats-block + .inst-stats-block { margin-top:16px; }
+  padding:12px; min-width:0; }
+.inst-stats-embed .inst-stats-block--custodian { grid-column:1 / -1; }
 .inst-stats-embed .inst-stats-block-title { font-size:13px; font-weight:700;
-  color:#1a3a5c; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
-.inst-stats-embed .inst-stats-block-meta { font-size:11px; font-weight:400;
-  color:#6b7a95; margin-left:2px; }
+  color:#1a3a5c; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+.inst-stats-embed .inst-stats-block-meta { font-size:10px; font-weight:400;
+  color:#6b7a95; margin-left:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .inst-stats-embed .inst-stats-block-title::before { content:''; width:3px; height:14px;
   background:#2563a8; border-radius:2px; flex:none; }
-.inst-stats-embed .inst-stats-table-wrap { max-height:360px; overflow:auto;
+.inst-stats-embed .inst-stats-table-wrap { max-height:320px; overflow:auto;
   border:1px solid #e1e8f0; border-radius:5px; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table { font-size:12px; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-5 thead th,
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-5 thead th.col-name,
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-5 thead th.col-cnt,
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-5 thead th.col-num,
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-5 thead th.col-pct { width:20%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-4 thead th,
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-4 thead th.col-name,
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-4 thead th.col-cnt,
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-4 thead th.col-num,
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-4 thead th.col-pct { width:25%; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table thead { background:#f8f9fa !important; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table thead th { position:sticky; top:0; z-index:1;
-  background:#f8f9fa !important; color:#495057; padding:10px 8px;
-  border-bottom:2px solid #dee2e6; font-size:11px; }
-.inst-stats-embed .inst-stats-table-wrap .stat-table thead th:first-child { text-align:left; padding-left:12px; }
+  background:#f8f9fa !important; color:#495057; padding:9px 8px;
+  border-bottom:2px solid #dee2e6; font-size:11px; white-space:normal; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th,
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th:first-child,
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-cnt,
 .inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-num,
-.inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-pct { text-align:right; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-pct { text-align:center; padding-left:8px; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table tbody tr:nth-child(even) { background:#fafbfc; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table tbody tr:hover { background:#f8f9fa; }
-.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td { padding:8px; color:#1d1d1f;
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td { padding:7px 8px; color:#1d1d1f;
   border-bottom:1px solid #e9ecef; }
-.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.name { text-align:left; padding-left:12px;
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.name { text-align:center; padding-left:8px;
   color:#0d1b2e; font-weight:500; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.cnt,
 .inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.num,
 .inst-stats-embed .inst-stats-table-wrap .stat-table tbody td.pct { text-align:right; color:#1d1d1f; }
+@media (max-width:960px) {
+  .inst-stats-grid { grid-template-columns:1fr; }
+  .inst-stats-embed .inst-stats-block--custodian { grid-column:auto; }
+}
 @media (max-width:720px) {
   .inst-stats-dashboard { padding:12px 10px 24px; }
   .inst-stats-card-header { align-items:flex-start; flex-direction:column; gap:3px; }
   .inst-stats-card-sub { text-align:left; white-space:normal; }
-  .inst-stats-embed { padding:12px; }
+  .inst-stats-embed { padding:10px; }
   .inst-stats-embed .inst-stats-block { padding:10px; }
   .inst-stats-embed .inst-stats-block-meta { display:block; margin:4px 0 0; }
-  .inst-stats-embed .inst-stats-table-wrap { max-height:320px; }
-  .inst-stats-embed .inst-stats-table-wrap .stat-table { min-width:650px; }
+  .inst-stats-embed .inst-stats-table-wrap { max-height:300px; }
+  .inst-stats-embed .inst-stats-table-wrap .stat-table { min-width:620px; }
 }
 """
 
@@ -823,8 +837,8 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename):
     date_min = meta['date_min']
     date_max = meta['date_max']
 
-    def _block(title, subtitle, table_html, anchor_id):
-        return f'''<div class="inst-stats-block" id="{anchor_id}">
+    def _block(title, subtitle, table_html, anchor_id, extra_class=''):
+        return f'''<div class="inst-stats-block {extra_class}" id="{anchor_id}">
   <div class="inst-stats-block-title">{title}<span class="inst-stats-block-meta">{subtitle}</span></div>
   <div class="inst-stats-table-wrap">{table_html}</div>
 </div>'''
@@ -851,9 +865,9 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename):
     cust_table = _extract_table(cust_section)
 
     blocks = '\n'.join([
-        _block('管理人统计', f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 申万宏源系合并', mgr_table, 'stats-manager'),
-        _block('销售机构统计', f'{len(sales)}家券商 · 联席承销商=销售机构 · 申万宏源系合并', sales_table, 'stats-sales'),
-        _block('托管行统计', f'{len(custody)}家银行 · 分行归并至总行 · 同名合并', cust_table, 'stats-custodian'),
+        _block('管理人统计', f'{len(mgr)}家券商', mgr_table, 'stats-manager'),
+        _block('销售机构统计', f'{len(sales)}家券商', sales_table, 'stats-sales'),
+        _block('托管行统计', f'{len(custody)}家银行', cust_table, 'stats-custodian', 'inst-stats-block--custodian'),
     ])
 
     return f'''<div class="inst-stats-dashboard">
@@ -863,12 +877,9 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename):
       <span class="inst-stats-card-sub">{date_min} ~ {date_max} · {project_count}个项目 · {total_scale:.2f}亿</span>
     </div>
     <div class="inst-stats-embed">
-      <div class="inst-stats-anchors">
-        <a href="#stats-manager">管理人</a>
-        <a href="#stats-sales">销售机构</a>
-        <a href="#stats-custodian">托管行</a>
-      </div>
+      <div class="inst-stats-grid">
 {blocks}
+      </div>
     </div>
   </div>
 </div>'''
