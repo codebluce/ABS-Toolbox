@@ -28,12 +28,12 @@ BAR_BLUE = "#2a78d6"
 ASSET_FAMILY_ORDER = ("京东系", "蚂蚁系", "网商系", "腾讯系", "微众系", "字节系", "美团系")
 UNKNOWN_ASSET_FAMILY = "未知资产"
 ASSET_FAMILY_COLORS = {
-    "京东系": "#0d1b2e",
+    "京东系": "#cf6b6b",
     "蚂蚁系": "#2a78d6",
     "网商系": "#4e9f8b",
     "腾讯系": "#7c6eb0",
     "微众系": "#c98747",
-    "字节系": "#cf6b6b",
+    "字节系": "#0d1b2e",
     "美团系": "#6f8e45",
     UNKNOWN_ASSET_FAMILY: "#98a1ad",
 }
