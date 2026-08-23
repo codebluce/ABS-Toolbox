@@ -526,6 +526,78 @@ def build_peer(html: str) -> dict | None:
     return {"groups": groups, "trust": trust, "top": top, "colors": colors}
 
 
+# ---------------------------------------------------------------- 机构统计
+
+# 电脑端「机构画像 > 机构统计」子面板:三张统计表(管理人/销售机构/托管行)
+# 垂直堆叠在 inst-stats-block 里。表头背景色即该表的主题色,沿用到手机端。
+INST_STATS_BLOCK_RE = re.compile(
+    r'<div class="inst-stats-block-title">(?P<title>[^<]+)'
+    r'<span class="inst-stats-block-meta">(?P<meta>[^<]*)</span>'
+    r'(?:<span class="inst-stats-summary">(?P<summary>[^<]*)</span>)?',
+)
+INST_STATS_TABLE_RE = re.compile(
+    r'<table class="stat-table[^"]*"><thead style="background:(?P<color>#[0-9a-fA-F]{6})">'
+    r'<tr>(?P<head>.*?)</tr></thead><tbody>(?P<rows>.*?)</tbody>',
+    re.S,
+)
+TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _cells(fragment: str, tag: str) -> list[str]:
+    return [TAG_RE.sub("", c).strip() for c in re.findall(rf"<{tag}[^>]*>(.*?)</{tag}>", fragment, re.S)]
+
+
+def build_inst_stats(html: str) -> dict | None:
+    """解析机构统计三表;面板缺失或电脑端标记"暂不可用"时返回 None。
+
+    手机端屏窄放不下 4~5 列表格,这里只抽结构化数据,由 abs_mobile_app.js
+    重排成"名称 + 规模条 + 次要指标"的卡片式列表。
+    """
+    marks = [m.start() for m in re.finditer(r'data-sub="inst_stats"', html)]
+    if not marks:
+        return None
+    start = marks[-1]
+    end = html.find('data-sub="credit_total"', start)
+    body = html[start:end if end > start else start + 200000]
+    if "暂不可用" in body[:400]:
+        # 电脑端该面板本次没生成出来,手机端如实沿用"无数据",不编造
+        return None
+    flat = re.sub(r">\s+<", "><", body)
+
+    titles = list(INST_STATS_BLOCK_RE.finditer(flat))
+    tables = list(INST_STATS_TABLE_RE.finditer(flat))
+    if not tables or len(tables) != len(titles):
+        return None
+
+    summary = ""
+    sections = []
+    for t, tb in zip(titles, tables):
+        if t.group("summary") and not summary:
+            summary = t.group("summary").strip()
+        head = _cells(tb.group("head"), "th")
+        rows = []
+        for tr in re.findall(r"<tr>(.*?)</tr>", tb.group("rows"), re.S):
+            cells = _cells(tr, "td")
+            if len(cells) != len(head):
+                continue
+            rows.append(cells)
+        if not rows:
+            return None
+        # 规模列固定是第 3 列(索引 2),用于画占比条
+        scales = [float(r[2].replace(",", "") or 0) for r in rows]
+        top = max(scales) or 1.0
+        sections.append({
+            "key": t.group("title").strip(),
+            "title": t.group("title").strip(),
+            "meta": t.group("meta").strip(),
+            "color": tb.group("color"),
+            "head": head,
+            "rows": rows,
+            "w": [round(v / top * 100, 2) for v in scales],
+        })
+    return {"summary": summary, "sections": sections}
+
+
 # ---------------------------------------------------------------- meta
 
 def build_meta(html: str, dashboard_path: Path) -> dict:
@@ -606,6 +678,11 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
         raise RuntimeError("以下面板未能从看板中解析,手机版生成中止: " + "、".join(missing))
     inject["asset"] = asset
     inject["peer"] = peer
+    # 机构统计:电脑端该子面板本身就可能生成失败(渲染成"数据暂不可用"),
+    # 这种情况手机端如实显示无数据,不阻断整份手机版生成。
+    inst_stats = build_inst_stats(html)
+    if inst_stats:
+        inject["instStats"] = inst_stats
 
     page = PAGE.format(
         prog_quick=json.dumps(prog_quick, ensure_ascii=False, separators=(",", ":")),
@@ -617,9 +694,14 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(page, encoding="utf-8")
 
+    if inst_stats:
+        stats_note = " / ".join(f"{sec['title']} {len(sec['rows'])} 行" for sec in inst_stats["sections"])
+    else:
+        stats_note = "无(电脑端该子面板未生成)"
     print(f"[mobile] 机构 {len(prog_quick)} 家 · 消金 KPI {len(asset['kpis'])} 项 · "
           f"同业集团 {len(peer['groups'])} 个 / 渠道 {len(peer['trust'])} 家 / Top {len(peer['top'])} · "
           f"配色 {len(peer['colors'])} 组(取自电脑端图例)")
+    print(f"[mobile] 机构统计: {stats_note}")
     print(f"[mobile] 产物: {out_path}  ({out_path.stat().st_size / 1024:.0f} KB)")
     return out_path
 

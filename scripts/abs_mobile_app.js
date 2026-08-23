@@ -7,7 +7,8 @@
     q: '', owner: '', cat: '', sel: null, limit: 24, openPr: {}, prAll: false,
     tab: 'progress', sub: 'quick', sheet: null,
     assetSide: 'consume', caliber: false,
-    peerView: 'overview', peerOpen: {}, peerCaliber: false
+    peerView: 'overview', peerOpen: {}, peerCaliber: false,
+    statSec: 0, statCaliber: false
   };
 
   var INJ = (typeof window !== 'undefined' && window.ABS_MOBILE_DATA) || {};
@@ -496,6 +497,71 @@
   }
 
   /* ---------- 占位 ---------- */
+  /* ---------- 机构统计(机构画像 > 机构统计) ---------- */
+  // 电脑端是 4~5 列表格,手机屏放不下,这里重排成"名称 + 规模条 + 次要指标"的列表。
+  // 规模列固定在索引 2,占比在索引 3,项目数在索引 1,第 5 列(若有)是投行认购规模。
+  function viewInstStats() {
+    var d = INJ.instStats;
+    if (!d || !d.sections || !d.sections.length) return viewSoon();
+
+    var idx = S.statSec;
+    if (idx >= d.sections.length) idx = 0;
+    var sec = d.sections[idx];
+
+    var h = '<div>' +
+      '<div style="' + STICKY + '">' +
+        '<div style="padding:0 20px; display:flex; align-items:baseline; justify-content:space-between;">' +
+          '<div style="font-size:23px; font-weight:700; color:#0d1b2e; letter-spacing:.5px;">机构画像</div>' +
+          '<div style="' + SUB + ' letter-spacing:.2px;">快照 ' + META.snapshot + '</div>' +
+        '</div>' +
+        '<div class="noscroll" style="margin-top:11px; padding:0 20px; display:flex; gap:7px; overflow-x:auto;">' +
+          pill('机构速查', false, 'sub:quick') +
+          pill('机构统计', true, 'sub:inst_stats') +
+          pill('授信总额度', false, 'sub:credit_total') +
+        '</div>' +
+        '<div class="noscroll" style="margin-top:9px; padding:0 20px; display:flex; gap:7px; overflow-x:auto;">';
+    d.sections.forEach(function (s2, i) {
+      h += pill(s2.title.replace('统计', ''), i === idx, 'stat:' + i);
+    });
+    h += '</div></div><div style="padding:2px 20px 18px;">';
+
+    if (d.summary) {
+      h += '<div style="' + CARD + ' padding:11px 13px; margin-top:4px; display:flex; align-items:center; gap:9px;">' +
+        '<span style="width:8px; height:8px; border-radius:2px; background:' + sec.color + '; flex:0 0 auto;"></span>' +
+        '<span style="' + SUB + ' line-height:1.6; font-variant-numeric:tabular-nums;">' + esc(d.summary) + '</span></div>';
+    }
+
+    h += '<div style="margin-top:12px; display:flex; align-items:baseline; justify-content:space-between;">' +
+      '<div style="' + H2 + '">' + esc(sec.title) + '</div>' +
+      '<div style="' + SUB + '">' + esc(sec.meta) + ' · 按规模排序</div></div>' +
+      '<div style="margin-top:9px; ' + CARD + ' padding:13px 14px 4px;">';
+
+    var head = sec.head || [];
+    var hasIb = head.length >= 5;
+    sec.rows.forEach(function (r, i) {
+      // 次要指标行:左=项目数,右=投行认购规模(托管行表没有该列时留空)
+      var left = esc(r[1]) + ' 个项目';
+      var right = hasIb ? ('投行认购 ' + esc(r[4]) + ' 亿') : '';
+      h += barRow(
+        '<span style="display:inline-flex; align-items:center; gap:7px;">' +
+          '<span style="' + SUB + ' font-variant-numeric:tabular-nums; min-width:16px;">' + (i + 1) + '</span>' +
+          esc(r[0]) + '</span>',
+        r[2] + ' 亿 · ' + r[3],
+        sec.w[i] + '%',
+        left, right, '#6b7a95', sec.color
+      );
+    });
+    h += '</div>';
+
+    h += caliberBox('statcaliber', S.statCaliber, [
+      '管理人统计:按计划管理人归集,仅统计券商(排除银行/信托等非券商主体)。',
+      '销售机构统计:按联席承销商拆分归集,同一项目的多家承销商各计一次,故销售项目数之和大于项目总数。',
+      '托管行统计:分行已归并至总行。',
+      '规模占比 = 该机构规模 / 全部项目总规模;横条长度按本表内最大规模等比缩放。'
+    ]);
+    return h + '</div></div>';
+  }
+
   function viewSoon() {
     return '<div style="padding:0 20px;">' +
       '<div style="padding:4px 0 0; font-size:23px; font-weight:700; color:#0d1b2e; letter-spacing:.5px;">机构画像</div>' +
@@ -503,7 +569,7 @@
         '<div style="width:56px; height:56px; margin:0 auto; border-radius:28px; background:#e7ebf2; display:flex; align-items:center; justify-content:center;">' +
           '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8a96ab" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5.4l3.4 2"></path></svg></div>' +
         '<div style="margin-top:16px; font-size:14.5px; font-weight:600; color:#4a5a75;">这个面板还没加工</div>' +
-        '<div style="margin-top:8px; font-size:12.5px; color:#9aa5b5; line-height:1.7;">机构统计 / 授信总额度 · 待加工<br>请在电脑端查看完整面板</div>' +
+        '<div style="margin-top:8px; font-size:12.5px; color:#9aa5b5; line-height:1.7;">授信总额度 · 待加工<br>请在电脑端查看完整面板</div>' +
         '<div data-act="sub:quick" style="margin:18px auto 0; max-width:180px; min-height:42px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #e4e8ee; border-radius:12px; font-size:13px; font-weight:500; color:#1a3a5c;">返回机构速查</div>' +
       '</div></div>';
   }
@@ -563,6 +629,7 @@
     if (S.tab === 'asset') return viewAsset();
     if (S.tab === 'peer') return viewPeer();
     if (S.sel) return viewDetail();
+    if (S.sub === 'inst_stats') return viewInstStats();
     if (S.sub !== 'quick') return viewSoon();
     return viewQuickList();
   }
@@ -620,6 +687,8 @@
       case 'pv': S.peerView = p[1]; S.peerOpen = {}; render(true); break;
       case 'pt': S.peerOpen[p[1]] = !S.peerOpen[p[1]]; render(true); break;
       case 'pcaliber': S.peerCaliber = !S.peerCaliber; render(true); break;
+      case 'stat': S.statSec = +p[1] || 0; render(true); break;
+      case 'statcaliber': S.statCaliber = !S.statCaliber; render(true); break;
     }
   }
 
