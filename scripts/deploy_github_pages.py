@@ -240,6 +240,7 @@ def encrypt_dashboard_html(
         "iv": base64.b64encode(iv).decode("ascii"),
         "ciphertext": base64.b64encode(cipher).decode("ascii"),
         "cipherRaw": cipher,          # 直接落盘为 p/*.bin,免去 base64 的 33% 膨胀
+        "digest": hashlib.sha256(cipher).hexdigest()[:12],   # URL 版本号,见 protected_shell_html
         "plainBytes": len(raw),
         "gzipBytes": len(compressed),
         "cipherBytes": len(cipher),
@@ -255,8 +256,18 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
         {
             "salt": payload["salt"],
             "iterations": payload["iterations"],
-            "desktop": {"iv": payload["iv"], "url": "p/d.bin", "bytes": payload["cipherBytes"]},
-            "mobile": {"iv": mobile_payload["iv"], "url": "p/m.bin", "bytes": mobile_payload["cipherBytes"]},
+            # URL 带密文摘要:每次发布密文变了 URL 就变,浏览器不可能拿旧密文
+            # 配新壳的 salt/iv(那会 AES-GCM 校验失败,表现成"密码错误")。
+            "desktop": {
+                "iv": payload["iv"],
+                "url": f"p/d.bin?v={payload['digest']}",
+                "bytes": payload["cipherBytes"],
+            },
+            "mobile": {
+                "iv": mobile_payload["iv"],
+                "url": f"p/m.bin?v={mobile_payload['digest']}",
+                "bytes": mobile_payload["cipherBytes"],
+            },
         },
         ensure_ascii=False,
         separators=(",", ":"),
@@ -354,9 +365,19 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
     const FETCHES = {{}};
     function fetchPayload(view) {{
       if (!FETCHES[view]) {{
-        FETCHES[view] = fetch(PARAMS[view].url, {{cache:'force-cache'}}).then(r => {{
+        // 不能用 cache:'force-cache':它会无视 max-age 直接吃旧缓存,
+        // 于是"新壳 + 旧密文"解密失败并被误报成密码错误。URL 已带摘要版本号,
+        // 走默认缓存策略即可——同一版密文照样命中缓存,换版则天然是新 URL。
+        FETCHES[view] = fetch(PARAMS[view].url).then(r => {{
           if (!r.ok) throw new Error('payload HTTP ' + r.status);
           return r.arrayBuffer();
+        }}).then(buf => {{
+          if (buf.byteLength !== PARAMS[view].bytes) {{
+            const e = new Error('payload size mismatch');
+            e.stale = true;
+            throw e;
+          }}
+          return buf;
         }});
       }}
       return FETCHES[view];
@@ -423,8 +444,12 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
         PASSWORD = null; KEY = null;
         if (err && err.unsupported) {{
           msg('当前浏览器不支持解压(DecompressionStream),请使用 Chrome 80+/Edge 80+/Safari 16.4+ 或更新浏览器。', 'err');
+        }} else if (err && err.stale) {{
+          // 密文体积与壳记录的不符 = 拿到了旧版本密文,不是密码问题,别误导用户
+          delete FETCHES[VIEW];
+          msg('缓存的数据版本过期,已自动重取,请再点一次解锁。', 'err');
         }} else {{
-          msg('密码错误,解密失败。', 'err');
+          msg('密码错误,解密失败。若刚更新过看板,请强制刷新页面后重试。', 'err');
         }}
       }} finally {{
         $('unlock').disabled = false;
