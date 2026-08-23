@@ -319,6 +319,8 @@ class TestRender(unittest.TestCase):
         data, _ = build_dashboard([make_record()], [make_record(date=date(2025, 4, 1), week="w25")])
         html = render_body(data)
         self.assertIn("同业发行面板", html)
+        self.assertIn("互联网金融 ABS/ABN 全市场发行动态", html)
+        self.assertNotIn("已纳入京东系资产", html)
         self.assertNotIn("<!doctype", html)
         self.assertNotIn("<script", html)
         # 顶部 KPI 卡已删除

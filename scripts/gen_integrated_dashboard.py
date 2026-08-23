@@ -154,7 +154,7 @@ def build_integrated_html(panels, all_css):
               智能问答悬浮球语料覆盖全部年份，不受当前激活子 Tab 限制
     """
     # 固定展示顺序；仅渲染实际有 panel 的模块，避免空 Tab
-    MODULE_ORDER = [('progress', '机构画像'), ('ledger', '投资台账'), ('asset_overview', '资产大盘'), ('pricing', '发行定价'), ('peer_issuance', '同业发行')]
+    MODULE_ORDER = [('peer_issuance', '同业发行'), ('progress', '机构画像'), ('ledger', '投资台账'), ('asset_overview', '资产大盘'), ('pricing', '发行定价')]
     present_modules = {p[0] for p in panels}
     MODULES = [(m, label) for m, label in MODULE_ORDER if m in present_modules]
     # 第一层 Tab 标签

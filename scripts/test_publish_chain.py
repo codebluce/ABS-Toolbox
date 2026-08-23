@@ -73,7 +73,7 @@ class DynamicTabsTest(unittest.TestCase):
             ("peer_issuance", "overview", _panel("peer_issuance", "overview")),
         ]
         tabs = self._tabs(panels)
-        self.assertEqual(tabs, ["progress", "ledger", "asset_overview", "pricing", "peer_issuance"])
+        self.assertEqual(tabs, ["peer_issuance", "progress", "ledger", "asset_overview", "pricing"])
 
     def test_every_module_has_matching_pane(self):
         panels = [
