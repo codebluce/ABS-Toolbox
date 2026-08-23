@@ -16,6 +16,7 @@ from peer_issuance_panel import (  # noqa: E402
     asset_family,
     build_dashboard,
     cluster_by_family,
+    compare_weekly_snapshot,
     is_jd,
     is_trust_channel,
     parse_rate,
@@ -113,6 +114,45 @@ class TestClusterByFamily(unittest.TestCase):
         selected = [("腾讯分付", D("50")), ("网商贷", D("100")), ("美团月付", D("80"))]
         ordered = cluster_by_family(selected)
         self.assertEqual(ordered, ["网商贷", "美团月付", "腾讯分付"])
+
+
+class TestWeeklyDrift(unittest.TestCase):
+    def test_classifies_weekly_addition_and_backfill(self):
+        previous = [make_record(product="历史产品", amount=D("10"))]
+        current = previous + [
+            make_record(product="本周产品", amount=D("20"), week="2026.8.17-2026.8.23"),
+            make_record(product="回补产品", amount=D("4.7"), week="2026.8.10-2026.8.16"),
+        ]
+        summary, qc = compare_weekly_snapshot(previous, current)
+        self.assertEqual(summary["current_week"], "2026.8.17-2026.8.23")
+        self.assertEqual(len(summary["weekly_additions"]), 1)
+        self.assertEqual(len(summary["backfills"]), 1)
+        self.assertEqual(summary["amounts"]["difference"], D("24.7"))
+        self.assertEqual(summary["amounts"]["additions"], D("24.7"))
+        self.assertIn("HISTORICAL_BACKFILL", [item["code"] for item in qc])
+        self.assertNotIn("FAIL", [item["level"] for item in qc])
+
+    def test_historical_deletion_blocks(self):
+        summary, qc = compare_weekly_snapshot([make_record(product="历史产品")], [])
+        self.assertEqual(len(summary["deletions"]), 1)
+        self.assertIn("HISTORICAL_DELETION", [item["code"] for item in qc])
+        self.assertIn("FAIL", [item["level"] for item in qc])
+
+    def test_business_revision_blocks_but_week_label_does_not(self):
+        previous = [make_record(product="历史产品", week="2026.8.10-2026.8.16")]
+        presentation_only = [make_record(product="历史产品", week=None)]
+        summary, qc = compare_weekly_snapshot(previous, presentation_only)
+        self.assertEqual(summary["modifications"], [])
+        self.assertNotIn("FAIL", [item["level"] for item in qc])
+        revised = [make_record(product="历史产品", amount=D("11"))]
+        summary, qc = compare_weekly_snapshot(previous, revised)
+        self.assertEqual(summary["modifications"][0]["changed_fields"], ["amount"])
+        self.assertIn("HISTORICAL_REVISION", [item["code"] for item in qc])
+
+    def test_duplicate_product_blocks(self):
+        duplicated = [make_record(product="重复产品"), make_record(product="重复产品", amount=D("20"))]
+        _, qc = compare_weekly_snapshot([], duplicated)
+        self.assertIn("CURRENT_DUPLICATE_KEY", [item["code"] for item in qc])
 
 
 class TestAggregation(unittest.TestCase):

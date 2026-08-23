@@ -115,10 +115,16 @@ PYTHONUTF8=1 python scripts/gen_spread_report.py \
 ### 6. 同业发行周度更新
 
 ```bash
-# 仅提供本周同业发行明细；同比自动使用受控 2025 历史基准。
+# 传入本周全量快照与上周快照：自动识别本周新增、历史回补、删除和业务修订。
+# 历史删除/业务修订/重复产品名称为 FAIL，阻断发布；历史回补保留 WARN 审计记录。
 PYTHONUTF8=1 python scripts/peer_issuance_panel.py \
   --xlsx-2026 "<本周同业发行明细.xlsx>" \
+  --compare-previous "<上周同业发行明细.xlsx>" \
   --strict-qc
+
+# `--strict-qc` 会同时将历史回补 WARN 作为人工复核门槛。
+# 正式综合看板发布可传 `--peer-issuance-previous-xlsx`：仅漂移 FAIL 自动阻断，
+# 历史回补会写入增量报告并在生成日志中提示。
 ```
 
 将同业发行合入综合看板时传入：
@@ -126,7 +132,8 @@ PYTHONUTF8=1 python scripts/peer_issuance_panel.py \
 ```bash
 PYTHONUTF8=1 python scripts/gen_integrated_dashboard.py \
   "deliverables/ledger/03_final/2026年ABS发行台账-0807-定稿.xlsx" \
-  --peer-issuance-xlsx "<本周同业发行明细.xlsx>"
+  --peer-issuance-xlsx "<本周同业发行明细.xlsx>" \
+  --peer-issuance-previous-xlsx "<上周同业发行明细.xlsx>"
 ```
 
 默认同比基准：`deliverables/dashboards/04_reference/2025年互联网金融ABS同业发行明细.xlsx`。如历史口径修订，可通过 `--xlsx-2025` 或 `--peer-issuance-baseline-xlsx` 显式覆盖。

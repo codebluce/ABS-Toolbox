@@ -64,6 +64,13 @@
 - 移植 macro-allocation-strategy 自动化编排:新增 `scripts/audit_next_action.py`(状态机)、`scripts/audit_validate.py`(产物校验)、`scripts/audit_refresh_index.py`(索引刷新),纯标准库
 - dispatch.md 增加自动化编排模式章节(主 Agent 控制平面 + 独立 subagent 角色)
 
+## Unreleased — 同业发行增量校验
+
+- 同业发行周更新增规范化快照、输入指纹、增量差异与漂移 QC：按产品名称识别正常周新增、历史回补、删除、业务字段修订和重复主键。
+- 周标签向下填充后比较，避免同周首行位置变化造成历史修订误报；删除、业务修订、重复产品名称和累计规模差额勾稽失败均为 FAIL。
+- 新增 `--compare-previous` / `--drift-json` / `--snapshot-json`；综合看板与发布脚本新增 `--peer-issuance-previous-xlsx` 透传，漂移 FAIL 自动阻断生成与发布。
+- 历史回补作为 WARN 留痕：0821 对 0814 实测为本周新增 21 条 / 175.86 亿、历史回补 1 条 / 4.70 亿、无删除及业务修订。
+
 ## Unreleased — 同业发行面板转正
 
 - 将已验收的同业发行实验面板迁移为 `scripts/peer_issuance_panel.py`，作为综合看板最后一个一级模块“同业发行”。

@@ -174,6 +174,8 @@ def parse_dynamics(path: Path) -> list[dict[str, Any]]:
         records.append({
             "week": current_week,
             "product": product,
+            "product_type": str(cell("product_type") or "").strip(),
+            "venue": str(cell("venue") or "").strip() if "venue" in columns else "",
             "originator": str(cell("originator") or "").strip(),
             "base_asset": str(cell("base_asset") or "").strip(),
             "asset_type": str(cell("asset_type") or "").strip(),
@@ -185,6 +187,87 @@ def parse_dynamics(path: Path) -> list[dict[str, Any]]:
     if not records:
         raise PanelInputError(f"{path.name} 未读取到有效发行动态记录")
     return records
+
+
+# ---------------------------------------------------------------------------
+# 周更增量与漂移校验
+# ---------------------------------------------------------------------------
+
+DRIFT_FIELDS = ("product_type", "venue", "originator", "base_asset", "asset_type", "amount", "date", "aaa", "term")
+
+
+def record_key(record: dict[str, Any]) -> str:
+    """当前发行动态中产品名称唯一；复合信息保留在快照中供诊断。"""
+    return record["product"]
+
+
+def record_fingerprint(record: dict[str, Any]) -> str:
+    """排除周标签展示字段后的业务事实指纹。"""
+    payload = {field: str(record.get(field) or "") for field in DRIFT_FIELDS}
+    return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def compare_weekly_snapshot(previous: list[dict[str, Any]], current: list[dict[str, Any]]) -> tuple[dict[str, Any], list[dict]]:
+    """比较两份追加式快照，识别周新增、历史回补、删除与实质修订。"""
+    qc: list[dict] = []
+    previous_by_key = {record_key(record): record for record in previous}
+    current_by_key = {record_key(record): record for record in current}
+    if len(previous_by_key) != len(previous):
+        issue(qc, "FAIL", "BASELINE_DUPLICATE_KEY", "基线快照存在重复产品名称")
+    if len(current_by_key) != len(current):
+        issue(qc, "FAIL", "CURRENT_DUPLICATE_KEY", "当前快照存在重复产品名称")
+
+    previous_keys, current_keys = set(previous_by_key), set(current_by_key)
+    additions = [current_by_key[key] for key in sorted(current_keys - previous_keys)]
+    deletions = [previous_by_key[key] for key in sorted(previous_keys - current_keys)]
+    modifications = []
+    for key in sorted(previous_keys & current_keys):
+        before, after = previous_by_key[key], current_by_key[key]
+        if record_fingerprint(before) != record_fingerprint(after):
+            changed_fields = [field for field in DRIFT_FIELDS if before.get(field) != after.get(field)]
+            modifications.append({"product": key, "changed_fields": changed_fields})
+
+    current_dates = [record["date"] for record in current if record["date"]]
+    latest_date = max(current_dates) if current_dates else None
+    # Excel 常按最新周到历史周倒序，但快照/测试可有任意顺序；以周标签中的起始日期确定本周。
+    def week_start(week: Any) -> date:
+        match = re.search(r"(20\d{2})\.(\d{1,2})\.(\d{1,2})", str(week or ""))
+        return date(int(match.group(1)), int(match.group(2)), int(match.group(3))) if match else date.min
+    current_week = max((record["week"] for record in current if record["week"]), key=week_start, default=None)
+    weekly_additions = [record for record in additions if record.get("week") == current_week]
+    backfills = [record for record in additions if record.get("week") != current_week]
+    added_amount = sum((record["amount"] for record in additions), ZERO)
+    weekly_amount = sum((record["amount"] for record in weekly_additions), ZERO)
+    backfill_amount = sum((record["amount"] for record in backfills), ZERO)
+
+    if deletions:
+        issue(qc, "FAIL", "HISTORICAL_DELETION", f"检测到 {len(deletions)} 条历史产品删除", products=[record["product"] for record in deletions])
+    if modifications:
+        issue(qc, "FAIL", "HISTORICAL_REVISION", f"检测到 {len(modifications)} 条历史产品业务字段修订", changes=modifications)
+    if backfills:
+        issue(qc, "WARN", "HISTORICAL_BACKFILL", f"检测到 {len(backfills)} 条历史周回补", amount=str(backfill_amount), products=[record["product"] for record in backfills])
+    if additions:
+        issue(qc, "INFO", "WEEKLY_DELTA", f"本次新增 {len(additions)} 条 / {added_amount} 亿，其中当周 {len(weekly_additions)} 条 / {weekly_amount} 亿")
+
+    previous_amount = sum((record["amount"] for record in previous), ZERO)
+    current_amount = sum((record["amount"] for record in current), ZERO)
+    difference = current_amount - previous_amount
+    reconciliation_level = "OK" if difference == added_amount else "FAIL"
+    issue(qc, reconciliation_level, "DELTA_RECONCILIATION", f"累计规模变动 {difference} 亿，新增规模 {added_amount} 亿", difference=str(difference), additions=str(added_amount))
+
+    summary = {
+        "latest_date": latest_date,
+        "current_week": current_week,
+        "previous_count": len(previous),
+        "current_count": len(current),
+        "additions": additions,
+        "deletions": deletions,
+        "modifications": modifications,
+        "weekly_additions": weekly_additions,
+        "backfills": backfills,
+        "amounts": {"previous": previous_amount, "current": current_amount, "difference": difference, "additions": added_amount, "weekly": weekly_amount, "backfills": backfill_amount},
+    }
+    return summary, qc
 
 
 # ---------------------------------------------------------------------------
@@ -718,6 +801,9 @@ def main() -> None:
     parser.add_argument("--output-html")
     parser.add_argument("--output-json")
     parser.add_argument("--qc-json")
+    parser.add_argument("--compare-previous", default=None, help="上周同业发行快照 Excel；提供时生成增量与漂移校验")
+    parser.add_argument("--drift-json", default=None, help="增量与漂移校验 JSON 输出路径")
+    parser.add_argument("--snapshot-json", default=None, help="规范化事实快照与输入 manifest 输出路径")
     parser.add_argument("--strict-qc", action="store_true")
     args = parser.parse_args()
     data, qc = compute_data(Path(args.xlsx_2026), Path(args.xlsx_2025) if args.xlsx_2025 else None)
@@ -731,9 +817,23 @@ def main() -> None:
     html_path.write_text(render_html(data), encoding="utf-8")
     json_path.write_text(json.dumps(data, ensure_ascii=False, indent=2, default=json_default), encoding="utf-8")
     qc_path.write_text(json.dumps(qc, ensure_ascii=False, indent=2, default=json_default), encoding="utf-8")
-    warnings = sum(item["level"] == "WARN" for item in qc)
-    print(f"[完成] HTML: {html_path}\n[完成] 数据: {json_path}\n[完成] QC: {qc_path}\n[QC] WARN={warnings}")
-    if args.strict_qc and warnings:
+    snapshot_path = Path(args.snapshot_json) if args.snapshot_json else DEFAULT_OUTPUT_DIR / f"peer_issuance_snapshot_{tag}.json"
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+    current_records = parse_dynamics(Path(args.xlsx_2026))
+    snapshot_path.write_text(json.dumps({"input": input_fingerprint(Path(args.xlsx_2026), len(current_records)), "records": current_records}, ensure_ascii=False, indent=2, default=json_default), encoding="utf-8")
+    drift_qc: list[dict] = []
+    drift_path = None
+    if args.compare_previous:
+        previous_path = Path(args.compare_previous)
+        summary, drift_qc = compare_weekly_snapshot(parse_dynamics(previous_path), parse_dynamics(Path(args.xlsx_2026)))
+        drift_path = Path(args.drift_json) if args.drift_json else DEFAULT_OUTPUT_DIR / f"peer_issuance_drift_{tag}.json"
+        drift_path.parent.mkdir(parents=True, exist_ok=True)
+        drift_path.write_text(json.dumps({"previous_input": input_fingerprint(previous_path, summary["previous_count"]), "current_input": input_fingerprint(Path(args.xlsx_2026), summary["current_count"]), "summary": summary, "qc": drift_qc}, ensure_ascii=False, indent=2, default=json_default), encoding="utf-8")
+    warnings = sum(item["level"] == "WARN" for item in qc + drift_qc)
+    failures = sum(item["level"] == "FAIL" for item in qc + drift_qc)
+    drift_line = f"\n[完成] Drift: {drift_path}" if drift_path else ""
+    print(f"[完成] HTML: {html_path}\n[完成] 数据: {json_path}\n[完成] QC: {qc_path}\n[完成] Snapshot: {snapshot_path}{drift_line}\n[QC] WARN={warnings} FAIL={failures}")
+    if failures or (args.strict_qc and warnings):
         raise SystemExit(2)
 
 

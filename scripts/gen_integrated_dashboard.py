@@ -291,6 +291,7 @@ def main():
     parser.add_argument('--jintiao-xlsx', default=None, help='金条大盘余额原始 Excel（需与白条源成对传入）')
     parser.add_argument('--peer-issuance-xlsx', default=None, help='当期同业发行动态 Excel（提供时展示同业发行一级模块）')
     parser.add_argument('--peer-issuance-baseline-xlsx', default=None, help='同业发行同比基准 Excel（默认使用受控 2025 基准）')
+    parser.add_argument('--peer-issuance-previous-xlsx', default=None, help='上周同业发行快照；存在漂移 FAIL 时阻断生成')
     args = parser.parse_args()
     if bool(args.baitiao_xlsx) != bool(args.jintiao_xlsx):
         parser.error('--baitiao-xlsx 与 --jintiao-xlsx 必须成对传入')
@@ -362,9 +363,19 @@ def main():
                 args.baitiao_xlsx, args.jintiao_xlsx)
             panels.append(('asset_overview', 'consumer_asset', consumer_asset_body))
 
-        # 同业发行模块：显式传入当期源时严格生成，默认使用受控 2025 同比基准。
+        # 同业发行模块：显式传入当期源时严格生成，前次快照存在 FAIL 时阻断看板生成。
         if peer_issuance_enabled:
             print('\n[3.58/4] 生成同业发行 > 发行动态 panel...')
+            if args.peer_issuance_previous_xlsx:
+                _, drift_qc = peer_issuance_panel.compare_weekly_snapshot(
+                    peer_issuance_panel.parse_dynamics(Path(args.peer_issuance_previous_xlsx)),
+                    peer_issuance_panel.parse_dynamics(Path(args.peer_issuance_xlsx)),
+                )
+                drift_failures = [item for item in drift_qc if item['level'] == 'FAIL']
+                if drift_failures:
+                    raise RuntimeError(f'同业发行增量漂移校验失败：{drift_failures}')
+                for item in drift_qc:
+                    print(f"[同业增量][{item['level']}] {item['message']}")
             peer_body = peer_issuance_panel.render_peer_issuance_panel(
                 args.peer_issuance_xlsx, args.peer_issuance_baseline_xlsx)
             panels.append(('peer_issuance', 'overview', peer_body))

@@ -178,6 +178,7 @@ def generate_dashboard(
     jintiao_path: Path | None = None,
     peer_issuance_path: Path | None = None,
     peer_issuance_baseline_path: Path | None = None,
+    peer_issuance_previous_path: Path | None = None,
 ) -> Path:
     print(f"\n[1/4] 生成最新综合看板: {ledger_path}")
     # 显式指定输出路径,生成后直接使用该产物,不再按 mtime 重扫目录(避免误选旧文件)
@@ -190,6 +191,8 @@ def generate_dashboard(
         command.extend(["--peer-issuance-xlsx", str(peer_issuance_path)])
         if peer_issuance_baseline_path:
             command.extend(["--peer-issuance-baseline-xlsx", str(peer_issuance_baseline_path)])
+        if peer_issuance_previous_path:
+            command.extend(["--peer-issuance-previous-xlsx", str(peer_issuance_previous_path)])
     run(command)
     if not out_path.exists():
         raise RuntimeError(f"生成器已退出但未找到产物: {out_path}")
@@ -740,6 +743,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--jintiao-xlsx", type=Path, default=None, help="金条大盘余额原始 Excel（需与白条源成对传入）")
     parser.add_argument("--peer-issuance-xlsx", type=Path, default=None, help="当期同业发行动态 Excel")
     parser.add_argument("--peer-issuance-baseline-xlsx", type=Path, default=None, help="同业发行同比基准 Excel（默认使用受控 2025 基准）")
+    parser.add_argument("--peer-issuance-previous-xlsx", type=Path, default=None, help="上周同业发行快照；发现历史删除或业务修订时阻断发布")
     parser.add_argument("--skip-generate", action="store_true", help="跳过综合看板生成,直接用 01_latest 最新 HTML 组装站点")
     parser.add_argument("--no-push", action="store_true", help="在临时 worktree 创建提交但不推送远端,且不移动本地分支引用")
     parser.add_argument("--build-only", action="store_true", help="纯预览:只组装站点包并对比差异,不创建提交/不更新引用/不推送(与 --no-push 互斥)")
@@ -757,7 +761,9 @@ def main() -> None:
     args = parse_args()
     if bool(args.baitiao_xlsx) != bool(args.jintiao_xlsx):
         raise ValueError("--baitiao-xlsx 与 --jintiao-xlsx 必须成对传入")
-    if args.skip_generate and (args.baitiao_xlsx or args.peer_issuance_xlsx or args.peer_issuance_baseline_xlsx):
+    if args.peer_issuance_previous_xlsx and not args.peer_issuance_xlsx:
+        raise ValueError("--peer-issuance-previous-xlsx 必须与 --peer-issuance-xlsx 同时使用")
+    if args.skip_generate and (args.baitiao_xlsx or args.peer_issuance_xlsx or args.peer_issuance_baseline_xlsx or args.peer_issuance_previous_xlsx):
         raise ValueError("--skip-generate 不能与消金或同业源 Excel 参数同时使用")
     if args.build_only and args.no_push:
         raise ValueError("--build-only 与 --no-push 互斥:纯预览请用 --build-only")
@@ -775,6 +781,7 @@ def main() -> None:
             args.jintiao_xlsx,
             args.peer_issuance_xlsx,
             args.peer_issuance_baseline_xlsx,
+            args.peer_issuance_previous_xlsx,
         )
 
     password = os.environ.get(args.password_env) if args.protected else None
