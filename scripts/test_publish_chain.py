@@ -169,15 +169,53 @@ class CryptoRoundTripTest(unittest.TestCase):
 class AuditProtectedSiteTest(unittest.TestCase):
     """A3: protected 站点包泄露自检。"""
 
+    @staticmethod
+    def _write_payloads(site: Path) -> None:
+        """密文外置版式:p/d.bin 与 p/m.bin 必须存在且非空。"""
+        pdir = site / "p"
+        pdir.mkdir(parents=True, exist_ok=True)
+        (pdir / "d.bin").write_bytes(b"\x00cipher-desktop")
+        (pdir / "m.bin").write_bytes(b"\x00cipher-mobile")
+
     def test_clean_shell_passes(self):
         import tempfile
         with tempfile.TemporaryDirectory() as root:
             site = Path(root) / "site"
             site.mkdir()
             (site / "index.html").write_text("<!doctype html>加密壳" + "A" * 500, encoding="utf-8")
+            self._write_payloads(site)
             src = Path(root) / "src.html"
             src.write_text("<!DOCTYPE html>" + "不同内容" * 100, encoding="utf-8")
             audit_protected_site(site, src)  # 不应抛异常
+
+    def test_missing_payload_detected(self):
+        """密文没生成时必须报错:壳没有内联兜底,缺文件=线上直接打不开。"""
+        import tempfile
+        with tempfile.TemporaryDirectory() as root:
+            site = Path(root) / "site"
+            site.mkdir()
+            (site / "index.html").write_text("<!doctype html>壳", encoding="utf-8")
+            src = Path(root) / "src.html"
+            src.write_text("<!DOCTYPE html>源", encoding="utf-8")
+            with self.assertRaises(RuntimeError) as ctx:
+                audit_protected_site(site, src)
+            self.assertIn("密文缺失", str(ctx.exception))
+
+    def test_plaintext_in_payload_bin_detected(self):
+        """明文若被误当成密文落盘,必须被抓到(旧自检因 DOCTYPE 前置判断会漏掉 .bin)。"""
+        import tempfile
+        src_content = "<!DOCTYPE html><html>明文看板" + "C" * 3000
+        with tempfile.TemporaryDirectory() as root:
+            site = Path(root) / "site"
+            site.mkdir()
+            (site / "index.html").write_text("<!doctype html>壳", encoding="utf-8")
+            self._write_payloads(site)
+            (site / "p" / "m.bin").write_text(src_content, encoding="utf-8")
+            src = Path(root) / "src.html"
+            src.write_text(src_content, encoding="utf-8")
+            with self.assertRaises(RuntimeError) as ctx:
+                audit_protected_site(site, src)
+            self.assertIn("明文看板", str(ctx.exception))
 
     def test_xlsx_leak_detected(self):
         import tempfile
@@ -185,6 +223,7 @@ class AuditProtectedSiteTest(unittest.TestCase):
             site = Path(root) / "site"
             site.mkdir()
             (site / "index.html").write_text("<!doctype html>壳", encoding="utf-8")
+            self._write_payloads(site)
             (site / "data.xlsx").write_bytes(b"fake")
             src = Path(root) / "src.html"
             src.write_text("<!DOCTYPE html>源", encoding="utf-8")
@@ -203,6 +242,7 @@ class AuditProtectedSiteTest(unittest.TestCase):
             # 站点内某文件包含源 HTML 的头部 2048 字节片段 → 疑似明文泄露
             (site / "leaked.html").write_text(src_content, encoding="utf-8")
             (site / "index.html").write_text("<!doctype html>壳", encoding="utf-8")
+            self._write_payloads(site)
             with self.assertRaises(RuntimeError) as ctx:
                 audit_protected_site(site, src)
             self.assertIn("明文看板", str(ctx.exception))

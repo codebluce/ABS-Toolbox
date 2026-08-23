@@ -215,7 +215,9 @@ def verify_dashboard_artifact(dashboard_path: Path) -> None:
         raise RuntimeError(f"综合看板产物结构异常: {'; '.join(problems)}")
 
 
-def encrypt_dashboard_html(dashboard_path: Path, password: str, iterations: int) -> dict:
+def encrypt_dashboard_html(
+    dashboard_path: Path, password: str, iterations: int, *, salt: bytes | None = None
+) -> dict:
     """Return encrypted payload metadata for static password-gated Pages.
 
     The deployed page contains only gzip(html) encrypted by AES-GCM. The password is
@@ -225,7 +227,9 @@ def encrypt_dashboard_html(dashboard_path: Path, password: str, iterations: int)
         raise ValueError("protected mode requires a non-empty password")
     raw = dashboard_path.read_bytes()
     compressed = gzip.compress(raw, compresslevel=6, mtime=0)
-    salt = secrets.token_bytes(16)
+    # 双端共用同一个 salt,浏览器只需派生一次密钥即可解开两份密文;
+    # IV 仍逐份随机，AES-GCM 在"同密钥 + 不同 IV"下是安全的。
+    salt = salt or secrets.token_bytes(16)
     iv = secrets.token_bytes(12)
     key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations, dklen=32)
     cipher = AESGCM(key).encrypt(iv, compressed, None)
@@ -235,6 +239,7 @@ def encrypt_dashboard_html(dashboard_path: Path, password: str, iterations: int)
         "salt": base64.b64encode(salt).decode("ascii"),
         "iv": base64.b64encode(iv).decode("ascii"),
         "ciphertext": base64.b64encode(cipher).decode("ascii"),
+        "cipherRaw": cipher,          # 直接落盘为 p/*.bin,免去 base64 的 33% 膨胀
         "plainBytes": len(raw),
         "gzipBytes": len(compressed),
         "cipherBytes": len(cipher),
@@ -244,8 +249,18 @@ def encrypt_dashboard_html(dashboard_path: Path, password: str, iterations: int)
 def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: dict) -> str:
     latest_name = latest_dashboard.name
     latest_date = dashboard_date(latest_dashboard)
-    payload_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    mobile_json = json.dumps(mobile_payload, ensure_ascii=False, separators=(",", ":"))
+    # 密文不再内联进壳:两端各自落成 p/*.bin,壳里只留 salt/iv/迭代数与体积。
+    # 手机端因此不会白下载电脑端密文(内联 base64 实测 564KB),也省掉 base64 的 33% 膨胀。
+    params_json = json.dumps(
+        {
+            "salt": payload["salt"],
+            "iterations": payload["iterations"],
+            "desktop": {"iv": payload["iv"], "url": "p/d.bin", "bytes": payload["cipherBytes"]},
+            "mobile": {"iv": mobile_payload["iv"], "url": "p/m.bin", "bytes": mobile_payload["cipherBytes"]},
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -304,7 +319,7 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
   <iframe id="viewer" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups allow-forms"></iframe>
   <button id="flip" type="button"></button>
   <script>
-    const PAYLOADS = {{ desktop: {payload_json}, mobile: {mobile_json} }};
+    const PARAMS = {params_json};
     const VIEW_KEY = 'abs_dash_view';
     const $ = (id) => document.getElementById(id);
     const msg = (text, cls='', html=false) => {{
@@ -334,14 +349,26 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
 
     let VIEW = resolveView();
     const AUTO = detect();
-    let KEYS = {{}};   // 每份密文的 salt 不同,派生出的 key 分开缓存
+    let KEY = null;    // 两端共用 salt,派生一次即可解开两份密文
     let PASSWORD = null;
+    const FETCHES = {{}};
+    function fetchPayload(view) {{
+      if (!FETCHES[view]) {{
+        FETCHES[view] = fetch(PARAMS[view].url, {{cache:'force-cache'}}).then(r => {{
+          if (!r.ok) throw new Error('payload HTTP ' + r.status);
+          return r.arrayBuffer();
+        }});
+      }}
+      return FETCHES[view];
+    }}
+    // 密文与"用户输入密码"并行下载:等按下解锁时通常已经躺在本地了
+    fetchPayload(VIEW).catch(() => {{}});
     // <head> 脚本已填过终端;此处兜底(仅当 VIEW 被 URL/storage 覆盖成与 AUTO 不一致时无需重填 term,term 表示当前终端类型)
     if ($('term')) $('term').textContent = AUTO === 'mobile' ? '手机版' : '电脑版';
 
-    async function deriveKey(password, p) {{
+    async function deriveKey(password) {{
       const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
-      return crypto.subtle.deriveKey({{name:'PBKDF2', salt:b64(p.salt), iterations:p.iterations, hash:'SHA-256'}}, base, {{name:'AES-GCM', length:256}}, false, ['decrypt']);
+      return crypto.subtle.deriveKey({{name:'PBKDF2', salt:b64(PARAMS.salt), iterations:PARAMS.iterations, hash:'SHA-256'}}, base, {{name:'AES-GCM', length:256}}, false, ['decrypt']);
     }}
     async function ungzip(bytes) {{
       if (!('DecompressionStream' in window)) {{
@@ -355,9 +382,13 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
       return new TextDecoder('utf-8').decode(buf);
     }}
     async function decryptView(view, password) {{
-      const p = PAYLOADS[view];
-      if (!KEYS[view]) KEYS[view] = await deriveKey(password, p);
-      const plain = await crypto.subtle.decrypt({{name:'AES-GCM', iv:b64(p.iv)}}, KEYS[view], b64(p.ciphertext));
+      const p = PARAMS[view];
+      // 密钥派生(纯 CPU)与密文下载(纯网络)互不依赖,并行跑完取两者较慢的那个
+      const [key, cipher] = await Promise.all([
+        KEY ? Promise.resolve(KEY) : deriveKey(password).then(k => (KEY = k)),
+        fetchPayload(view)
+      ]);
+      const plain = await crypto.subtle.decrypt({{name:'AES-GCM', iv:b64(p.iv)}}, key, cipher);
       return ungzip(new Uint8Array(plain));
     }}
     function showFlip() {{
@@ -383,13 +414,13 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
       $('unlock').disabled = true;
       const t0 = performance.now();
       try {{
-        msg('<span class="load">载入中 · 解密解压约 6.6MB,请稍候</span>', '', true);
+        msg('<span class="load">载入中 · 解密解压 ' + Math.round(PARAMS[VIEW].bytes / 1024) + ' KB,请稍候</span>', '', true);
         PASSWORD = password;
         await render(VIEW);
         msg('✅ 解锁成功,正在打开看板... ' + Math.round(performance.now() - t0) + 'ms', 'ok');
       }} catch (err) {{
         console.error(err);
-        PASSWORD = null; KEYS = {{}};
+        PASSWORD = null; KEY = null;
         if (err && err.unsupported) {{
           msg('当前浏览器不支持解压(DecompressionStream),请使用 Chrome 80+/Edge 80+/Safari 16.4+ 或更新浏览器。', 'err');
         }} else {{
@@ -484,6 +515,12 @@ def audit_protected_site(
     """
     problems: list[str] = []
     banned_suffixes = {".xlsx", ".xls", ".csv", ".env", ".py"}
+    src_probe = latest_dashboard.read_bytes()[:2048]
+    # 密文外置后必须确认两份 .bin 确实生成:壳没有内联兜底,文件缺失=页面直接打不开
+    for rel in ("p/d.bin", "p/m.bin"):
+        blob_path = site_dir / rel
+        if not blob_path.is_file() or blob_path.stat().st_size == 0:
+            problems.append(f"密文缺失或为空: {rel}")
     for p in sorted(site_dir.rglob("*")):
         if not p.is_file():
             continue
@@ -496,15 +533,13 @@ def audit_protected_site(
         except OSError as exc:
             problems.append(f"读取失败: {p.relative_to(site_dir)} ({exc})")
             continue
-        # 明文看板特征片段:源 HTML 中必然存在且唯一的 UTF-8 字节串
-        probe = "<!DOCTYPE html>".encode("utf-8")
-        if p.name not in {"manifest.json", "README.md", ".nojekyll"} and probe in blob:
-            # index.html 解锁壳本身也是 HTML,需进一步用源文件特征串区分
-            src_probe = latest_dashboard.read_bytes()[:2048]
-            if src_probe and src_probe in blob:
-                problems.append(f"疑似明文看板泄露: {p.relative_to(site_dir)}")
-            if mobile_probe and mobile_probe in blob:
-                problems.append(f"疑似明文手机版泄露: {p.relative_to(site_dir)}")
+        # 明文特征串对每个文件都要查——包括 p/*.bin。
+        # 旧写法先用 "<!DOCTYPE html>" 卡一道,密文里不含该串,导致 .bin 根本没被查过;
+        # 万一哪天加密环节被跳过、明文直接落盘成 .bin,自检会静默放行。
+        if src_probe and src_probe in blob:
+            problems.append(f"疑似明文看板泄露: {p.relative_to(site_dir)}")
+        if mobile_probe and mobile_probe in blob:
+            problems.append(f"疑似明文手机版泄露: {p.relative_to(site_dir)}")
     if problems:
         raise RuntimeError("protected 站点包泄露自检失败:\n  " + "\n  ".join(problems))
     print("[site] protected 泄露自检通过: 无源 Excel/明文看板特征")
@@ -515,7 +550,7 @@ def build_site(
     *,
     protected: bool = False,
     password: str | None = None,
-    iterations: int = 310_000,
+    iterations: int = 10_000,
 ) -> Path:
     print("\n[2/4] 组装静态站点包...")
     dashboards = find_dashboard_files()
@@ -545,8 +580,19 @@ def build_site(
         mobile_tmp = Path(tempfile.mkdtemp(prefix="abs_mobile_"))
         try:
             mobile_path = build_mobile_html(latest_dashboard, mobile_tmp / "mobile.html")
-            protected_payload = encrypt_dashboard_html(latest_dashboard, password, iterations)
-            mobile_payload = encrypt_dashboard_html(mobile_path, password, iterations)
+            shared_salt = secrets.token_bytes(16)
+            protected_payload = encrypt_dashboard_html(
+                latest_dashboard, password, iterations, salt=shared_salt
+            )
+            mobile_payload = encrypt_dashboard_html(
+                mobile_path, password, iterations, salt=shared_salt
+            )
+            # 密文独立落盘:壳只有 ~10KB,访问者按当前终端拉取对应的一份,
+            # 手机端不再连带下载电脑端密文。
+            payload_dir = SITE_STAGING_DIR / "p"
+            payload_dir.mkdir(parents=True, exist_ok=True)
+            (payload_dir / "d.bin").write_bytes(protected_payload["cipherRaw"])
+            (payload_dir / "m.bin").write_bytes(mobile_payload["cipherRaw"])
             (SITE_STAGING_DIR / "index.html").write_text(
                 protected_shell_html(latest_dashboard, protected_payload, mobile_payload),
                 encoding="utf-8",
@@ -589,6 +635,9 @@ def build_site(
         }
         if mobile_payload:
             manifest["encryption"]["mobileCipherBytes"] = mobile_payload["cipherBytes"]
+        # 密文外置后壳体积与密文解耦,记录下来便于回归对比
+        manifest["encryption"]["layout"] = "external-bin"
+        manifest["encryption"]["shellBytes"] = (SITE_STAGING_DIR / "index.html").stat().st_size
     (SITE_STAGING_DIR / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
     archive_line = "- 历史归档：已下线（protected 模式不发布明文历史版本）" if protected else "- 历史归档：`archive/index.html`"
@@ -753,7 +802,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--allow-dirty", action="store_true", help="允许 main 工作树有未提交改动(不推荐)")
     parser.add_argument("--protected", action="store_true", help="发布加密门禁版: gzip(html)+AES-GCM,不发布明文archive")
     parser.add_argument("--password-env", default="ABS_DASHBOARD_PASSWORD", help="protected模式读取密码的环境变量名")
-    parser.add_argument("--pbkdf2-iterations", type=int, default=310_000, help="PBKDF2-SHA256迭代次数,默认310000")
+    parser.add_argument(
+        "--pbkdf2-iterations",
+        type=int,
+        default=10_000,
+        help=(
+            "PBKDF2-SHA256迭代次数,默认10000。手机端 310000 次需 0.5~0.9 秒纯 CPU 阻塞,"
+            "降到 10000 后约 30ms。注意:迭代数只对强口令有意义,弱口令(纯数字/短口令)"
+            "在任何迭代数下都扛不住离线爆破,安全性取决于口令熵。"
+        ),
+    )
     return parser.parse_args()
 
 
