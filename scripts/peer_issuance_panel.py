@@ -23,11 +23,12 @@ HUNDRED = Decimal("100")
 # 资产类型固定展示顺序
 ASSET_TYPE_ORDER = ("消金分期类", "消金提现类", "小微toB", "小微toC")
 TOP_N = 12
-TRUST_TOP_N = 5
+TRUST_TOP_N = 8
 BAR_BLUE = "#2a78d6"
-ASSET_FAMILY_ORDER = ("蚂蚁系", "网商系", "腾讯系", "微众系", "字节系", "美团系")
+ASSET_FAMILY_ORDER = ("京东系", "蚂蚁系", "网商系", "腾讯系", "微众系", "字节系", "美团系")
 UNKNOWN_ASSET_FAMILY = "未知资产"
 ASSET_FAMILY_COLORS = {
+    "京东系": "#0d1b2e",
     "蚂蚁系": "#2a78d6",
     "网商系": "#4e9f8b",
     "腾讯系": "#7c6eb0",
@@ -37,6 +38,7 @@ ASSET_FAMILY_COLORS = {
     UNKNOWN_ASSET_FAMILY: "#98a1ad",
 }
 ASSET_FAMILY_KEYWORDS = {
+    "京东系": ("京东",),
     "蚂蚁系": ("花呗", "借呗"),
     "网商系": ("网商",),
     "腾讯系": ("腾讯", "分付"),
@@ -343,16 +345,17 @@ def build_dashboard(records_2026: list[dict[str, Any]], records_2025: list[dict[
     latest_date = max(r["date"] for r in dated_2026)
     cutoff = yoy_cutoff(latest_date)
 
-    market_2026 = [r for r in records_2026 if not is_jd(r)]
+    # 全市场口径纳入京东系资产；京东摘要仅供展示与数据质量观测。
+    market_2026 = list(records_2026)
     jd_2026 = [r for r in records_2026 if is_jd(r)]
-    market_2025 = [r for r in records_2025 if not is_jd(r) and r["date"] and r["date"] <= cutoff]
-    jd_2025 = [r for r in records_2025 if is_jd(r)]
+    market_2025 = [r for r in records_2025 if r["date"] and r["date"] <= cutoff]
+    jd_2025 = [r for r in market_2025 if is_jd(r)]
 
     issue(qc, "OK", "PARSE_2026", f"2026 源解析 {len(records_2026)} 期", rows=len(records_2026))
     issue(qc, "OK", "PARSE_2025", f"2025 源解析 {len(records_2025)} 期", rows=len(records_2025))
-    issue(qc, "OK", "JD_EXCLUSION",
-          f"剔除京东系 2026 年 {len(jd_2026)} 期 / {sum((r['amount'] for r in jd_2026), ZERO):.0f} 亿，"
-          f"2025 年 {len(jd_2025)} 期",
+    issue(qc, "OK", "JD_INCLUDED",
+          f"纳入京东系 2026 年 {len(jd_2026)} 期 / {sum((r['amount'] for r in jd_2026), ZERO):.0f} 亿，"
+          f"2025 同期 {len(jd_2025)} 期",
           count_2026=len(jd_2026), count_2025=len(jd_2025))
     if not market_2025:
         issue(qc, "WARN", "YOY_WINDOW_EMPTY", f"2025 同期窗口（≤ {cutoff.isoformat()}）无可用数据")
@@ -514,9 +517,9 @@ def build_dashboard(records_2026: list[dict[str, Any]], records_2025: list[dict[
             "latest_date": latest_date,
             "latest_week": latest_week,
             "yoy_cutoff": cutoff,
-            "excluded_jd": {
+            "jd_included": {
                 "y2026": {"count": len(jd_2026), "amount": sum((r["amount"] for r in jd_2026), ZERO)},
-                "y2025": {"count": len(jd_2025)},
+                "y2025": {"count": len(jd_2025), "amount": sum((r["amount"] for r in jd_2025), ZERO)},
             },
         },
         "kpis": {
@@ -762,7 +765,7 @@ def render_body(data: dict[str, Any]) -> str:
     cards = "".join(card_html(card, meta["latest_date"]) for card in data["cards"])
     trust_channels = kpis["trust_channels"]
     trust_rows = trust_channel_rows(trust_channels)
-    return f'''<main class="peer-issuance-root"><div class="peer-issuance-shell"><header class="peer-issuance-hero"><h1>同业发行面板</h1><p>互联网金融 ABS/ABN 同业发行动态 · 剔除京东系资产</p><div class="peer-issuance-date-grid"><span class="peer-issuance-date">2026 数据更新至 {meta['latest_date'].isoformat()}</span><span class="peer-issuance-date">同比窗口 2025-01-01 ~ {meta['yoy_cutoff'].isoformat()}</span><span class="peer-issuance-date">剔除京东系 {meta['excluded_jd']['y2026']['count']} 期 / {yi(meta['excluded_jd']['y2026']['amount'])} 亿</span></div></header><section class="peer-issuance-section"><h2>同业发行概览（2026 累计 {yi(total["amount"])} 亿 / {total["count"]} 期）</h2><p>按具体基础资产归并至资产集团，展示累计发行规模、去年同期规模与变化；未命中归并规则的资产列为“未知资产”。同比基期为 2025 年簿记时间 ≤ {meta['yoy_cutoff'].isoformat()} 的同期窗口</p>{type_rows(kpis["by_family"], total["amount"])}</section><section class="peer-issuance-section"><h2>信托渠道分布</h2><p>仅统计原始权益人名称含“信托”的渠道；按 2026 年累计发行规模取前 {trust_channels["top_n"]} 家，其余合并为“其他”。横条长度表示渠道规模；条下明确展示各资产集团的规模及其在该渠道内占比。</p>{trust_rows}</section><section class="peer-issuance-section"><h2>基础资产发行 Top {TOP_N}</h2><p>按 2026 年累计发行规模排序；每张卡片含月度规模、AAA 利率周度走势、原始权益人分布及月度变化</p></section><div class="peer-issuance-cards">{cards}</div><section class="peer-issuance-section peer-issuance-foot"><h2>数据口径</h2><p>剔除京东系 = 原始权益人或基础资产含“京东”（并集口径，覆盖走信托通道发行的京东资产）；统计范围为全市场互联网金融 ABS/ABN 发行。</p><p>同比 = 2025 年簿记时间 ≤ 2026 最新簿记日前一年的同期窗口；信托渠道仅统计名称含“信托”的原始权益人，按基础资产归并至六类资产集团，未命中规则的资产归入未知资产。</p><p>权益人月度变化中当月为进行中月份，统计至最新簿记日；周度利率走势仅含有有效 AAA 利率的周。</p></section></div></main>'''
+    return f'''<main class="peer-issuance-root"><div class="peer-issuance-shell"><header class="peer-issuance-hero"><h1>同业发行面板</h1><p>互联网金融 ABS/ABN 全市场发行动态 · 已纳入京东系资产</p><div class="peer-issuance-date-grid"><span class="peer-issuance-date">2026 数据更新至 {meta['latest_date'].isoformat()}</span><span class="peer-issuance-date">同比窗口 2025-01-01 ~ {meta['yoy_cutoff'].isoformat()}</span><span class="peer-issuance-date">其中京东系 {meta['jd_included']['y2026']['count']} 期 / {yi(meta['jd_included']['y2026']['amount'])} 亿</span></div></header><section class="peer-issuance-section"><h2>同业发行概览（2026 累计 {yi(total["amount"])} 亿 / {total["count"]} 期）</h2><p>按具体基础资产归并至资产集团，展示累计发行规模、去年同期规模与变化；未命中归并规则的资产列为“未知资产”。同比基期为 2025 年簿记时间 ≤ {meta['yoy_cutoff'].isoformat()} 的同期窗口</p>{type_rows(kpis["by_family"], total["amount"])}</section><section class="peer-issuance-section"><h2>信托渠道分布</h2><p>仅统计原始权益人名称含“信托”的渠道；按 2026 年累计发行规模取前 {trust_channels["top_n"]} 家，其余合并为“其他”。横条长度表示渠道规模；条下明确展示各资产集团的规模及其在该渠道内占比。</p>{trust_rows}</section><section class="peer-issuance-section"><h2>基础资产发行 Top {TOP_N}</h2><p>按 2026 年累计发行规模排序；每张卡片含月度规模、AAA 利率周度走势、原始权益人分布及月度变化</p></section><div class="peer-issuance-cards">{cards}</div><section class="peer-issuance-section peer-issuance-foot"><h2>数据口径</h2><p>京东系 = 原始权益人或基础资产含“京东”（并集口径，覆盖走信托通道发行的京东资产），已纳入全市场互联网金融 ABS/ABN 发行统计。</p><p>同比 = 2025 年簿记时间 ≤ 2026 最新簿记日前一年的同期窗口；信托渠道仅统计名称含“信托”的原始权益人，按基础资产归并至七类资产集团，未命中规则的资产归入未知资产。</p><p>权益人月度变化中当月为进行中月份，统计至最新簿记日；周度利率走势仅含有有效 AAA 利率的周。</p></section></div></main>'''
 
 
 def render_html(data: dict[str, Any]) -> str:

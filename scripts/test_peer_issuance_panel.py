@@ -63,7 +63,7 @@ class TestParse(unittest.TestCase):
         self.assertEqual(parse_term(1.54), D("1.54"))
 
 
-class TestJdExclusion(unittest.TestCase):
+class TestJdRecognition(unittest.TestCase):
     def test_excludes_by_originator(self):
         self.assertTrue(is_jd(make_record(originator="京东世纪贸易")))
 
@@ -71,7 +71,7 @@ class TestJdExclusion(unittest.TestCase):
         self.assertTrue(is_jd(make_record(base_asset="京东白条")))
 
     def test_excludes_channel_issuance(self):
-        # 走外贸信托通道发行的京东资产也必须剔除
+        # 走外贸信托通道发行的京东资产也应识别并纳入京东系统计
         self.assertTrue(is_jd(make_record(originator="外贸信托", base_asset="京东金条")))
 
     def test_keeps_non_jd(self):
@@ -87,6 +87,8 @@ class TestAssetFamilies(unittest.TestCase):
         }
         for base_asset, family in expectations.items():
             self.assertEqual(asset_family(base_asset), family)
+        for base_asset in ("京东白条", "京东金条", "京东企业主贷", "京东自主支付资产", "京东京企贷"):
+            self.assertEqual(asset_family(base_asset), "京东系")
         self.assertEqual(asset_family("度小满满易贷"), UNKNOWN_ASSET_FAMILY)
 
     def test_trust_channel_uses_originator_only(self):
@@ -183,24 +185,25 @@ class TestAggregation(unittest.TestCase):
         ]
         self.data, self.qc = build_dashboard(self.r2026, self.r2025)
 
-    def test_total_excludes_jd(self):
-        # 100 + 50 + 40 = 190，京东 30 已剔除
-        self.assertEqual(self.data["kpis"]["total_2026"]["amount"], D("190"))
-        self.assertEqual(self.data["kpis"]["total_2026"]["count"], 3)
+    def test_total_includes_jd(self):
+        # 100 + 50 + 40 + 京东通道资产 30 = 220
+        self.assertEqual(self.data["kpis"]["total_2026"]["amount"], D("220"))
+        self.assertEqual(self.data["kpis"]["total_2026"]["count"], 4)
+        self.assertEqual(self.data["meta"]["jd_included"]["y2026"]["amount"], D("30"))
 
     def test_yoy_window(self):
-        # 2025 同期仅国投信托 60 亿；窗口外 999 与京东 80 不计
-        self.assertEqual(self.data["kpis"]["yoy"]["amount"], D("60"))
+        # 2025 同期纳入国投信托 60 亿与京东 80 亿；窗口外 999 不计。
+        self.assertEqual(self.data["kpis"]["yoy"]["amount"], D("140"))
         yoy_pct = self.data["kpis"]["yoy"]["pct"]
-        self.assertEqual(yoy_pct, (D("190") - D("60")) / D("60") * 100)
+        self.assertEqual(yoy_pct, (D("220") - D("140")) / D("140") * 100)
 
     def test_yoy_cutoff(self):
         self.assertEqual(self.data["meta"]["yoy_cutoff"], date(2025, 8, 14))
 
     def test_latest_week_weighted(self):
-        # 最新簿记周 8.10-8.16 两笔：10 亿价 1.60% + 50 亿价 1.80%，加权 = (0.016*100+0.018*50)/150
+        # 最新簿记周同时纳入京东通道资产：10 亿价 1.60% + 50 亿价 1.80% + 30 亿价 1.70%。
         aaa = self.data["kpis"]["latest_week"]["aaa"]
-        expected = (D("0.016") * D("100") + D("0.018") * D("50")) / D("150")
+        expected = (D("0.016") * D("100") + D("0.018") * D("50") + D("0.017") * D("30")) / D("180")
         self.assertEqual(aaa["wavg"], expected)
         self.assertEqual(aaa["min"], D("0.016"))
         self.assertEqual(aaa["max"], D("0.018"))
@@ -208,7 +211,7 @@ class TestAggregation(unittest.TestCase):
     def test_top_cards_order(self):
         names = [card["name"] for card in self.data["cards"]]
         self.assertEqual(names[0], "网商贷")  # 140 亿 > 蚂蚁花呗 50 亿
-        self.assertNotIn("京东金条", names)
+        self.assertIn("京东金条", names)
 
     def test_card_monthly_sum(self):
         card = self.data["cards"][0]
@@ -226,6 +229,7 @@ class TestAggregation(unittest.TestCase):
         self.assertEqual(overview["网商系"]["amount_2026"], D("140"))
         self.assertEqual(overview["网商系"]["amount_2025"], D("60"))
         self.assertEqual(overview["蚂蚁系"]["amount_2026"], D("50"))
+        self.assertEqual(overview["京东系"]["amount_2026"], D("30"))
         self.assertEqual(
             sum((row["amount_2026"] for row in overview.values()), D("0")),
             self.data["kpis"]["total_2026"]["amount"],
@@ -233,10 +237,11 @@ class TestAggregation(unittest.TestCase):
 
     def test_trust_channel_aggregation(self):
         channels = self.data["kpis"]["trust_channels"]
-        self.assertEqual(channels["total"], D("190"))
-        self.assertEqual([row["name"] for row in channels["rows"]], ["国投信托", "中信信托"])
+        self.assertEqual(channels["total"], D("220"))
+        self.assertEqual([row["name"] for row in channels["rows"]], ["国投信托", "中信信托", "外贸信托"])
         self.assertEqual(channels["rows"][0]["segments"]["网商系"], D("140"))
         self.assertEqual(channels["rows"][1]["segments"]["蚂蚁系"], D("50"))
+        self.assertEqual(channels["rows"][2]["segments"]["京东系"], D("30"))
         self.assertNotIn("京东金条", channels["unmapped_assets"])
 
     def test_no_warn_qc(self):
@@ -245,7 +250,7 @@ class TestAggregation(unittest.TestCase):
 
 
 class TestTrustTopN(unittest.TestCase):
-    def test_top_five_and_other_reconcile(self):
+    def test_top_eight_and_other_reconcile(self):
         records = []
         families = ["蚂蚁花呗", "网商贷", "腾讯分付", "微粒贷", "抖音放心借", "美团月付"]
         for index, base_asset in enumerate(families, 1):
@@ -257,9 +262,11 @@ class TestTrustTopN(unittest.TestCase):
         records.append(make_record(originator="渠道7信托", base_asset="度小满满易贷", amount=D("5"), date=date(2026, 8, 14)))
         data, qc = build_dashboard(records, [make_record(date=date(2025, 8, 1))])
         channels = data["kpis"]["trust_channels"]
-        self.assertEqual(len(channels["rows"]), 6)
-        self.assertEqual(channels["rows"][-1]["name"], "其他")
-        self.assertEqual(channels["rows"][-1]["amount"], D("15"))
+        self.assertEqual(channels["top_n"], 8)
+        self.assertEqual(len(channels["rows"]), 7)
+        self.assertNotIn("其他", [row["name"] for row in channels["rows"]])
+        self.assertEqual(channels["rows"][-1]["name"], "渠道7信托")
+        self.assertEqual(channels["rows"][-1]["amount"], D("5"))
         self.assertEqual(channels["rows"][-1]["segments"][UNKNOWN_ASSET_FAMILY], D("5"))
         self.assertEqual(sum((row["amount"] for row in channels["rows"]), D("0")), channels["total"])
         self.assertEqual(channels["unmapped_assets"]["度小满满易贷"], D("5"))
