@@ -366,6 +366,17 @@ def map_detail_to_project(filename, project_names=None):
     name = re.sub(r'项目$', '', name)
     name = name.strip()
 
+    # 明确别名：东裕9-1簿记文件及其内部项目名均唯一对应本期台账主项目。
+    # 禁止用“东裕9号”宽泛匹配，避免命中伯/仲/叔/季/春裕等历史项目。
+    explicit_aliases = {
+        "【26东裕9-1】": "26东裕9号一期",
+        "26东裕9-1": "26东裕9号一期",
+        "26东裕9号ABN001": "26东裕9号一期",
+        "【26东裕11夏裕】": "东裕11号夏裕（可续发）",
+        "26东裕11夏裕": "东裕11号夏裕（可续发）",
+    }
+    name = explicit_aliases.get(name, name)
+
     # If project names are provided, try exact match first
     if project_names:
         # Exact match
@@ -888,7 +899,8 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     else:
         print("  Loading new raw ledger...")
         wb_b = openpyxl.load_workbook(new_raw_path, data_only=False)
-        ws_b = wb_b.active
+        # 最新原始台账通常以“总表”为首个业务表，不能依赖工作簿 active 状态。
+        ws_b = wb_b["总表"] if "总表" in wb_b.sheetnames else wb_b.active
         ws_b = unmerge_and_fill_raw(ws_b)
         projects_b = get_all_projects(ws_b)
         set_b = set(projects_b.keys())
