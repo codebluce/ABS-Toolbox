@@ -794,6 +794,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--peer-issuance-baseline-xlsx", type=Path, default=None, help="同业发行同比基准 Excel（默认使用受控 2025 基准）")
     parser.add_argument("--peer-issuance-previous-xlsx", type=Path, default=None, help="上周同业发行快照；发现历史删除或业务修订时阻断发布")
     parser.add_argument("--skip-generate", action="store_true", help="跳过综合看板生成,直接用 01_latest 最新 HTML 组装站点")
+    parser.add_argument(
+        "--dashboard",
+        type=Path,
+        default=None,
+        help=(
+            "显式指定要发布的综合看板 HTML(需与 --skip-generate 搭配)。"
+            "不传则按文件名业务日期自动选最新——但文件名日期取自机构画像快照日,"
+            "并不代表同业发行/消金数据的新鲜度,重新生成旧日期文件时自动选择会选错,"
+            "此时用本参数显式指定。"
+        ),
+    )
     parser.add_argument("--no-push", action="store_true", help="在临时 worktree 创建提交但不推送远端,且不移动本地分支引用")
     parser.add_argument("--build-only", action="store_true", help="纯预览:只组装站点包并对比差异,不创建提交/不更新引用/不推送(与 --no-push 互斥)")
     parser.add_argument("--remote", default="github", help="Pages 远端名,默认 github")
@@ -825,12 +836,20 @@ def main() -> None:
         raise ValueError("--skip-generate 不能与消金或同业源 Excel 参数同时使用")
     if args.build_only and args.no_push:
         raise ValueError("--build-only 与 --no-push 互斥:纯预览请用 --build-only")
+    if args.dashboard and not args.skip_generate:
+        raise ValueError("--dashboard 需与 --skip-generate 搭配:重新生成时产物路径由生成环节决定")
     if not args.allow_dirty:
         ensure_clean_main()
 
     latest_dashboard = None
     if args.skip_generate:
-        print("[1/4] 跳过生成综合看板,使用现有 01_latest 最新 HTML")
+        if args.dashboard:
+            latest_dashboard = args.dashboard.resolve()
+            if not latest_dashboard.is_file():
+                raise FileNotFoundError(f"--dashboard 指定的看板不存在: {latest_dashboard}")
+            print(f"[1/4] 跳过生成综合看板,使用显式指定的 {latest_dashboard.name}")
+        else:
+            print("[1/4] 跳过生成综合看板,使用现有 01_latest 最新 HTML")
     else:
         ledger = args.ledger or find_latest_ledger()
         latest_dashboard = generate_dashboard(
