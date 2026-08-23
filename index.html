@@ -56,7 +56,7 @@
   <iframe id="viewer" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups allow-forms"></iframe>
   <button id="flip" type="button"></button>
   <script>
-    const PARAMS = {"salt":"ZjZ5M9znSMwuyi1tXbAe7Q==","iterations":10000,"desktop":{"iv":"ZN2f/y2FHQ1Qe6Je","url":"p/d.bin","bytes":435922},"mobile":{"iv":"QfWcqKCU7+u2EzDy","url":"p/m.bin","bytes":85736}};
+    const PARAMS = {"salt":"3pmbCYSbjbu7x9JeIkYSDQ==","iterations":10000,"desktop":{"iv":"LXddxYFzJCqZTDpS","url":"p/d.bin?v=0c4444474a7a","bytes":435922},"mobile":{"iv":"whdhC32a9nT5tbOz","url":"p/m.bin?v=a4866bd59094","bytes":85736}};
     const VIEW_KEY = 'abs_dash_view';
     const $ = (id) => document.getElementById(id);
     const msg = (text, cls='', html=false) => {
@@ -91,9 +91,19 @@
     const FETCHES = {};
     function fetchPayload(view) {
       if (!FETCHES[view]) {
-        FETCHES[view] = fetch(PARAMS[view].url, {cache:'force-cache'}).then(r => {
+        // 不能用 cache:'force-cache':它会无视 max-age 直接吃旧缓存,
+        // 于是"新壳 + 旧密文"解密失败并被误报成密码错误。URL 已带摘要版本号,
+        // 走默认缓存策略即可——同一版密文照样命中缓存,换版则天然是新 URL。
+        FETCHES[view] = fetch(PARAMS[view].url).then(r => {
           if (!r.ok) throw new Error('payload HTTP ' + r.status);
           return r.arrayBuffer();
+        }).then(buf => {
+          if (buf.byteLength !== PARAMS[view].bytes) {
+            const e = new Error('payload size mismatch');
+            e.stale = true;
+            throw e;
+          }
+          return buf;
         });
       }
       return FETCHES[view];
@@ -160,8 +170,12 @@
         PASSWORD = null; KEY = null;
         if (err && err.unsupported) {
           msg('当前浏览器不支持解压(DecompressionStream),请使用 Chrome 80+/Edge 80+/Safari 16.4+ 或更新浏览器。', 'err');
+        } else if (err && err.stale) {
+          // 密文体积与壳记录的不符 = 拿到了旧版本密文,不是密码问题,别误导用户
+          delete FETCHES[VIEW];
+          msg('缓存的数据版本过期,已自动重取,请再点一次解锁。', 'err');
         } else {
-          msg('密码错误,解密失败。', 'err');
+          msg('密码错误,解密失败。若刚更新过看板,请强制刷新页面后重试。', 'err');
         }
       } finally {
         $('unlock').disabled = false;
