@@ -160,9 +160,10 @@
           '<div style="' + SUB + ' letter-spacing:.2px;">快照 ' + META.snapshot + '</div>' +
         '</div>' +
         '<div class="noscroll" style="margin-top:11px; padding:0 20px; display:flex; gap:7px; overflow-x:auto;">' +
+          // 子标签与电脑端 gen_integrated_dashboard.sub_label_map 保持一致:
+          // 理财子分析/非标额度已于 0820 暂时下线,机构统计为新增
           pill('机构速查', S.sub === 'quick', 'sub:quick') +
-          pill('理财子分析', false, 'sub:wlz') +
-          pill('非标额度', false, 'sub:credit') +
+          pill('机构统计', false, 'sub:inst_stats') +
           pill('授信总额度', false, 'sub:credit_total') +
         '</div>' +
         '<div style="padding:0 20px; margin-top:11px;">' +
@@ -405,7 +406,8 @@
       '<div class="noscroll" style="margin-top:11px; padding:0 20px; display:flex; gap:7px; overflow-x:auto;">' +
         pill('发行概览', S.peerView === 'overview', 'pv:overview') +
         pill('信托渠道', S.peerView === 'trust', 'pv:trust') +
-        pill('资产 Top 8', S.peerView === 'top', 'pv:top') +
+        // Top N 取实际卡片数,电脑端 peer_issuance_panel.TOP_N 调整时手机端自动跟随
+        pill('资产 Top ' + PEER.top.length, S.peerView === 'top', 'pv:top') +
       '</div></div><div style="padding:2px 20px 18px;">';
 
     if (S.peerView === 'overview') {
@@ -442,7 +444,7 @@
 
     if (S.peerView === 'top') {
       h += '<div style="margin-top:4px; display:flex; align-items:baseline; justify-content:space-between;">' +
-        '<div style="' + H2 + '">基础资产发行 Top 8</div><div style="' + SUB + '">点击展开渠道</div></div>' +
+        '<div style="' + H2 + '">基础资产发行 Top ' + PEER.top.length + '</div><div style="' + SUB + '">点击展开渠道</div></div>' +
         '<div style="margin-top:9px; display:flex; flex-direction:column; gap:8px;">';
       PEER.top.forEach(function (c, i) {
         var open = !!S.peerOpen[i];
@@ -489,26 +491,29 @@
         '<div style="width:56px; height:56px; margin:0 auto; border-radius:28px; background:#e7ebf2; display:flex; align-items:center; justify-content:center;">' +
           '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8a96ab" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5.4l3.4 2"></path></svg></div>' +
         '<div style="margin-top:16px; font-size:14.5px; font-weight:600; color:#4a5a75;">这个面板还没加工</div>' +
-        '<div style="margin-top:8px; font-size:12.5px; color:#9aa5b5; line-height:1.7;">理财子分析 / 非标额度 / 授信总额度 · 待加工<br>请在电脑端查看完整面板</div>' +
+        '<div style="margin-top:8px; font-size:12.5px; color:#9aa5b5; line-height:1.7;">机构统计 / 授信总额度 · 待加工<br>请在电脑端查看完整面板</div>' +
         '<div data-act="sub:quick" style="margin:18px auto 0; max-width:180px; min-height:42px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #e4e8ee; border-radius:12px; font-size:13px; font-weight:500; color:#1a3a5c;">返回机构速查</div>' +
       '</div></div>';
   }
 
-  /* ---------- 底部 Tab + 弹层 ---------- */
+  /* ---------- 顶部 Tab + 弹层 ---------- */
   function tabBar() {
     var items = [
       ['progress', '机构画像', '<circle cx="11" cy="7" r="3.4"></circle><path d="M4.5 18.5c0-3.6 2.9-5.8 6.5-5.8s6.5 2.2 6.5 5.8"></path>'],
       ['asset', '资产大盘', '<path d="M3.5 18.5h15"></path><rect x="4.5" y="10" width="3.6" height="6"></rect><rect x="9.7" y="6" width="3.6" height="10"></rect><rect x="14.9" y="12.5" width="3.6" height="3.5"></rect>'],
       ['peer', '同业发行', '<path d="M3.5 14.5 8 9.5l3.6 3.2L18.5 6"></path><path d="M14.4 6h4.1v4"></path>']
     ];
-    var h = '<div style="flex:0 0 auto; background:rgba(255,255,255,.94); backdrop-filter:blur(18px); border-top:1px solid #e2e6ee; padding:8px 12px 0;"><div style="display:flex;">';
+    // 顶部标签栏:安全区留白包在栏内,图标与文字横向并排,选中态用底部 2px 下划线
+    var h = '<div style="flex:0 0 auto; background:#fff; border-bottom:1px solid #e2e6ee; box-shadow:0 1px 3px rgba(13,27,46,.05);">' +
+      '<div style="height:env(safe-area-inset-top, 0px);"></div>' +
+      '<div style="display:flex; padding:0 10px;">';
     items.forEach(function (it) {
-      var on = S.tab === it[0], c = on ? '#0d1b2e' : '#a6b0c0';
-      h += '<div data-act="tab:' + it[0] + '" style="flex:1; min-height:46px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:' + c + ';">' +
-        '<svg width="21" height="21" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + it[2] + '</svg>' +
-        '<span style="font-size:10px; font-weight:600; letter-spacing:.2px;">' + it[1] + '</span></div>';
+      var on = S.tab === it[0], c = on ? '#0d1b2e' : '#98a3b5';
+      h += '<div data-act="tab:' + it[0] + '" style="flex:1; min-height:46px; display:flex; align-items:center; justify-content:center; gap:5px; color:' + c + '; border-bottom:2px solid ' + (on ? '#0d1b2e' : 'transparent') + ';">' +
+        '<svg width="17" height="17" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;">' + it[2] + '</svg>' +
+        '<span style="font-size:13px; font-weight:' + (on ? '700' : '500') + '; letter-spacing:.2px; white-space:nowrap;">' + it[1] + '</span></div>';
     });
-    return h + '</div><div style="height:env(safe-area-inset-bottom, 0px); min-height:8px;"></div></div>';
+    return h + '</div></div>';
   }
 
   function sheet() {
@@ -554,9 +559,10 @@
     var top = keepScroll && scroller ? scroller.scrollTop : 0;
     root.innerHTML =
       '<div style="position:relative; width:100%; height:100%; background:#f2f4f8; overflow:hidden; display:flex; flex-direction:column;">' +
-        '<div style="flex:0 0 auto; height:env(safe-area-inset-top, 0px);"></div>' +
-        '<div class="noscroll" id="m-scroll" style="flex:1; overflow-y:auto; overscroll-behavior:contain; position:relative; -webkit-overflow-scrolling:touch;">' + body() + '</div>' +
-        tabBar() + sheet() +
+        tabBar() +
+        '<div class="noscroll" id="m-scroll" style="flex:1; overflow-y:auto; overscroll-behavior:contain; position:relative; -webkit-overflow-scrolling:touch;">' + body() +
+          '<div style="height:calc(14px + env(safe-area-inset-bottom, 0px));"></div></div>' +
+        sheet() +
       '</div>';
     scroller = document.getElementById('m-scroll');
     if (keepScroll && scroller) scroller.scrollTop = top;
