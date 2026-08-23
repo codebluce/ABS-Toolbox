@@ -432,6 +432,24 @@ def build_asset(html: str) -> dict | None:
 
 # ---------------------------------------------------------------- 同业发行
 
+# 电脑端同业发行图例:<i style="background:#cf6b6b"></i>京东系
+# 配色的唯一真源是 peer_issuance_panel.ASSET_FAMILY_COLORS,它已渲染进图例;
+# 从这里回读可以让手机端自动跟随电脑端调色,无需两边各存一份常量。
+LEGEND_RE = re.compile(
+    r'<span class="peer-issuance-legend-item"><i style="background:'
+    r'(?P<color>#[0-9a-fA-F]{6})"></i>(?P<family>[^<]+)</span>'
+)
+
+
+def build_peer_colors(block: str) -> dict:
+    """从图例回读资产集团配色;沿用与 label 相同的 未知资产→其他 改名。"""
+    colors = {}
+    for m in LEGEND_RE.finditer(block):
+        family = m.group("family").strip().replace("未知资产", "其他")
+        colors[family] = m.group("color")
+    return colors
+
+
 def build_peer(html: str) -> dict | None:
     start = html.find('<main class="peer-issuance-root">')
     if start < 0:
@@ -502,7 +520,10 @@ def build_peer(html: str) -> dict | None:
     got = len(groups) + sum(len(c["rows"]) for c in top)
     if got != expected:
         raise RuntimeError(f"同业发行行数不匹配: 源 {expected} 行, 解析到 {got} 行")
-    return {"groups": groups, "trust": trust, "top": top}
+    colors = build_peer_colors(block)
+    if not colors:
+        raise RuntimeError("同业发行图例配色解析为空,手机版会退回内置兜底色导致与电脑端不一致")
+    return {"groups": groups, "trust": trust, "top": top, "colors": colors}
 
 
 # ---------------------------------------------------------------- meta
@@ -597,7 +618,8 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
     out_path.write_text(page, encoding="utf-8")
 
     print(f"[mobile] 机构 {len(prog_quick)} 家 · 消金 KPI {len(asset['kpis'])} 项 · "
-          f"同业集团 {len(peer['groups'])} 个 / 渠道 {len(peer['trust'])} 家 / Top {len(peer['top'])}")
+          f"同业集团 {len(peer['groups'])} 个 / 渠道 {len(peer['trust'])} 家 / Top {len(peer['top'])} · "
+          f"配色 {len(peer['colors'])} 组(取自电脑端图例)")
     print(f"[mobile] 产物: {out_path}  ({out_path.stat().st_size / 1024:.0f} KB)")
     return out_path
 

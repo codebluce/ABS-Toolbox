@@ -13,7 +13,12 @@
   var INJ = (typeof window !== 'undefined' && window.ABS_MOBILE_DATA) || {};
   var META = INJ.meta || { snapshot: '2026-08-16', assetDate: '08-14', peerDate: '08-14', progYear: 2026 };
 
-  var CG = { '蚂蚁系': '#2a78d6', '网商系': '#4e9f8b', '腾讯系': '#7c6eb0', '微众系': '#c98747', '字节系': '#cf6b6b', '美团系': '#6f8e45', '其他': '#98a1ad', '未知资产': '#98a1ad' };
+  // 资产集团配色优先取电脑端图例(gen_mobile_dashboard 从 peer_issuance_panel
+  // 渲染出的图例回读注入),电脑端调色手机端自动跟随。下面只是解析失败时的兜底,
+  // 取值须与 peer_issuance_panel.ASSET_FAMILY_COLORS 一致:
+  // 京东系固定用 #cf6b6b 红,字节系用 #0d1b2e 深蓝。
+  var CG_FALLBACK = { '京东系': '#cf6b6b', '蚂蚁系': '#2a78d6', '网商系': '#4e9f8b', '腾讯系': '#7c6eb0', '微众系': '#c98747', '字节系': '#0d1b2e', '美团系': '#6f8e45', '其他': '#98a1ad', '未知资产': '#98a1ad' };
+  var CG = (INJ.peer && INJ.peer.colors) || CG_FALLBACK;
 
   var ASSET = INJ.asset || {
     kpis: [
@@ -420,9 +425,16 @@
       h += '</div><div style="margin-top:7px; ' + SUB + ' line-height:1.65;">按基础资产归并至资产集团；未命中归并规则的列为「其他」</div>';
     }
 
+    function trustScope() {
+      var list = PEER.trust || [];
+      var merged = list.length && /^其他/.test(list[list.length - 1].name || '');
+      return merged ? ('前 ' + (list.length - 1) + ' 家 + 其他') : ('前 ' + list.length + ' 家');
+    }
+
     if (S.peerView === 'trust') {
       h += '<div style="margin-top:4px; display:flex; align-items:baseline; justify-content:space-between;">' +
-        '<div style="' + H2 + '">信托渠道分布</div><div style="' + SUB + '">前 5 家 + 其他</div></div>' +
+        // 渠道数取实际数据(电脑端 TRUST_TOP_N),末位是否为合并项也据实判断,不写死
+        '<div style="' + H2 + '">信托渠道分布</div><div style="' + SUB + '">' + trustScope() + '</div></div>' +
         '<div style="margin-top:9px; display:flex; flex-direction:column; gap:9px;">';
       PEER.trust.forEach(function (t) {
         h += '<div style="' + CARD + ' padding:12px 14px;">' +
