@@ -48,6 +48,7 @@ BANK_NORM_MAP = {
     '浦发北分': '浦发银行', '渤海银行上海自贸区分行': '渤海银行',
     '中银北分': '中国银行', '中行北分': '中国银行',
     '上银北分': '上海银行', '杭州北分': '杭州银行',
+    '工银天分': '工商银行', '浙商上分': '浙商银行',
     # v2.0.0 补充
     '工银天津': '工商银行',
     '华夏北分': '华夏银行',
@@ -135,6 +136,8 @@ if __name__ == "__main__":
     assert normalize_bank("江苏北分") == "江苏银行"
     assert normalize_bank("建行北分") == "建设银行"
     assert normalize_bank("杭州北分") == "杭州银行"
+    assert normalize_bank("工银天分") == "工商银行"
+    assert normalize_bank("浙商上分") == "浙商银行"
     assert normalize_bank("招商银行") == "招商银行"
     print("✅ normalize_bank 测试通过")
 
