@@ -374,6 +374,8 @@ def map_detail_to_project(filename, project_names=None):
         "26东裕9号ABN001": "26东裕9号一期",
         "【26东裕11夏裕】": "东裕11号夏裕（可续发）",
         "26东裕11夏裕": "东裕11号夏裕（可续发）",
+        "26东裕11季裕": "东裕11号季裕（可续发）",
+        "26东裕11季裕ABN001": "东裕11号季裕（可续发）",
     }
     name = explicit_aliases.get(name, name)
 
