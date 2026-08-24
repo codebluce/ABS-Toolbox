@@ -288,6 +288,8 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
         let v = 'desktop';
         if (/iPad|Android(?!.*Mobile)|Tablet/i.test(ua)) v = 'desktop';
         else if (/iPhone|iPod|Android.*Mobile|Windows Phone|HarmonyOS/i.test(ua)) v = 'mobile';
+        // 明确的桌面 UA 优先于视口兜底；避免 Electron/嵌入式浏览器短暂报 0px 时误判手机端。
+        else if (/Macintosh|Windows NT|X11; Linux/i.test(ua)) v = 'desktop';
         else {{
           const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
           const narrow = Math.min(window.innerWidth, window.innerHeight) <= 520;
@@ -345,6 +347,7 @@ def protected_shell_html(latest_dashboard: Path, payload: dict, mobile_payload: 
       const ua = navigator.userAgent || '';
       if (/iPad|Android(?!.*Mobile)|Tablet/i.test(ua)) return 'desktop';
       if (/iPhone|iPod|Android.*Mobile|Windows Phone|HarmonyOS/i.test(ua)) return 'mobile';
+      if (/Macintosh|Windows NT|X11; Linux/i.test(ua)) return 'desktop';
       const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
       const narrow = Math.min(window.innerWidth, window.innerHeight) <= 520;
       if (coarse && narrow) return 'mobile';
