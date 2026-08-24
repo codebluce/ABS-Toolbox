@@ -14,6 +14,8 @@
         let v = 'desktop';
         if (/iPad|Android(?!.*Mobile)|Tablet/i.test(ua)) v = 'desktop';
         else if (/iPhone|iPod|Android.*Mobile|Windows Phone|HarmonyOS/i.test(ua)) v = 'mobile';
+        // 明确的桌面 UA 优先于视口兜底；避免 Electron/嵌入式浏览器短暂报 0px 时误判手机端。
+        else if (/Macintosh|Windows NT|X11; Linux/i.test(ua)) v = 'desktop';
         else {
           const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
           const narrow = Math.min(window.innerWidth, window.innerHeight) <= 520;
@@ -56,7 +58,7 @@
   <iframe id="viewer" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups allow-forms"></iframe>
   <button id="flip" type="button"></button>
   <script>
-    const PARAMS = {"salt":"41SQ/fjHxZ06kM7r5LstHA==","iterations":10000,"desktop":{"iv":"0H15wU3RUCxRqy7R","url":"p/d.bin?v=231e0d07c126","bytes":435922},"mobile":{"iv":"SJEQFTzH8Y3qZGIW","url":"p/m.bin?v=578df6c8f522","bytes":85736}};
+    const PARAMS = {"salt":"y7/nL3Hc5C5rN5xXGlAJjA==","iterations":10000,"desktop":{"iv":"+YTOGPrars4/jjlV","url":"p/d.bin?v=a7efab1e5014","bytes":438410},"mobile":{"iv":"7kmUZaXFTKiMXEqS","url":"p/m.bin?v=f06cdbb2780b","bytes":86466}};
     const VIEW_KEY = 'abs_dash_view';
     const $ = (id) => document.getElementById(id);
     const msg = (text, cls='', html=false) => {
@@ -71,6 +73,7 @@
       const ua = navigator.userAgent || '';
       if (/iPad|Android(?!.*Mobile)|Tablet/i.test(ua)) return 'desktop';
       if (/iPhone|iPod|Android.*Mobile|Windows Phone|HarmonyOS/i.test(ua)) return 'mobile';
+      if (/Macintosh|Windows NT|X11; Linux/i.test(ua)) return 'desktop';
       const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
       const narrow = Math.min(window.innerWidth, window.innerHeight) <= 520;
       if (coarse && narrow) return 'mobile';
