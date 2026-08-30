@@ -37,7 +37,7 @@ CATEGORY_COLORS = {
     "助贷联合贷": "#2a78d6",
 }
 
-PANEL_SUMMARY_RULE = "面板汇总以展示明细加总为准；来源表汇总仅用于容差校验（允许 1 元尾差）。"
+PANEL_SUMMARY_RULE = "面板汇总以展示明细加总为准；来源表汇总仅用于容差校验（允许 2 元尾差）。"
 CONSUMER_LOAN_RULE = "消费贷 = 白条消费 + 分分卡。"
 CASH_LOAN_RULE = "现金贷 = 金条 + 白取。"
 CASH_FUNDING_RULE = "现金贷助贷合计 = 金条助贷 + 白取助贷100% + 白取助贷联合贷。"

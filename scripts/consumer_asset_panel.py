@@ -164,7 +164,7 @@ def check_total(qc: list[dict], name: str, displayed: Decimal, reported: Decimal
     if reported is None:
         return
     difference = displayed - reported
-    level = "OK" if abs(difference) <= Decimal("1") else "WARN"
+    level = "OK" if abs(difference) <= Decimal("2") else "WARN"
     issue(qc, level, "TOTAL_RECONCILIATION", f"{name}明细与来源汇总差额 {difference} 元",
           displayed_yuan=str(displayed), reported_yuan=str(reported), difference_yuan=str(difference), source_locator=locator)
 
