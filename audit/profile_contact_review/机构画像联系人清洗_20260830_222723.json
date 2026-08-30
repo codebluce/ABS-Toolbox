@@ -1,0 +1,161 @@
+{
+  "generated_at": "2026-08-30T22:27:23",
+  "records_scanned": 237,
+  "summary": {
+    "placeholder_cleared": 6,
+    "contact_cleared": 7,
+    "business_text_removed": 2,
+    "placeholder_segment_removed": 1
+  },
+  "auto_fixed": [
+    {
+      "institution": "博时基金",
+      "owner": "高雅",
+      "before": "无人对接",
+      "after": "",
+      "actions": [
+        "placeholder_cleared",
+        "contact_cleared"
+      ],
+      "manual_review": []
+    },
+    {
+      "institution": "花旗银行",
+      "owner": "李亦非",
+      "before": "暂无",
+      "after": "",
+      "actions": [
+        "placeholder_cleared",
+        "contact_cleared"
+      ],
+      "manual_review": []
+    },
+    {
+      "institution": "招商银行/招银理财",
+      "owner": "姜守园",
+      "before": "赵伊异-项目投资一部-高级投资经理\n张杰-总助\n袁丽娟-北分战客部\n张鹏-总行战客部负责人\n刘政-总行战客部\n黄妮妮-总行战客部\n桂斯苑-北分投行部\n杜磊-私行总行产品经理\n安奕霖-私行北分产品经理白条、金条、白取、保理、金采、采购融资、京企贷、企业主贷、动产质押（天风管理人不投）总额度140亿，包括：\n白条上限60亿，金条+取现上限100亿，保理上限40亿，金采上限20亿，企业主贷上限20亿，采购贷上限10亿，京小贷上限5亿，动产融资3亿。",
+      "after": "赵伊异-项目投资一部-高级投资经理; 张杰-总助; 袁丽娟-北分战客部; 张鹏-总行战客部负责人; 刘政-总行战客部; 黄妮妮-总行战客部; 桂斯苑-北分投行部; 杜磊-私行总行产品经理; 安奕霖-私行北分产品经理白条、金条、白取、保理、金采、采购融资、京企贷、企业主贷、动产质押（天风管理人不投）总额度140亿，包括：",
+      "actions": [
+        "business_text_removed"
+      ],
+      "manual_review": []
+    },
+    {
+      "institution": "渣打银行",
+      "owner": "姜守园",
+      "before": "-",
+      "after": "",
+      "actions": [
+        "placeholder_cleared",
+        "contact_cleared"
+      ],
+      "manual_review": []
+    },
+    {
+      "institution": "中原信托",
+      "owner": "姜守园",
+      "before": "-",
+      "after": "",
+      "actions": [
+        "placeholder_cleared",
+        "contact_cleared"
+      ],
+      "manual_review": []
+    },
+    {
+      "institution": "汽融专项",
+      "owner": "姜守园",
+      "before": "本周三出材料，目前已开展销售工作。本期产品结构、期限与前三期差距不大。最大差距为无易鑫资产，加入联众资产。下周反馈一轮市场情况。",
+      "after": "",
+      "actions": [
+        "business_text_removed",
+        "contact_cleared"
+      ],
+      "manual_review": []
+    },
+    {
+      "institution": "富滇银行",
+      "owner": "高雅",
+      "before": "暂无联系人; 金市：王国荣",
+      "after": "金市：王国荣",
+      "actions": [
+        "placeholder_segment_removed"
+      ],
+      "manual_review": []
+    },
+    {
+      "institution": "金锝投资",
+      "owner": "邓殷洁",
+      "before": "暂无联系人",
+      "after": "",
+      "actions": [
+        "placeholder_cleared",
+        "contact_cleared"
+      ],
+      "manual_review": []
+    },
+    {
+      "institution": "持牌消金公司",
+      "owner": "邓殷洁",
+      "before": "暂无联系人",
+      "after": "",
+      "actions": [
+        "placeholder_cleared",
+        "contact_cleared"
+      ],
+      "manual_review": []
+    }
+  ],
+  "manual_review": [
+    {
+      "institution": "浦发银行/浦银理财",
+      "owner": "邓殷洁",
+      "before": "总行：\n原：薛宏立-金市部总经理；新：彭松\n原：侯林-金市部副总经理；新：夏晔莹\n陆炜-授信管理部总经理\n金市主管邹佳骏、经办郑天天 宾川\n\n重分：\n冉维-金市负责人\n万月月-金市经办\n\n北分：\n分管副行长-彭熙\n新：梁淼鑫-金市总经理\n原：俞洋-金市总经理-富力城支行行长\n郭志维-金市副总\n张一红-金市产品经理\n索鑫-万寿路支行行长\n张庆超-万寿路支行副行长\n牛笑-万寿路支行客户经理\n\n上分：\n于永俊-分行副行长（分管对公和金市）\n相勇-上分静安支行行长; 董事长-何卫海\n总经理-李桦\n副总裁（分管风险）-甄光明\n非标条线：\n副总裁（分管非标）-原：孙俊，新：张文桥\n项目投资部负责人-孙磊\n消金业务非标团队长-欧如飞\n总协调-詹敏\n\n公募条线：\n现管负责人-王希哲\n现管团队长-张晨\n现管总协调-孙赵莹\n多资产总协调-李知谭\n固收负责人-罗英宗",
+      "after": "总行：; 原：薛宏立-金市部总经理; 新：彭松; 原：侯林-金市部副总经理; 新：夏晔莹; 陆炜-授信管理部总经理; 金市主管邹佳骏、经办郑天天 宾川; 重分：; 冉维-金市负责人; 万月月-金市经办; 北分：; 分管副行长-彭熙; 新：梁淼鑫-金市总经理; 原：俞洋-金市总经理-富力城支行行长; 郭志维-金市副总; 张一红-金市产品经理; 索鑫-万寿路支行行长; 张庆超-万寿路支行副行长; 牛笑-万寿路支行客户经理; 上分：; 于永俊-分行副行长（分管对公和金市）; 相勇-上分静安支行行长; 董事长-何卫海; 总经理-李桦; 副总裁（分管风险）-甄光明; 非标条线：; 副总裁（分管非标）-原：孙俊，新：张文桥; 项目投资部负责人-孙磊; 消金业务非标团队长-欧如飞; 总协调-詹敏; 公募条线：; 现管负责人-王希哲; 现管团队长-张晨; 现管总协调-孙赵莹; 多资产总协调-李知谭; 固收负责人-罗英宗",
+      "actions": [],
+      "manual_review": [
+        "possible_role_conflict:副总裁"
+      ]
+    },
+    {
+      "reason": "cross_institution_reuse",
+      "contact": "冯博-普惠部",
+      "institutions": [
+        "中粮期货",
+        "厦门信托"
+      ]
+    },
+    {
+      "reason": "cross_institution_reuse",
+      "contact": "朱哲意-结构融资组总牵头",
+      "institutions": [
+        "上银基金",
+        "汇丰银行"
+      ]
+    },
+    {
+      "reason": "cross_institution_reuse",
+      "contact": "张欣怡-结构融资组投资经理",
+      "institutions": [
+        "上银基金",
+        "汇丰银行"
+      ]
+    },
+    {
+      "reason": "cross_institution_reuse",
+      "contact": "贾婧怡-结构融资组投资经理",
+      "institutions": [
+        "上银基金",
+        "汇丰银行"
+      ]
+    },
+    {
+      "reason": "cross_institution_reuse",
+      "contact": "宋淡宜-金市投资经理",
+      "institutions": [
+        "徽商银行/徽银理财",
+        "湖南银行金市"
+      ]
+    }
+  ]
+}
