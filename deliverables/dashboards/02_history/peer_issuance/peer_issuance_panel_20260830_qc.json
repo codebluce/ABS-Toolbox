@@ -1,0 +1,162 @@
+[
+  {
+    "level": "OK",
+    "code": "PARSE_2026",
+    "message": "2026 源解析 471 期",
+    "rows": 471
+  },
+  {
+    "level": "OK",
+    "code": "PARSE_2025",
+    "message": "2025 源解析 677 期",
+    "rows": 677
+  },
+  {
+    "level": "OK",
+    "code": "JD_INCLUDED",
+    "message": "纳入京东系 2026 年 71 期 / 735 亿，2025 同期 139 期",
+    "count_2026": 71,
+    "count_2025": 139
+  },
+  {
+    "level": "OK",
+    "code": "YOY_WINDOW",
+    "message": "2025 同期窗口 455 期",
+    "cutoff": "2025-08-28"
+  },
+  {
+    "level": "OK",
+    "code": "FAMILY_OVERVIEW_RECONCILIATION",
+    "message": "基础资产集团概览加总与市场总额差额 0.00 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_CHANNEL_RECONCILIATION",
+    "message": "信托渠道展示加总与全量信托渠道总额差额 0.00 亿元",
+    "displayed": "3095.73",
+    "total": "3095.73"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
+    "message": "国投信托 分段加总与渠道总额差额 0.00 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
+    "message": "华能信托 分段加总与渠道总额差额 0.00 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
+    "message": "外贸信托 分段加总与渠道总额差额 0.0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
+    "message": "华鑫信托 分段加总与渠道总额差额 0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
+    "message": "中信信托 分段加总与渠道总额差额 0.0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
+    "message": "上海信托 分段加总与渠道总额差额 0.0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
+    "message": "厦门信托 分段加总与渠道总额差额 0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
+    "message": "中粮信托 分段加总与渠道总额差额 0.00 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_UNKNOWN_ASSET_RECONCILIATION",
+    "message": "信托渠道未知资产分段与基础资产明细差额 0.00 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_UNKNOWN_ASSETS",
+    "message": "信托渠道存在 11 类未知资产，已归入未知资产分段",
+    "assets": {
+      "乐信分期乐": "3",
+      "奇富借条小微贷": "14",
+      "奇富借条消费贷": "54",
+      "平安普惠经营贷": "88.15",
+      "度小满周转贷": "10",
+      "度小满满易贷": "80",
+      "新网银行好人贷": "4",
+      "新网银行好商贷": "33",
+      "滴滴\"滴水贷\"": "10",
+      "蚂蚁经营贷": "51",
+      "金城银行金企贷": "14.5"
+    }
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "网商贷 月度加总与卡片总量差额 0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "蚂蚁花呗 月度加总与卡片总量差额 0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "蚂蚁借呗 月度加总与卡片总量差额 0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "腾讯分付 月度加总与卡片总量差额 0.00 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "京东白条 月度加总与卡片总量差额 0.00 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "京东企业主贷 月度加总与卡片总量差额 0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "京东金条 月度加总与卡片总量差额 0.0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "微众银行微粒贷 月度加总与卡片总量差额 0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "美团月付 月度加总与卡片总量差额 0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "美团生活费 月度加总与卡片总量差额 0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "抖音放心借·小微 月度加总与卡片总量差额 0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "度小满满易贷 月度加总与卡片总量差额 0 亿元"
+  }
+]
