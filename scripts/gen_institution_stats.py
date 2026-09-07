@@ -1014,12 +1014,14 @@ def run_qc(df, projects, mgr, sales, custody, total_scale,
     else:
         fail(f'管理人表规模超过总规模：{mgr_total:.2f} > {total_scale:.2f}')
 
-    # 1-4 销售机构表规模之和 ≤ 总规模
+    # 1-4 销售机构表规模之和 ≤ 总规模（经验值，非硬约束）
+    # 每个联席承销商各记一次项目全额规模，若某项目有多家券商联席承销，
+    # 合计可能超过总规模（如"国信证券/光大证券/中信证券"三家联席），属正常业务场景，降级为WARN不阻断。
     sales_total = sales['参与项目规模'].sum()
     if sales_total <= total_scale + 0.01:
         ok(f'销售机构表规模合理：{sales_total:.2f}亿 ≤ 总规模{total_scale:.2f}亿')
     else:
-        fail(f'销售机构表规模超过总规模：{sales_total:.2f} > {total_scale:.2f}')
+        warn(f'销售机构表规模超过总规模：{sales_total:.2f} > {total_scale:.2f}（可能存在多家联席承销商项目，各记全额规模所致）')
 
     # 1-5 托管行表规模之和 ≈ 总规模（所有项目都有托管行）
     custody_total = custody['托管规模'].sum()
