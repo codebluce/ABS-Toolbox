@@ -446,13 +446,30 @@ def _field_equal(a, b):
     return a == b
 
 
+def _is_known_year_typo(old, new):
+    """判断是否为"簿记年份 2026 误录为 2025"这一已知录入错误。
+
+    业务规则（见 abs_common.fix_bookkeeping_year）：2026 台账中的项目一定发生在
+    2026 年，源表偶尔把 2026 误录为 2025。已加工台账里存的是纠错后的年份，
+    若无条件按原始表回填，会把纠错结果覆盖回错误年份。
+
+    仅当 月-日完全相同、年份恰为 2026→2025 时判定为已知笔误，不做回填。
+    """
+    if not isinstance(old, datetime.datetime) or not isinstance(new, datetime.datetime):
+        return False
+    return (old.year == 2026 and new.year == 2025
+            and (old.month, old.day) == (new.month, new.day))
+
+
 def sync_existing_project_fields(ws_a, ws_b, projects_a, projects_b):
     """以最新原始台账为准，回填既有项目的项目级字段。
 
     返回变更明细 list[dict]，供审计报告输出。不触碰 WXY 与分层层字段。
+    已知年份笔误（2026 误录为 2025）不回填，保留台账中纠错后的值。
     """
     common = [p for p in projects_a.keys() if p in projects_b]
     changes = []
+    protected = []
     touched = set()
     for proj in common:
         sa, ea = projects_a[proj]['start'], projects_a[proj]['end']
@@ -461,6 +478,15 @@ def sync_existing_project_fields(ws_a, ws_b, projects_a, projects_b):
             old = ws_a.cell(row=sa, column=c).value
             new = ws_b.cell(row=sb, column=c).value
             if _field_equal(old, new):
+                continue
+            if c == 12 and _is_known_year_typo(old, new):
+                # 保留台账中已纠错的 2026 年份，不按源表回退成 2025
+                protected.append({
+                    'project': proj, 'field': cname, 'col': c,
+                    'kept': old.strftime('%Y-%m-%d'),
+                    'raw': new.strftime('%Y-%m-%d'),
+                    'reason': '已知年份笔误(2026误录为2025)，保留台账纠错值',
+                })
                 continue
             changes.append({
                 'project': proj, 'field': cname, 'col': c,
@@ -472,7 +498,7 @@ def sync_existing_project_fields(ws_a, ws_b, projects_a, projects_b):
             for r in range(sa, ea + 1):
                 ws_a.cell(row=r, column=c).value = new
             touched.add(proj)
-    return changes, touched
+    return changes, touched, protected
 
 
 # ============================================================
@@ -953,6 +979,7 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     wb_out = None
     wb_orig = None
     field_changes = []
+    field_protected = []
 
     # === Step 1: Preprocess ledger(s) ===
     print("\n=== Step 1: Preprocessing ===")
@@ -1015,15 +1042,20 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
             print("  [SKIP] 已通过 --no-field-sync 关闭")
         else:
             print("\n=== Step 2.5: 既有项目字段同步 ===")
-            field_changes, touched = sync_existing_project_fields(
+            field_changes, touched, field_protected = sync_existing_project_fields(
                 ws_a, ws_b, projects_a, projects_b)
-            if not field_changes:
+            if not field_changes and not field_protected:
                 print("  PASS: 既有项目项目级字段与最新原始台账一致，无需回填")
-            else:
+            if field_changes:
                 print(f"  回填 {len(field_changes)} 处字段修订，涉及 {len(touched)} 个项目：")
                 for ch in sorted(field_changes, key=lambda x: (x['project'], x['col'])):
                     print(f"    [FIX] {ch['project']} | {ch['field']}: "
                           f"{ch['old']!r} -> {ch['new']!r}")
+            if field_protected:
+                print(f"  保护 {len(field_protected)} 处已知笔误（保留台账纠错值）：")
+                for p in field_protected:
+                    print(f"    [KEEP] {p['project']} | {p['field']}: "
+                          f"源表={p['raw']} 保留={p['kept']} ({p['reason']})")
 
         if not increment and not field_changes:
             print("\n  No increment projects and no field changes. Nothing to merge.")
@@ -1557,8 +1589,8 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     os.replace(tmp_path, output_path)
     print(f"\nSaved: {output_path}")
 
-    # 字段同步审计报告（有变更时才落盘，便于逐条复核与回溯）
-    if field_changes:
+    # 字段同步审计报告（有变更或保护项时才落盘，便于逐条复核与回溯）
+    if field_changes or field_protected:
         audit_path = os.path.splitext(output_path)[0] + '_field_sync.json'
         try:
             with open(audit_path, 'w', encoding='utf-8') as f:
@@ -1568,6 +1600,8 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
                     'change_count': len(field_changes),
                     'project_count': len({c['project'] for c in field_changes}),
                     'changes': field_changes,
+                    'protected_count': len(field_protected),
+                    'protected': field_protected,
                 }, f, ensure_ascii=False, indent=2, default=str)
             print(f"字段同步审计报告: {audit_path}")
         except OSError as e:

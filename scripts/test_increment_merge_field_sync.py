@@ -113,7 +113,7 @@ class TestSyncExistingProjectFields(unittest.TestCase):
         self.ws_b = make_sheet(raw_rows)
 
     def test_detects_only_real_changes(self):
-        changes, touched = sync_existing_project_fields(
+        changes, touched, _protected = sync_existing_project_fields(
             self.ws_a, self.ws_b,
             get_all_projects(self.ws_a), get_all_projects(self.ws_b))
         self.assertEqual(
@@ -144,7 +144,7 @@ class TestSyncExistingProjectFields(unittest.TestCase):
                                  f'列{c} 不应被字段同步改动')
 
     def test_identical_project_has_no_change(self):
-        changes, _ = sync_existing_project_fields(
+        changes, _touched, _protected = sync_existing_project_fields(
             self.ws_a, self.ws_b,
             get_all_projects(self.ws_a), get_all_projects(self.ws_b))
         self.assertNotIn('项目B', {c['project'] for c in changes})
@@ -158,7 +158,7 @@ class TestSyncExistingProjectFields(unittest.TestCase):
         self.assertEqual(before, snapshot(self.ws_a, range(pa['start'], pa['end'] + 1)))
 
     def test_change_record_shape(self):
-        changes, _ = sync_existing_project_fields(
+        changes, _touched, _protected = sync_existing_project_fields(
             self.ws_a, self.ws_b,
             get_all_projects(self.ws_a), get_all_projects(self.ws_b))
         venue = next(c for c in changes if c['field'] == '发行场所')
@@ -170,7 +170,7 @@ class TestSyncExistingProjectFields(unittest.TestCase):
         ws_rows = proj_rows('项目D', 2) + []
         ws_a = make_sheet(ws_rows)
         ws_b = make_sheet(proj_rows('项目D', 1, {C_DATE: D2}))
-        changes, _ = sync_existing_project_fields(
+        changes, _touched, _protected = sync_existing_project_fields(
             ws_a, ws_b, get_all_projects(ws_a), get_all_projects(ws_b))
         self.assertEqual([c['field'] for c in changes], ['簿记时间'])
         self.assertEqual(changes[0]['old'], '2026-08-10')
@@ -183,6 +183,62 @@ class TestSyncExistingProjectFields(unittest.TestCase):
                           C_RATING, C_LAYER_COST, C_U, C_V, C_W, C_X, C_Y):
             self.assertNotIn(forbidden, PROJECT_LEVEL_COLS,
                              f'列{forbidden} 不应纳入字段同步范围')
+
+
+class TestKnownYearTypoProtected(unittest.TestCase):
+    """源表把 2026 簿记年份误录为 2025 时，不得覆盖台账中已纠错的值。
+
+    金采7-12 即此类：原始台账三期均为 2025-05-12，而定稿存的是纠错后的
+    2026-05-12。若无条件回填，会把纠错结果退回错误年份。
+    """
+
+    def _sheets(self, raw_date, processed_date):
+        ws_a = make_sheet(proj_rows('金采7-12', 2, {C_DATE: processed_date}))
+        ws_b = make_sheet(proj_rows('金采7-12', 2, {C_DATE: raw_date}))
+        return ws_a, ws_b
+
+    def test_2026_to_2025_typo_not_backfilled(self):
+        keep = datetime.datetime(2026, 5, 12)
+        typo = datetime.datetime(2025, 5, 12)
+        ws_a, ws_b = self._sheets(typo, keep)
+        changes, _touched, protected = sync_existing_project_fields(
+            ws_a, ws_b, get_all_projects(ws_a), get_all_projects(ws_b))
+        self.assertEqual(changes, [])
+        self.assertEqual(len(protected), 1)
+        self.assertEqual(protected[0]['kept'], '2026-05-12')
+        self.assertEqual(protected[0]['raw'], '2025-05-12')
+        # 台账保持纠错后的年份
+        for r in (3, 4):
+            self.assertEqual(ws_a.cell(row=r, column=C_DATE).value, keep)
+
+    def test_different_month_day_still_syncs(self):
+        """月-日不同则属真实修订，应正常回填（年份问题交由下游纠错）。"""
+        ws_a, ws_b = self._sheets(datetime.datetime(2025, 6, 15),
+                                  datetime.datetime(2026, 5, 12))
+        changes, _touched, protected = sync_existing_project_fields(
+            ws_a, ws_b, get_all_projects(ws_a), get_all_projects(ws_b))
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0]['field'], '簿记时间')
+        self.assertEqual(protected, [])
+
+    def test_reverse_direction_syncs_normally(self):
+        """台账 2025、源表 2026：方向与已知笔误相反，应正常回填。"""
+        ws_a, ws_b = self._sheets(datetime.datetime(2026, 5, 12),
+                                  datetime.datetime(2025, 5, 12))
+        changes, _touched, protected = sync_existing_project_fields(
+            ws_a, ws_b, get_all_projects(ws_a), get_all_projects(ws_b))
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0]['new'], '2026-05-12')
+        self.assertEqual(protected, [])
+
+    def test_non_date_field_not_treated_as_typo(self):
+        """保护仅针对簿记时间列，其他字段正常回填。"""
+        ws_a = make_sheet(proj_rows('项目E', 1, {C_VENUE: '上交所', C_DATE: D1}))
+        ws_b = make_sheet(proj_rows('项目E', 1, {C_VENUE: '深交所', C_DATE: D1}))
+        changes, _touched, protected = sync_existing_project_fields(
+            ws_a, ws_b, get_all_projects(ws_a), get_all_projects(ws_b))
+        self.assertEqual([c['field'] for c in changes], ['发行场所'])
+        self.assertEqual(protected, [])
 
 
 if __name__ == '__main__':
