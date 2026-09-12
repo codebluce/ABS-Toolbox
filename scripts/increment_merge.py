@@ -17,7 +17,7 @@
 5. 对有明细的项目执行簿记录入
 6. 全表格式优化 + QC（含存量WXY保护验证）
 """
-import openpyxl, sys, os, argparse
+import openpyxl, sys, os, argparse, json, datetime
 import tempfile
 from collections import OrderedDict, defaultdict, Counter
 from copy import copy
@@ -408,6 +408,71 @@ def map_detail_to_project(filename, project_names=None):
 
     # Return original name (not transformed) as fallback -- preserves "号" in names like "东裕9号叔裕"
     return name
+
+
+# ============================================================
+# 既有项目项目级字段同步
+# ============================================================
+# 原始台账是业务事实的权威来源：本周表若修正了历史项目的月份/场所/管理人/规模/成本等，
+# 应以最新原始表为准回填既有项目。此前仅追加新项目，源端修订被静默丢弃。
+#
+# 回填范围仅限"项目级字段"——这些字段在同一项目的每一行都取相同值，
+# 且与 WXY 逐行结构无关：
+PROJECT_LEVEL_COLS = {
+    2: '月份', 3: '类别', 4: '资产类型', 6: '发行场所', 7: '计划管理人',
+    8: '联席承销商', 9: '托管行', 10: '规模', 11: '期限', 12: '簿记时间',
+    13: '国股CD', 14: 'ALL-IN成本', 15: '认购倍数',
+}
+# 明确不同步：1 序号（行序键）、5 项目名称（主键）、16-20 分层层字段
+# （分层情况/分层占比/对应金额/评级/成本随层变化，改动会打乱 WXY 行结构与层匹配）、
+# 21-25 U/V/W/X/Y（U/V 为原始中标口径但与 WXY 行一一对齐，WXY 为我们累积的簿记成果）。
+
+
+def _field_equal(a, b):
+    """字段值等价判断：fuzzy 处理空值、日期、字符串空白与数值浮点误差。"""
+    if a is None and b is None:
+        return True
+    # 空串与 None 等价（源表清除内容时可能留空串）
+    if (a is None or (isinstance(a, str) and not a.strip())) and \
+       (b is None or (isinstance(b, str) and not b.strip())):
+        return True
+    if isinstance(a, datetime.datetime) and isinstance(b, datetime.datetime):
+        return a == b
+    if isinstance(a, str) and isinstance(b, str):
+        return a.strip() == b.strip()
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)) \
+            and not isinstance(a, bool) and not isinstance(b, bool):
+        return abs(float(a) - float(b)) < 1e-9
+    return a == b
+
+
+def sync_existing_project_fields(ws_a, ws_b, projects_a, projects_b):
+    """以最新原始台账为准，回填既有项目的项目级字段。
+
+    返回变更明细 list[dict]，供审计报告输出。不触碰 WXY 与分层层字段。
+    """
+    common = [p for p in projects_a.keys() if p in projects_b]
+    changes = []
+    touched = set()
+    for proj in common:
+        sa, ea = projects_a[proj]['start'], projects_a[proj]['end']
+        sb = projects_b[proj]['start']
+        for c, cname in PROJECT_LEVEL_COLS.items():
+            old = ws_a.cell(row=sa, column=c).value
+            new = ws_b.cell(row=sb, column=c).value
+            if _field_equal(old, new):
+                continue
+            changes.append({
+                'project': proj, 'field': cname, 'col': c,
+                'old': old.strftime('%Y-%m-%d') if isinstance(old, datetime.datetime) else old,
+                'new': new.strftime('%Y-%m-%d') if isinstance(new, datetime.datetime) else new,
+                'rows': f'{sa}-{ea}',
+            })
+            # 项目级字段在该项目每一行都取同值 → 整组回填
+            for r in range(sa, ea + 1):
+                ws_a.cell(row=r, column=c).value = new
+            touched.add(proj)
+    return changes, touched
 
 
 # ============================================================
@@ -877,7 +942,8 @@ def run_enhanced_qc(ws_out, ws_orig_protected, set_a, supplemented_keys,
 # 增量合并核心逻辑
 # ============================================================
 
-def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path, supplement=False, rebook=False):
+def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
+                        supplement=False, rebook=False, field_sync=True):
     mode_label = "Rebook WXY" if rebook else ("Supplement WXY entry" if supplement else "Increment merge")
     print("=" * 60)
     print(f"v2.1 {mode_label}")
@@ -886,6 +952,7 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     wb_b = None
     wb_out = None
     wb_orig = None
+    field_changes = []
 
     # === Step 1: Preprocess ledger(s) ===
     print("\n=== Step 1: Preprocessing ===")
@@ -942,8 +1009,24 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
             for p in missing_ordered:
                 print(f"    - {p}")
 
-        if not increment:
-            print("  No increment projects found. Nothing to merge.")
+        # === Step 2.5: 既有项目项目级字段同步 ===
+        if not field_sync:
+            print("\n=== Step 2.5: 既有项目字段同步 ===")
+            print("  [SKIP] 已通过 --no-field-sync 关闭")
+        else:
+            print("\n=== Step 2.5: 既有项目字段同步 ===")
+            field_changes, touched = sync_existing_project_fields(
+                ws_a, ws_b, projects_a, projects_b)
+            if not field_changes:
+                print("  PASS: 既有项目项目级字段与最新原始台账一致，无需回填")
+            else:
+                print(f"  回填 {len(field_changes)} 处字段修订，涉及 {len(touched)} 个项目：")
+                for ch in sorted(field_changes, key=lambda x: (x['project'], x['col'])):
+                    print(f"    [FIX] {ch['project']} | {ch['field']}: "
+                          f"{ch['old']!r} -> {ch['new']!r}")
+
+        if not increment and not field_changes:
+            print("\n  No increment projects and no field changes. Nothing to merge.")
             save_workbook_atomic(wb_a, output_path)
             close_workbook(wb_b)
             close_workbook(wb_a)
@@ -1474,6 +1557,22 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     os.replace(tmp_path, output_path)
     print(f"\nSaved: {output_path}")
 
+    # 字段同步审计报告（有变更时才落盘，便于逐条复核与回溯）
+    if field_changes:
+        audit_path = os.path.splitext(output_path)[0] + '_field_sync.json'
+        try:
+            with open(audit_path, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'processed': os.path.basename(processed_path),
+                    'new_raw': os.path.basename(new_raw_path or ''),
+                    'change_count': len(field_changes),
+                    'project_count': len({c['project'] for c in field_changes}),
+                    'changes': field_changes,
+                }, f, ensure_ascii=False, indent=2, default=str)
+            print(f"字段同步审计报告: {audit_path}")
+        except OSError as e:
+            print(f"[WARN] 字段同步审计报告写入失败: {e}")
+
     print("\n" + "=" * 60)
     print(f"{mode_label} complete.")
     print("=" * 60)
@@ -1487,6 +1586,8 @@ if __name__ == "__main__":
     parser.add_argument("--output", required=True, help="输出文件路径")
     parser.add_argument("--supplement", action="store_true", help="补充簿记模式：仅对有明细的项目追加录入WXY，不做增量合并(注意:多次跑会累积脏行,推荐用 --rebook)")
     parser.add_argument("--rebook", action="store_true", help="重录模式(默认):清空目标项目WXY+删除分层末尾未匹配新行,然后重新录入(幂等,推荐)")
+    parser.add_argument("--no-field-sync", action="store_true",
+                        help="关闭既有项目项目级字段同步（默认开启：以最新原始台账回填月份/场所/管理人/规模/成本等，不动WXY与分层层字段）")
     args = parser.parse_args()
 
     # v2.5.0: 默认 rebook 模式(不传 --supplement/--rebook/--new-raw 时)
@@ -1500,4 +1601,5 @@ if __name__ == "__main__":
         parser.error("--supplement and --rebook are mutually exclusive")
 
     run_increment_merge(args.processed, args.new_raw, args.details, args.output,
-                        supplement=args.supplement, rebook=args.rebook)
+                        supplement=args.supplement, rebook=args.rebook,
+                        field_sync=not args.no_field_sync)
