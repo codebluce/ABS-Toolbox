@@ -1,8 +1,8 @@
 {
   "processed": "2026年ABS发行台账-0904-定稿.xlsx",
   "new_raw": "2026年ABS发行台账-0911.xlsx",
-  "change_count": 14,
-  "project_count": 14,
+  "change_count": 13,
+  "project_count": 13,
   "changes": [
     {
       "project": "尚赢2-3",
@@ -35,14 +35,6 @@
       "old": "平层非标",
       "new": "结构化非标",
       "rows": "693-695"
-    },
-    {
-      "project": "金采7-12",
-      "field": "簿记时间",
-      "col": 12,
-      "old": "2026-05-12",
-      "new": "2025-05-12",
-      "rows": "829-856"
     },
     {
       "project": "硕远6号",
@@ -115,6 +107,17 @@
       "old": 0.0164,
       "new": 0.0166,
       "rows": "2369-2390"
+    }
+  ],
+  "protected_count": 1,
+  "protected": [
+    {
+      "project": "金采7-12",
+      "field": "簿记时间",
+      "col": 12,
+      "kept": "2026-05-12",
+      "raw": "2025-05-12",
+      "reason": "已知年份笔误(2026误录为2025)，保留台账纠错值"
     }
   ]
 }
