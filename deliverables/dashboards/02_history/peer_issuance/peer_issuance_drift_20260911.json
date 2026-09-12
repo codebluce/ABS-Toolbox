@@ -1,0 +1,383 @@
+{
+  "previous_input": {
+    "file": "互联网金融ABS内部信息共享-更新至0904.xlsx",
+    "sheet": "发行动态（2026）",
+    "rows": 488,
+    "sha256": "2e8b9da99938b47cb26eb139aec1fd7c2a9e472c31aca6e93daa00c82bb0fab9"
+  },
+  "current_input": {
+    "file": "互联网金融ABS内部信息共享-更新至0911.xlsx",
+    "sheet": "发行动态（2026）",
+    "rows": 500,
+    "sha256": "65b881cc1c9bc1583157a11ace5046d8d22ddefc0ddad09f55bfcf5bdf5293c1"
+  },
+  "summary": {
+    "latest_date": "2026-09-11",
+    "current_week": "2026.9.7-2026.9.13",
+    "previous_count": 488,
+    "current_count": 500,
+    "additions": [
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "京东科技盛赢4号第5期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "深圳",
+        "originator": "盛际小贷",
+        "base_asset": "京东企业主贷",
+        "asset_type": "小微toC",
+        "amount": "8",
+        "date": "2026-09-07",
+        "aaa": "0.0165",
+        "term": "1.08"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "华泰-祈信一号3期资产支持专项计划(可续发型)",
+        "product_type": "ABS",
+        "venue": "深圳",
+        "originator": "国投信托",
+        "base_asset": "腾讯分付",
+        "asset_type": "消金分期类",
+        "amount": "8",
+        "date": "2026-09-09",
+        "aaa": "0.016",
+        "term": "1"
+      },
+      {
+        "week": "2026.8.31-2026.9.6",
+        "product": "华泰资管-奇富小贷毓秀3号第3期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "上海",
+        "originator": "奇富小贷",
+        "base_asset": "奇富借条消费贷",
+        "asset_type": "消金提现类",
+        "amount": "5",
+        "date": "2026-09-04",
+        "aaa": "0.024",
+        "term": "1.49"
+      },
+      {
+        "week": "2026.8.31-2026.9.6",
+        "product": "华泰资管诚新3号2期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "上海",
+        "originator": "华能信托",
+        "base_asset": "微众银行微粒贷",
+        "asset_type": "消金提现类",
+        "amount": "10",
+        "date": "2026-09-03",
+        "aaa": "0.0163",
+        "term": "1.05"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "华能贵诚信托有限公司2026年度第四期启达定向资产支持票据",
+        "product_type": "ABN",
+        "venue": "银行间",
+        "originator": "华能信托",
+        "base_asset": "微众银行微粒贷",
+        "asset_type": "消金提现类",
+        "amount": "10",
+        "date": "2026-09-07",
+        "aaa": "0.0165",
+        "term": "1.85"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "国联光睿1号4期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "深圳",
+        "originator": "外贸信托",
+        "base_asset": "度小满满易贷",
+        "asset_type": "消金提现类",
+        "amount": "10",
+        "date": "2026-09-11",
+        "aaa": "0.0173",
+        "term": "1.08"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "国金资管-景熠3号中小微企业融资支持3期资产支持专项计划(可续发型)",
+        "product_type": "ABS",
+        "venue": "上海",
+        "originator": "华能信托",
+        "base_asset": "平安普惠经营贷",
+        "asset_type": "小微toB",
+        "amount": "6",
+        "date": "2026-09-07",
+        "aaa": "0.025",
+        "term": "0.99"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "惠臻2026年度第十期定向资产支持票据",
+        "product_type": "ABN",
+        "venue": "银行间",
+        "originator": "华鑫信托",
+        "base_asset": "网商贷",
+        "asset_type": "小微toB",
+        "amount": "5",
+        "date": "2026-09-08",
+        "aaa": "0.0173",
+        "term": "1.7"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "永盛第7期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "深圳",
+        "originator": "中信信托",
+        "base_asset": "蚂蚁花呗",
+        "asset_type": "消金分期类",
+        "amount": "10",
+        "date": "2026-09-08",
+        "aaa": "0.0178",
+        "term": "1.83"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "永盛第8期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "深圳",
+        "originator": "中信信托",
+        "base_asset": "蚂蚁花呗",
+        "asset_type": "消金分期类",
+        "amount": "10",
+        "date": "2026-09-11",
+        "aaa": "0.0178",
+        "term": "1.84"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "睿新2026年度第三期定向资产支持票据",
+        "product_type": "ABN",
+        "venue": "银行间",
+        "originator": "上海信托",
+        "base_asset": "蚂蚁花呗",
+        "asset_type": "消金分期类",
+        "amount": "10",
+        "date": "2026-09-08",
+        "aaa": "0.0161",
+        "term": "1"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "睿新2026年度第四期定向资产支持票据",
+        "product_type": "ABN",
+        "venue": "银行间",
+        "originator": "上海信托",
+        "base_asset": "蚂蚁花呗",
+        "asset_type": "消金分期类",
+        "amount": "10",
+        "date": "2026-09-09",
+        "aaa": "0.016",
+        "term": "1.01"
+      }
+    ],
+    "deletions": [],
+    "modifications": [],
+    "weekly_additions": [
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "京东科技盛赢4号第5期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "深圳",
+        "originator": "盛际小贷",
+        "base_asset": "京东企业主贷",
+        "asset_type": "小微toC",
+        "amount": "8",
+        "date": "2026-09-07",
+        "aaa": "0.0165",
+        "term": "1.08"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "华泰-祈信一号3期资产支持专项计划(可续发型)",
+        "product_type": "ABS",
+        "venue": "深圳",
+        "originator": "国投信托",
+        "base_asset": "腾讯分付",
+        "asset_type": "消金分期类",
+        "amount": "8",
+        "date": "2026-09-09",
+        "aaa": "0.016",
+        "term": "1"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "华能贵诚信托有限公司2026年度第四期启达定向资产支持票据",
+        "product_type": "ABN",
+        "venue": "银行间",
+        "originator": "华能信托",
+        "base_asset": "微众银行微粒贷",
+        "asset_type": "消金提现类",
+        "amount": "10",
+        "date": "2026-09-07",
+        "aaa": "0.0165",
+        "term": "1.85"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "国联光睿1号4期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "深圳",
+        "originator": "外贸信托",
+        "base_asset": "度小满满易贷",
+        "asset_type": "消金提现类",
+        "amount": "10",
+        "date": "2026-09-11",
+        "aaa": "0.0173",
+        "term": "1.08"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "国金资管-景熠3号中小微企业融资支持3期资产支持专项计划(可续发型)",
+        "product_type": "ABS",
+        "venue": "上海",
+        "originator": "华能信托",
+        "base_asset": "平安普惠经营贷",
+        "asset_type": "小微toB",
+        "amount": "6",
+        "date": "2026-09-07",
+        "aaa": "0.025",
+        "term": "0.99"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "惠臻2026年度第十期定向资产支持票据",
+        "product_type": "ABN",
+        "venue": "银行间",
+        "originator": "华鑫信托",
+        "base_asset": "网商贷",
+        "asset_type": "小微toB",
+        "amount": "5",
+        "date": "2026-09-08",
+        "aaa": "0.0173",
+        "term": "1.7"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "永盛第7期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "深圳",
+        "originator": "中信信托",
+        "base_asset": "蚂蚁花呗",
+        "asset_type": "消金分期类",
+        "amount": "10",
+        "date": "2026-09-08",
+        "aaa": "0.0178",
+        "term": "1.83"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "永盛第8期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "深圳",
+        "originator": "中信信托",
+        "base_asset": "蚂蚁花呗",
+        "asset_type": "消金分期类",
+        "amount": "10",
+        "date": "2026-09-11",
+        "aaa": "0.0178",
+        "term": "1.84"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "睿新2026年度第三期定向资产支持票据",
+        "product_type": "ABN",
+        "venue": "银行间",
+        "originator": "上海信托",
+        "base_asset": "蚂蚁花呗",
+        "asset_type": "消金分期类",
+        "amount": "10",
+        "date": "2026-09-08",
+        "aaa": "0.0161",
+        "term": "1"
+      },
+      {
+        "week": "2026.9.7-2026.9.13",
+        "product": "睿新2026年度第四期定向资产支持票据",
+        "product_type": "ABN",
+        "venue": "银行间",
+        "originator": "上海信托",
+        "base_asset": "蚂蚁花呗",
+        "asset_type": "消金分期类",
+        "amount": "10",
+        "date": "2026-09-09",
+        "aaa": "0.016",
+        "term": "1.01"
+      }
+    ],
+    "backfills": [
+      {
+        "week": "2026.8.31-2026.9.6",
+        "product": "华泰资管-奇富小贷毓秀3号第3期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "上海",
+        "originator": "奇富小贷",
+        "base_asset": "奇富借条消费贷",
+        "asset_type": "消金提现类",
+        "amount": "5",
+        "date": "2026-09-04",
+        "aaa": "0.024",
+        "term": "1.49"
+      },
+      {
+        "week": "2026.8.31-2026.9.6",
+        "product": "华泰资管诚新3号2期资产支持专项计划",
+        "product_type": "ABS",
+        "venue": "上海",
+        "originator": "华能信托",
+        "base_asset": "微众银行微粒贷",
+        "asset_type": "消金提现类",
+        "amount": "10",
+        "date": "2026-09-03",
+        "aaa": "0.0163",
+        "term": "1.05"
+      }
+    ],
+    "amounts": {
+      "previous": "4209.73",
+      "current": "4311.73",
+      "difference": "102.00",
+      "additions": "102",
+      "weekly": "87",
+      "backfills": "15"
+    }
+  },
+  "qc": [
+    {
+      "level": "WARN",
+      "code": "HISTORICAL_BACKFILL",
+      "message": "检测到 2 条历史周回补",
+      "amount": "15",
+      "products": [
+        "华泰资管-奇富小贷毓秀3号第3期资产支持专项计划",
+        "华泰资管诚新3号2期资产支持专项计划"
+      ]
+    },
+    {
+      "level": "INFO",
+      "code": "PRODUCT_NAME_NORMALIZED",
+      "message": "检测到 1 条产品名标点/空白规范化（非产品增删）",
+      "renames": [
+        {
+          "before": "曦岚1号第1期资产支持专项计划（可续发型）",
+          "after": "曦岚1号第1期资产支持专项计划(可续发型)"
+        }
+      ]
+    },
+    {
+      "level": "INFO",
+      "code": "WEEKLY_DELTA",
+      "message": "本次新增 12 条 / 102 亿，其中当周 10 条 / 87 亿"
+    },
+    {
+      "level": "OK",
+      "code": "DELTA_RECONCILIATION",
+      "message": "累计规模变动 102.00 亿，新增规模 102 亿",
+      "difference": "102.00",
+      "additions": "102"
+    }
+  ]
+}
