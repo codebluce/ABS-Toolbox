@@ -197,10 +197,27 @@ def parse_dynamics(path: Path) -> list[dict[str, Any]]:
 
 DRIFT_FIELDS = ("product_type", "venue", "originator", "base_asset", "asset_type", "amount", "date", "aaa", "term")
 
+# 源表偶发对产品名做标点规范化（全角括号→半角），这不构成业务变更。
+# 比对键必须归一化，否则同一产品会被误判为"历史删除 + 新增"，
+# 并连带触发累计规模对账 FAIL（0911 曦岚1号第1期即为此类误报）。
+_PUNCT_NORMALIZE = str.maketrans({
+    "（": "(", "）": ")", "［": "[", "］": "]", "｛": "{", "｝": "}",
+    "，": ",", "、": ",", "：": ":", "；": ";", "　": " ", "－": "-", "—": "-",
+})
+
+
+def normalize_product_key(product: Any) -> str:
+    """产品名归一化为比对键：统一标点与空白、忽略大小写，仅用于匹配。"""
+    text = str(product or "").translate(_PUNCT_NORMALIZE)
+    return re.sub(r"\s+", "", text).lower()
+
 
 def record_key(record: dict[str, Any]) -> str:
-    """当前发行动态中产品名称唯一；复合信息保留在快照中供诊断。"""
-    return record["product"]
+    """当前发行动态中产品名称唯一；复合信息保留在快照中供诊断。
+
+    键做标点归一化，避免源表重写标点被当作产品增删。
+    """
+    return normalize_product_key(record["product"])
 
 
 def record_fingerprint(record: dict[str, Any]) -> str:
@@ -223,8 +240,12 @@ def compare_weekly_snapshot(previous: list[dict[str, Any]], current: list[dict[s
     additions = [current_by_key[key] for key in sorted(current_keys - previous_keys)]
     deletions = [previous_by_key[key] for key in sorted(previous_keys - current_keys)]
     modifications = []
+    renamed = []
     for key in sorted(previous_keys & current_keys):
         before, after = previous_by_key[key], current_by_key[key]
+        if before["product"] != after["product"]:
+            # 键归一化后命中但原始名不同：属于展示名规范化，不是产品增删
+            renamed.append({"before": before["product"], "after": after["product"]})
         if record_fingerprint(before) != record_fingerprint(after):
             changed_fields = [field for field in DRIFT_FIELDS if before.get(field) != after.get(field)]
             modifications.append({"product": key, "changed_fields": changed_fields})
@@ -248,6 +269,9 @@ def compare_weekly_snapshot(previous: list[dict[str, Any]], current: list[dict[s
         issue(qc, "FAIL", "HISTORICAL_REVISION", f"检测到 {len(modifications)} 条历史产品业务字段修订", changes=modifications)
     if backfills:
         issue(qc, "WARN", "HISTORICAL_BACKFILL", f"检测到 {len(backfills)} 条历史周回补", amount=str(backfill_amount), products=[record["product"] for record in backfills])
+    if renamed:
+        issue(qc, "INFO", "PRODUCT_NAME_NORMALIZED",
+              f"检测到 {len(renamed)} 条产品名标点/空白规范化（非产品增删）", renames=renamed)
     if additions:
         issue(qc, "INFO", "WEEKLY_DELTA", f"本次新增 {len(additions)} 条 / {added_amount} 亿，其中当周 {len(weekly_additions)} 条 / {weekly_amount} 亿")
 

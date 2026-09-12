@@ -19,6 +19,7 @@ from peer_issuance_panel import (  # noqa: E402
     compare_weekly_snapshot,
     is_jd,
     is_trust_channel,
+    normalize_product_key,
     parse_rate,
     parse_term,
     rate_sparkline,
@@ -155,6 +156,41 @@ class TestWeeklyDrift(unittest.TestCase):
         duplicated = [make_record(product="重复产品"), make_record(product="重复产品", amount=D("20"))]
         _, qc = compare_weekly_snapshot([], duplicated)
         self.assertIn("CURRENT_DUPLICATE_KEY", [item["code"] for item in qc])
+
+    def test_punctuation_rename_is_not_deletion(self):
+        """源表把产品名全角括号改半角，属展示名规范化，不应判为历史删除。
+
+        0911 曦岚1号第1期即此情形：旧键不归一化会误报 HISTORICAL_DELETION，
+        并连带触发 DELTA_RECONCILIATION（变动额比新增额少该产品规模）。
+        """
+        previous = [make_record(product="曦岚1号第1期资产支持专项计划（可续发型）",
+                                amount=D("10"), week="2026.7.27-2026.8.2")]
+        renamed = [make_record(product="曦岚1号第1期资产支持专项计划(可续发型)",
+                               amount=D("10"), week="2026.7.27-2026.8.2")]
+        summary, qc = compare_weekly_snapshot(previous, renamed)
+        levels = [item["level"] for item in qc]
+        codes = [item["code"] for item in qc]
+        self.assertEqual(summary["deletions"], [])
+        self.assertEqual(summary["additions"], [])
+        self.assertEqual(summary["modifications"], [])
+        self.assertNotIn("HISTORICAL_DELETION", codes)
+        self.assertNotIn("FAIL", levels)
+        # 对账平：累计未变，新增为 0
+        self.assertEqual(summary["amounts"]["difference"], D("0"))
+        self.assertEqual(summary["amounts"]["additions"], D("0"))
+        # 但名称变化要可见，不能被静默吞掉
+        normalized = next(item for item in qc if item["code"] == "PRODUCT_NAME_NORMALIZED")
+        self.assertEqual(normalized["renames"], [{
+            "before": "曦岚1号第1期资产支持专项计划（可续发型）",
+            "after": "曦岚1号第1期资产支持专项计划(可续发型)",
+        }])
+
+    def test_normalize_product_key_ignores_punctuation_and_whitespace(self):
+        self.assertEqual(normalize_product_key("永盛第8期（可续发型）"),
+                         normalize_product_key("永盛第8期(可续发型)"))
+        self.assertEqual(normalize_product_key("永盛 第8期"), normalize_product_key("永盛第8期"))
+        self.assertEqual(normalize_product_key(None), "")
+        self.assertNotEqual(normalize_product_key("永盛第8期"), normalize_product_key("永盛第9期"))
 
 
 class TestAggregation(unittest.TestCase):
