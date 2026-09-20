@@ -1,0 +1,59 @@
+{
+  "processed": "2026年ABS发行台账-0911-定稿.xlsx",
+  "new_raw": "2026年ABS发行台账-0918.xlsx",
+  "change_count": 5,
+  "project_count": 5,
+  "changes": [
+    {
+      "project": "盛赢3-8",
+      "field": "托管行",
+      "col": 9,
+      "old": "工银天津",
+      "new": "工银天分",
+      "rows": "1626-1654"
+    },
+    {
+      "project": "启赢3-3",
+      "field": "托管行",
+      "col": 9,
+      "old": "工银天津",
+      "new": "工银天分",
+      "rows": "1906-1943"
+    },
+    {
+      "project": "耘睿28-4",
+      "field": "ALL-IN成本",
+      "col": 14,
+      "old": 0.02258,
+      "new": 0.02858,
+      "rows": "2583-2602"
+    },
+    {
+      "project": "耘睿28-5",
+      "field": "ALL-IN成本",
+      "col": 14,
+      "old": 0.02241,
+      "new": 0.02841,
+      "rows": "2634-2657"
+    },
+    {
+      "project": "京诚16-4",
+      "field": "托管行",
+      "col": 9,
+      "old": "光大北分",
+      "new": "工银天分",
+      "rows": "2692-2712"
+    }
+  ],
+  "protected_count": 1,
+  "protected": [
+    {
+      "project": "金采7-12",
+      "field": "簿记时间",
+      "col": 12,
+      "kept": "2026-05-12",
+      "raw": "2025-05-12",
+      "reason": "已知年份笔误(2026误录为2025)，保留台账纠错值"
+    }
+  ]
+}
