@@ -39,7 +39,7 @@ ASSET_FAMILY_COLORS = {
 }
 ASSET_FAMILY_KEYWORDS = {
     "京东系": ("京东",),
-    "蚂蚁系": ("花呗", "借呗"),
+    "蚂蚁系": ("花呗", "借呗", "蚂蚁"),
     "网商系": ("网商",),
     "腾讯系": ("腾讯", "分付"),
     "微众系": ("微众", "微粒贷"),
@@ -226,6 +226,18 @@ def record_fingerprint(record: dict[str, Any]) -> str:
     return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
 
 
+# 经人工确认放行的源表勘误：产品名 -> 允许变更的字段集合。
+# 源表历史上把部分产品的基础资产记错（如"网商贷"实为蚂蚁经营贷、"美团月付"实为美团生活费），
+# 修正这类错误属于业务字段修订，漂移门禁默认 FAIL；在此登记后降级为 INFO 放行，明细仍完整留痕。
+APPROVED_REVISIONS: dict[str, tuple[str, ...]] = {
+    "中信信托有限责任公司2026年度芬郁第三期定向资产支持票据": ("base_asset", "asset_type"),
+    "中信信托有限责任公司2026年度芬郁第四期定向资产支持票据": ("base_asset", "asset_type"),
+    "中信信托有限责任公司2026年度芬郁第五期定向资产支持票据": ("base_asset", "asset_type"),
+    "远鸿2026年度第三期定向资产支持票据": ("base_asset", "asset_type"),
+    "远鸿2026年度第二期定向资产支持票据": ("base_asset", "asset_type"),
+}
+
+
 def compare_weekly_snapshot(previous: list[dict[str, Any]], current: list[dict[str, Any]]) -> tuple[dict[str, Any], list[dict]]:
     """比较两份追加式快照，识别周新增、历史回补、删除与实质修订。"""
     qc: list[dict] = []
@@ -265,8 +277,18 @@ def compare_weekly_snapshot(previous: list[dict[str, Any]], current: list[dict[s
 
     if deletions:
         issue(qc, "FAIL", "HISTORICAL_DELETION", f"检测到 {len(deletions)} 条历史产品删除", products=[record["product"] for record in deletions])
-    if modifications:
-        issue(qc, "FAIL", "HISTORICAL_REVISION", f"检测到 {len(modifications)} 条历史产品业务字段修订", changes=modifications)
+    approved, blocked = [], []
+    for mod in modifications:
+        allowed = APPROVED_REVISIONS.get(mod["product"])
+        if allowed is not None and set(mod["changed_fields"]) <= set(allowed):
+            approved.append(mod)
+        else:
+            blocked.append(mod)
+    if blocked:
+        issue(qc, "FAIL", "HISTORICAL_REVISION", f"检测到 {len(blocked)} 条历史产品业务字段修订", changes=blocked)
+    if approved:
+        issue(qc, "INFO", "APPROVED_REVISION",
+              f"{len(approved)} 条源表勘误经人工确认放行（登记于 APPROVED_REVISIONS）", changes=approved)
     if backfills:
         issue(qc, "WARN", "HISTORICAL_BACKFILL", f"检测到 {len(backfills)} 条历史周回补", amount=str(backfill_amount), products=[record["product"] for record in backfills])
     if renamed:

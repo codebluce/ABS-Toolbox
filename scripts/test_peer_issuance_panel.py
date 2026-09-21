@@ -192,6 +192,40 @@ class TestWeeklyDrift(unittest.TestCase):
         self.assertEqual(normalize_product_key(None), "")
         self.assertNotEqual(normalize_product_key("永盛第8期"), normalize_product_key("永盛第9期"))
 
+    def test_approved_revision_downgrades_to_info(self):
+        """登记于 APPROVED_REVISIONS 的源表勘误放行为 INFO，未登记或超范围仍 FAIL。
+
+        0920 源表勘误：芬郁系列"网商贷"实为蚂蚁经营贷、远鸿系列"美团月付"
+        实为美团生活费——均为 base_asset/asset_type 的更正，登记后放行。
+        """
+        product = "中信信托有限责任公司2026年度芬郁第三期定向资产支持票据"
+        previous = [make_record(product=product, base_asset="网商贷", asset_type="小微toB")]
+        # 登记范围内的修订：放行为 APPROVED_REVISION INFO
+        corrected = [make_record(product=product, base_asset="蚂蚁经营贷", asset_type="小微toC")]
+        summary, qc = compare_weekly_snapshot(previous, corrected)
+        self.assertEqual(summary["modifications"][0]["changed_fields"], ["base_asset", "asset_type"])
+        self.assertNotIn("FAIL", [item["level"] for item in qc])
+        approved = next(item for item in qc if item["code"] == "APPROVED_REVISION")
+        self.assertEqual(len(approved["changes"]), 1)
+        # 超出登记范围的修订（如规模变化）：仍 FAIL
+        overreach = [make_record(product=product, base_asset="蚂蚁经营贷", asset_type="小微toC", amount=D("99"))]
+        _, qc = compare_weekly_snapshot(previous, overreach)
+        self.assertIn("HISTORICAL_REVISION", [item["code"] for item in qc])
+        self.assertIn("FAIL", [item["level"] for item in qc])
+        # 未登记产品的修订：仍 FAIL
+        stranger = [make_record(product="未登记产品", amount=D("11"))]
+        _, qc = compare_weekly_snapshot([make_record(product="未登记产品")], stranger)
+        self.assertIn("HISTORICAL_REVISION", [item["code"] for item in qc])
+
+    def test_ant_family_covers_ant_daikou_assets(self):
+        """蚂蚁经营贷（蚂蚁系资产）需归入蚂蚁系，而非未知资产。
+
+        0920 源表勘误后芬郁系列基础资产从网商贷改为蚂蚁经营贷；
+        若关键词表缺"蚂蚁"，15 亿将落入未知资产分段。
+        """
+        self.assertEqual(asset_family("蚂蚁经营贷"), "蚂蚁系")
+        self.assertEqual(asset_family("网商贷"), "网商系")
+
 
 class TestAggregation(unittest.TestCase):
     def setUp(self):
