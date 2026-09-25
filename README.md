@@ -5,7 +5,7 @@
 - 最新入口：`index.html`
 - 最新来源：`deliverables/dashboards/01_latest/ABS综合看板_20260924.html`
 - 历史归档：`archive/index.html`
-- 生成时间：`2026-09-25T18:56:52`
+- 生成时间：`2026-09-25T19:09:52`
 - 加密模式：`False`
 
 安全说明：站点包只包含静态 HTML，不包含源 Excel、簿记明细、脚本、`.env` 等文件。
