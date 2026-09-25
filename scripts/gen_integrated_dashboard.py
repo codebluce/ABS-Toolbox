@@ -26,6 +26,7 @@ import gen_compare_tool
 import gen_investment_ledger
 import gen_pricing_insight
 import gen_institution_profile
+import secondary_allocation_panel
 import gen_institution_stats
 import peer_issuance_panel
 # 总授信额度监控模块必须在 lab 路径加入前导入，避免误加载旧实验版。
@@ -149,7 +150,7 @@ def build_integrated_html(panels, all_css):
 
     top tab 按实际 panels 动态推导（固定顺序），无 panel 的模块不渲染一级 Tab:
       机构画像 / 投资台账 / 资产大盘(可选) / 发行定价 / 同业发行(可选)
-    机构画像 > 机构速查 + 机构统计 + 授信总额度
+    机构画像 > 次级速查 + 机构速查 + 机构统计 + 授信速查
     投资台账 > 按年份子 Tab (各自独立筛选状态，多维筛选 + 分组/透视/明细 + 导出 CSV)
               智能问答悬浮球语料覆盖全部年份，不受当前激活子 Tab 限制
     """
@@ -176,7 +177,8 @@ def build_integrated_html(panels, all_css):
         for m, sub, body in module_panels:
             # 从 body 提取子 Tab 显示名（用 section-title 或 banner-title）
             if module == 'progress':
-                sub_label_map = {'quick': '机构速查', 'inst_stats': '机构统计', 'credit_total': '授信总额度'}
+                sub_label_map = {'quick': '机构速查', 'allocation_quick': '次级速查',
+                                 'inst_stats': '机构统计', 'credit_total': '授信速查'}
                 sub_label = sub_label_map.get(sub, sub)
             elif module == 'asset_overview':
                 sub_label_map = {'consumer_asset': '消金资产'}
@@ -336,13 +338,14 @@ def main():
         led_data = gen_investment_ledger.compute_data_multi_year(
             ledger_year_paths, preprocessed_path=shared_tmp)   # 只 2026 用
 
-        # 2. 各 render_body（institution 3 次调用，传 section_key）
+        # 2. 各 render_body（含机构画像次级速查快照）
         print('\n[2/4] 渲染 body...')
         panels = [
             ('pricing',     'compare',    gen_pricing_insight.render_pricing_panel(cmp_data)),
             ('pricing',     'invest',     gen_compare_tool.render_body_invest(cmp_data)),
             ('pricing',     'cost',       gen_abs_cost_report.render_body(cost_data)),
             ('pricing',     'spread',     gen_spread_report.render_body(spread_data)),
+            ('progress',    'allocation_quick', secondary_allocation_panel.render_body()),
             ('progress',    'quick',      gen_institution_profile.render_body()),
         ]
 
@@ -381,14 +384,14 @@ def main():
             panels.append(('peer_issuance', 'overview', peer_body))
 
         # 机构画像模块:总授信额度 panel
-        print('\n[3.6/4] 生成机构画像 > 授信总额度 panel...')
+        print('\n[3.6/4] 生成机构画像 > 授信速查 panel...')
         try:
             credit_total_body = fig8_credit_total_panel.render_credit_total_panel(
                 ledger_path=xlsx_path, preprocessed_path=shared_tmp)
             panels.append(('progress', 'credit_total', credit_total_body))
         except Exception as e:
-            print(f'[WARN] 授信总额度面板跳过: {e}')
-            panels.append(('progress', 'credit_total', '<div style="padding:40px;text-align:center;color:#9aa5b5;">授信总额度数据暂不可用</div>'))
+            print(f'[WARN] 授信速查面板跳过: {e}')
+            panels.append(('progress', 'credit_total', '<div style="padding:40px;text-align:center;color:#9aa5b5;">授信速查数据暂不可用</div>'))
     except RuntimeError as e:
         print(f'\n[ERROR] {e}')
         print('[ERROR] 请修正数据或逻辑后重试')
@@ -416,6 +419,7 @@ def main():
         gen_pricing_insight.PRICING_INSIGHT_CSS,
         gen_compare_tool.INVEST_CSS,
         gen_institution_profile.PROFILE_CSS,
+        secondary_allocation_panel.ALLOCATION_CSS,
         gen_institution_stats.INST_STATS_EMBED_CSS,
         consumer_asset_panel.CONSUMER_ASSET_CSS,
         peer_issuance_panel.PEER_ISSUANCE_COMPONENT_CSS,
@@ -434,7 +438,7 @@ def main():
     # 结构 QC(硬阻断):失败即删除临时产物并以非零退出,绝不覆盖上一版、绝不让异常页面进入发布链路
     with open(tmp_out, 'r', encoding='utf-8') as f:
         content = f.read()
-    expected_panel_count = 7 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled)  # 机构画像3 + 资产大盘可选1 + 发行定价4 + 同业发行可选1 + 各年份投资台账
+    expected_panel_count = 8 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled)  # 机构画像4 + 资产大盘可选1 + 发行定价4 + 同业发行可选1 + 各年份投资台账
     problems = verify_integrated_html(content, expected_panel_count)
     ledger_years_str = '+'.join(sorted(led_data['by_year'].keys(), reverse=True))
     if not problems:
@@ -445,7 +449,7 @@ def main():
         asset_overview_count = int(consumer_asset_enabled)
         peer_issuance_count = int(peer_issuance_enabled)
         panel_count_ok = content.count('<div class="panel"')
-        print(f'[QC] 综合看板结构检查通过：{panel_count_ok} 个 panel(机构画像3 + 投资台账[{ledger_years_str}] + 资产大盘{asset_overview_count} + 发行定价4 + 同业发行{peer_issuance_count}) + Tab 切换 JS 齐全')
+        print(f'[QC] 综合看板结构检查通过：{panel_count_ok} 个 panel(机构画像4 + 投资台账[{ledger_years_str}] + 资产大盘{asset_overview_count} + 发行定价4 + 同业发行{peer_issuance_count}) + Tab 切换 JS 齐全')
     else:
         print(f'[QC FAILED] 综合看板结构异常: {"; ".join(problems)}')
         try:

@@ -1,12 +1,12 @@
 """ABS 机构名映射统一模块
 
 合并自原 3 skill 的三套机构名映射表:
-  - ENTITY_MERGE_MAP (申万宏源系合并,来自机构统计 v1.1.0 L131)
+  - ENTITY_MERGE_MAP (申万资管简称归入申万宏源资管,证券主体独立)
   - BANK_NORM_MAP   (托管行分行归并,来自机构统计 v1.1.0 L138)
   - HARD_MAP        (杭州联合等,来自簿记录入 v2.1 SKILL.md L207-218 文档说明,
                      v2.1 代码实际用截断匹配策略,本表为文档参考用)
 
-整合目的:申万宏源/杭州联合等机构名映射原本在两处分别维护,容易漂移。
+整合目的:申万资管/杭州联合等机构名映射原本在两处分别维护,容易漂移。
 本模块统一暴露 normalize_entity / merge_entity 接口,三 skill 共用。
 
 来源行号对照(审计追溯用):
@@ -17,15 +17,17 @@
 
 import re
 
+from institution_identity import canonical as canonical_institution
+
 # ═══════════════════════════════════════════════════════════════
 # §1  实体合并映射 (申万宏源系)
 # ═══════════════════════════════════════════════════════════════
 # 来源: skills/机构统计/gen_institution_stats.py L131-135
-# 用途: 申万宏源系 3 家子公司合并为同一主体"申万宏源"
+# 用途: 申万资管简称归入申万宏源资管，但与申万宏源证券分开统计
 ENTITY_MERGE_MAP = {
     '申万宏源': '申万宏源',
-    '申万宏源资管': '申万宏源',
-    '申万资管': '申万宏源',
+    '申万宏源资管': '申万宏源资管',
+    '申万资管': '申万宏源资管',
 }
 
 # ═══════════════════════════════════════════════════════════════
@@ -37,6 +39,7 @@ ENTITY_MERGE_MAP = {
 #   原 BANK_NORM_MAP 缺失,补 '工银天津' → '工商银行' / '华夏北分' → '华夏银行'
 BANK_NORM_MAP = {
     '江苏北分': '江苏银行', '民生北分': '民生银行', '南银北分': '南京银行',
+    '南京南分': '南京银行',
     '邮储北分': '邮储银行', '中邮北分': '邮储银行', '邮储中关村': '邮储银行',
     '兴业北分': '兴业银行', '兴银北分': '兴业银行',
     '建行北分': '建设银行', '青岛银行总行': '青岛银行',
@@ -73,12 +76,13 @@ HARD_MAP = {
 # ═══════════════════════════════════════════════════════════════
 
 def normalize_entity(name):
-    """实体合并:申万系合并为同一主体。
+    """仅显式别名归并，资管与证券主体保持独立。
 
     用途: 机构统计三表(管理人/销售机构/托管行)的机构名归一化。
     来源: 机构统计 v1.1.0 L155 normalize_entity() 函数。
     """
-    return ENTITY_MERGE_MAP.get(str(name).strip(), str(name).strip())
+    normalized = ENTITY_MERGE_MAP.get(str(name).strip(), str(name).strip())
+    return canonical_institution(normalized)
 
 
 def normalize_bank(name):
@@ -91,11 +95,14 @@ def normalize_bank(name):
     """
     name = str(name).strip()
     if name in BANK_NORM_MAP:
-        return BANK_NORM_MAP[name]
-    # 通用规则:提取"XX银行"
+        return canonical_institution(BANK_NORM_MAP[name])
+    # 通用规则:提取"XX银行"；精确登记的别名优先，避免覆盖已批准跨面板映射。
+    mapped = canonical_institution(name)
+    if mapped != name:
+        return mapped
     m = re.search(r'([一-鿿]+银行)', name)
     if m:
-        return m.group(1)
+        return canonical_institution(m.group(1))
     return name
 
 
@@ -127,8 +134,8 @@ if __name__ == "__main__":
     print(f"HARD_MAP:         {len(HARD_MAP)} 条 (文档参考)")
 
     # 测试 normalize_entity
-    assert normalize_entity("申万宏源资管") == "申万宏源"
-    assert normalize_entity("申万资管") == "申万宏源"
+    assert normalize_entity("申万宏源资管") == "申万宏源资管"
+    assert normalize_entity("申万资管") == "申万宏源资管"
     assert normalize_entity("中信证券") == "中信证券"
     print("✅ normalize_entity 测试通过")
 
@@ -136,6 +143,7 @@ if __name__ == "__main__":
     assert normalize_bank("江苏北分") == "江苏银行"
     assert normalize_bank("建行北分") == "建设银行"
     assert normalize_bank("杭州北分") == "杭州银行"
+    assert normalize_bank("南京南分") == "南京银行"
     assert normalize_bank("工银天分") == "工商银行"
     assert normalize_bank("浙商上分") == "浙商银行"
     assert normalize_bank("招商银行") == "招商银行"

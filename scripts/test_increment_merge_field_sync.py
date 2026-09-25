@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from increment_merge import (  # noqa: E402
     PROJECT_LEVEL_COLS, _field_equal, sync_existing_project_fields, get_all_projects,
+    map_detail_to_project,
 )
 
 # 1-indexed 列位（与 PROJECT_LEVEL_COLS 一致）
@@ -79,6 +80,22 @@ def proj_rows(name, n_rows, overrides=None):
 def snapshot(ws, rows_range):
     return [tuple(ws.cell(row=r, column=c).value for c in range(1, 26))
             for r in rows_range]
+
+
+class TestBookkeepingFilenameAliases(unittest.TestCase):
+    def test_dongyu10_details_map_to_distinct_ledger_projects(self):
+        projects = {'26东裕10号二期', '26东裕10号三期', '26东裕10号四期'}
+        files = {
+            '【东裕10-2ABN】簿记明细-簿记日期2026年9月18日.xlsx': '26东裕10号二期',
+            '【26东裕10第三期】项目簿记明细-预簿记2026-9-21.xlsx': '26东裕10号三期',
+            '【26东裕10-4】项目簿记明细-20260921.xlsx': '26东裕10号四期',
+            '【东裕10-5ABN】簿记明细-簿记日期2026年9月24日.xlsx': '26东裕10号五期',
+        }
+        for filename, expected in files.items():
+            with self.subTest(filename=filename):
+                self.assertEqual(map_detail_to_project(filename, projects), expected)
+                # 第五期当前不在台账里，绝不可误归到三期或四期。
+                self.assertEqual(expected in projects, expected != '26东裕10号五期')
 
 
 class TestFieldEqual(unittest.TestCase):

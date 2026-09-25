@@ -36,8 +36,10 @@ from abs_common import (
     load_and_filter,
     filter_excluded_institutions,
     normalize_investor_name,
+    investor_search_aliases,
     NON_NUMERIC_COST_VALS,
 )
+from entity_alias import normalize_entity, normalize_bank
 
 # ── 面板样式 / 逻辑从同目录资源文件读取（单一来源，便于维护）──────
 _DIR = os.path.dirname(os.path.abspath(__file__))
@@ -60,6 +62,21 @@ def _s(v):
         return None
     s = str(v).strip()
     return s if s else None
+
+
+def _org_name(v):
+    raw = _s(v)
+    return normalize_entity(raw) if raw else None
+
+
+def _bank_name(v):
+    raw = _s(v)
+    return normalize_bank(raw) if raw else None
+
+
+def _underwriters(v):
+    raw = _s(v)
+    return '/'.join(normalize_entity(part.strip()) for part in raw.split('/')) if raw else None
 
 
 def _n(v):
@@ -93,9 +110,9 @@ def _records_from_25col_df(df, year_tag):
             'asset':       _s(row.get('资产类型')),
             'proj':        _s(row.get('项目名称')),
             'venue':       _s(row.get('发行场所')),
-            'mgr':         _s(row.get('计划管理人')),
-            'underwriter': _s(row.get('联席承销商')),
-            'custodian':   _s(row.get('托管行')),
+            'mgr':         _org_name(row.get('计划管理人')),
+            'underwriter': _underwriters(row.get('联席承销商')),
+            'custodian':   _bank_name(row.get('托管行')),
             'scale':       _n(row.get('规模')),
             'tenor':       _s(row.get('期限')),
             'date':        date.strftime('%Y-%m-%d') if pd.notna(date) else None,
@@ -180,9 +197,9 @@ def _compute_flat_year(xlsx_path, year_tag, mgr_col, has_underwriter, has_venue,
             'asset':       _s(row.get('资产类型')),
             'proj':        _s(row.get('项目名称')),
             'venue':       _s(row.get('发行场所')) if has_venue else None,
-            'mgr':         _s(row.get(mgr_col)),
-            'underwriter': _s(row.get('联席承销商')) if has_underwriter else None,
-            'custodian':   _s(row.get('托管行')),
+            'mgr':         _org_name(row.get(mgr_col)),
+            'underwriter': _underwriters(row.get('联席承销商')) if has_underwriter else None,
+            'custodian':   _bank_name(row.get('托管行')),
             'scale':       _n(row.get('规模')),
             'tenor':       _s(row.get('期限')),
             'date':        date.strftime('%Y-%m-%d') if pd.notna(date) else None,
@@ -286,6 +303,7 @@ def render_body_multi_year(data):
     by_year = data['by_year']
     years_present = [y for y in ('2026', '2025', '2024') if y in by_year]
     all_payload = json.dumps(data['all_records'], ensure_ascii=False, separators=(',', ':'))
+    alias_payload = json.dumps(investor_search_aliases(), ensure_ascii=False, separators=(',', ':'))
 
     chunks = []
     for i, year in enumerate(years_present):
@@ -300,7 +318,7 @@ def render_body_multi_year(data):
         )
         parts = []
         if i == 0:
-            parts.append(f'<script>window.ITL_ALL_DATA={all_payload};</script>')
+            parts.append(f'<script>window.ITL_ALL_DATA={all_payload};window.ITL_ALIAS={alias_payload};</script>')
         parts.append(f'<div id="itl-root-{year}"></div>')
         parts.append(f'<script>window.ITL_DATA_{year}={payload};window.ITL_SOURCE_{year}={source};</script>')
         parts.append(f'<script>{ns_js}</script>')

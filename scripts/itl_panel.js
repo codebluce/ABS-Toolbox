@@ -61,7 +61,19 @@
     var sel = st.selKw[field];
     var counts = distinctCounts(field);
     var arr = [];
-    counts.forEach(function (c, v) { if (sel.indexOf(v) < 0 && (!q || v.indexOf(q) >= 0)) arr.push([v, c]); });
+    var aliases = window.ITL_ALIAS || {};
+    var exactName = counts.has(q);
+    counts.forEach(function (c, v) {
+      var found = exactName ? v === q : (!q || v.indexOf(q) >= 0);
+      if (!found && !exactName && ['mgr', 'underwriter', 'custodian', 'inst'].indexOf(field) >= 0) {
+        found = Object.keys(aliases).some(function (alias) {
+          var target = aliases[alias];
+          return alias.indexOf(q) >= 0 && (v === target ||
+            (field === 'underwriter' && v.split('/').some(function (part) { return part.trim() === target; })));
+        });
+      }
+      if (sel.indexOf(v) < 0 && found) arr.push([v, c]);
+    });
     arr.sort(function (a, b) { return b[1] - a[1]; });
     return arr.slice(0, 20);
   }

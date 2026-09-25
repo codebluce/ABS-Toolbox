@@ -36,31 +36,16 @@ OUTPUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 
 def normalize(name):
-    """机构名归一化:去空格/括号统一/去常见后缀"""
+    """严格机构标识：仅标准化格式与已登记别名，不剥除资管等主体后缀。"""
     if not name:
         return ''
-    n = normalize_investor_name(str(name).strip())
-    n = n.replace('（', '(').replace('）', ')')
-    n = n.replace(' ', '').replace('　', '')
-    for suffix in ['有限责任公司', '股份有限公司', '股份有限公司', '理财有限责任公司',
-                   '理财', '资管', '资产管理']:
-        if n.endswith(suffix) and len(n) > len(suffix) + 2:
-            n = n[:-len(suffix)]
-    return n
+    return str(normalize_investor_name(str(name).strip())).replace(' ', '').replace('　', '').replace('(', '（').replace(')', '）')
 
 
 def approximate_match(inst_a, inst_b):
-    """近似匹配:归一化后相等,或一方包含另一方(len>=3)"""
-    na = normalize(inst_a)
-    nb = normalize(inst_b)
-    if not na or not nb:
-        return False
-    if na == nb:
-        return True
-    if len(na) >= 3 and len(nb) >= 3:
-        if na in nb or nb in na:
-            return True
-    return False
+    """保留旧接口；禁止包含匹配将独立证券/资管/投顾合并。"""
+    na, nb = normalize(inst_a), normalize(inst_b)
+    return bool(na and nb and na == nb)
 
 
 def _add_actual_subscription_columns(df):

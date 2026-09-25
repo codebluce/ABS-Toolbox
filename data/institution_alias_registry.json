@@ -1,0 +1,199 @@
+{
+  "version": 1,
+  "policy": "仅精确登记的别名可跨面板归并；业务汇总等价不代表法律主体相同。未登记的相似名称保持独立。",
+  "aliases": [
+    {
+      "alias": "中信证券（换券）",
+      "canonical": "中信证券",
+      "reason": "换券为同一机构的交易标记；已在次级配售快照人工映射，用户指定跨面板汇总",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "青岸投资",
+      "canonical": "青岸资本",
+      "reason": "用户指定的统计口径别名；仅作为报表汇总，不声明两者法律主体相同",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "广发证券（补续发）",
+      "canonical": "广发证券",
+      "reason": "补续发为业务标记；原次级配售人工映射",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "广发证券资管",
+      "canonical": "广发资管",
+      "reason": "原 abs_common.py 投资者显式别名；与广发证券保持独立",
+      "source": "scripts/abs_common.py"
+    },
+    {
+      "alias": "申万资管",
+      "canonical": "申万宏源资管",
+      "reason": "原机构统计显式简称，保留与申万宏源证券的独立边界",
+      "source": "scripts/entity_alias.py 原 ENTITY_MERGE_MAP"
+    },
+    {
+      "alias": "中信自营",
+      "canonical": "中信证券",
+      "reason": "原次级速查登记映射为「中信证券」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "中泰证券自营",
+      "canonical": "中泰（自营）",
+      "reason": "原次级速查登记映射为「中泰自营」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "中泰证券",
+      "canonical": "中泰（自营）",
+      "reason": "原次级速查登记映射为「中泰自营」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "中金自营（非标）",
+      "canonical": "中金公司（自营）",
+      "reason": "原次级速查登记映射为「中金自营」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "利曦基金（换券）",
+      "canonical": "利曦基金",
+      "reason": "原次级速查登记映射为「利曦基金」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "利曦投资",
+      "canonical": "利曦基金",
+      "reason": "原次级速查登记映射为「利曦基金」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "朗资韩亚",
+      "canonical": "朗姿韩亚",
+      "reason": "原次级速查登记映射为「朗姿韩亚」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "杭州联合",
+      "canonical": "杭州联合银行",
+      "reason": "原次级速查登记映射为「杭州联合银行」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "杭联资管",
+      "canonical": "杭州联合银行",
+      "reason": "原次级速查登记映射为「杭州联合银行」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "国泰海通客需",
+      "canonical": "国泰海通",
+      "reason": "原次级速查登记映射为「国泰海通」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "东方财富",
+      "canonical": "东方财富证券",
+      "reason": "原次级速查登记映射为「东方财富证券」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "信达证券",
+      "canonical": "信达（自营）",
+      "reason": "原次级速查登记映射为「信达自营」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "华兴证券",
+      "canonical": "华兴（自营）",
+      "reason": "原次级速查登记映射为「华兴自营」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "西部证券",
+      "canonical": "西部（自营）",
+      "reason": "原次级速查登记映射为「西部自营」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "国联资管",
+      "canonical": "国联证券",
+      "reason": "原次级速查登记映射为「国联证券」，推广至所有面板；全局名称沿用投资台账标准名",
+      "source": "data/secondary_allocation_aliases.json + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "中泰自营",
+      "canonical": "中泰（自营）",
+      "reason": "次级速查旧展示名统一到投资台账现用标准名；不新增主体合并关系",
+      "source": "data/secondary_allocation_aliases.json + scripts/abs_common.py + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "中金自营",
+      "canonical": "中金公司（自营）",
+      "reason": "次级速查旧展示名统一到投资台账现用标准名；不新增主体合并关系",
+      "source": "data/secondary_allocation_aliases.json + scripts/abs_common.py + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "信达自营",
+      "canonical": "信达（自营）",
+      "reason": "次级速查旧展示名统一到投资台账现用标准名；不新增主体合并关系",
+      "source": "data/secondary_allocation_aliases.json + scripts/abs_common.py + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "华兴自营",
+      "canonical": "华兴（自营）",
+      "reason": "次级速查旧展示名统一到投资台账现用标准名；不新增主体合并关系",
+      "source": "data/secondary_allocation_aliases.json + scripts/abs_common.py + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "西部自营",
+      "canonical": "西部（自营）",
+      "reason": "次级速查旧展示名统一到投资台账现用标准名；不新增主体合并关系",
+      "source": "data/secondary_allocation_aliases.json + scripts/abs_common.py + 用户确认全局推广 2026-09-25"
+    },
+    {
+      "alias": "广发证券（资管）",
+      "canonical": "广发资管",
+      "reason": "用户明确确认与广发资管使用同一统计口径；广发证券仍独立",
+      "source": "用户确认 2026-09-25"
+    }
+  ],
+  "distinct": [
+    {
+      "left": "广发证券",
+      "right": "广发资管",
+      "reason": "证券公司与资管机构分别统计和搜索"
+    },
+    {
+      "left": "中信证券",
+      "right": "中信证券（投顾）",
+      "reason": "投顾部门口径未经确认，不以主名称自动归并"
+    },
+    {
+      "left": "申万宏源",
+      "right": "申万宏源资管",
+      "reason": "资管不能按名称前缀与证券公司自动归并"
+    },
+    {
+      "left": "广发证券",
+      "right": "广发证券（资管）",
+      "reason": "广发证券（资管）已归并至广发资管；广发证券仍独立"
+    },
+    {
+      "left": "工商银行",
+      "right": "工银理财",
+      "reason": "银行与理财子为不同授信/投资机构，不可按集团名自动对应"
+    },
+    {
+      "left": "广发银行",
+      "right": "广银理财",
+      "reason": "银行与理财子不得按名称相似推断机构同一"
+    },
+    {
+      "left": "华泰证券",
+      "right": "华泰资管",
+      "reason": "证券与资管应分别统计，除非另有精确确认的别名"
+    }
+  ]
+}

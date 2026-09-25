@@ -20,7 +20,7 @@ from abs_common import (
     NON_NUMERIC_COST_VALS, PRIORITY_LAYERS,
     PRODUCT_ORDER_TEMPLATE,
     classify_tenor, resolve_tenor_col,
-    load_and_filter, QCRunner,
+    load_and_filter, QCRunner, investor_search_aliases,
 )
 
 
@@ -605,6 +605,7 @@ INVEST_JS_TEMPLATE = """
 // === 投资明细：机构认购明细查询 ===
 const INVEST_ALL_DATA = {data_js};
 const INVEST_ALL_PRODUCTS = {products_js};
+const INVEST_ALIASES = {aliases_js};
 
 // === 机构搜索下拉（自定义组件，白底黑字，随输入过滤）===
 let INVEST_ALL_INSTS = [];
@@ -662,7 +663,9 @@ function investRenderDropdown(query) {{
   const q = (query || '').trim().toLowerCase();
   let filtered = INVEST_ALL_INSTS;
   if (q) {{
-    filtered = INVEST_ALL_INSTS.filter(i => i.toLowerCase().includes(q));
+    const exact = INVEST_ALL_INSTS.filter(i => i.toLowerCase() === q);
+    filtered = exact.length ? exact : INVEST_ALL_INSTS.filter(i => i.toLowerCase().includes(q) ||
+      Object.keys(INVEST_ALIASES).some(alias => INVEST_ALIASES[alias] === i && alias.toLowerCase().includes(q)));
   }}
   if (filtered.length === 0) {{
     dropdown.innerHTML = '<div class="invest-search-empty">未找到匹配机构</div>';
@@ -765,6 +768,7 @@ def render_body_invest(data):
     js = INVEST_JS_TEMPLATE.format(
         data_js=data['data_js'],
         products_js=data['products_js'],
+        aliases_js=json.dumps(investor_search_aliases(), ensure_ascii=False),
     )
     xlsx_basename = data['xlsx_basename']
     return f'''

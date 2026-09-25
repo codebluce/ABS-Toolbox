@@ -5,7 +5,7 @@
   表二：销售机构统计表（联席承销商=销售机构，券商only）
   表三：托管行统计表（分行归并至总行，同名合并）
 
-实体合并：申万宏源 / 申万宏源资管 / 申万资管 → 申万宏源 (来自 entity_alias.py)
+实体合并：仅申万资管 → 申万宏源资管，申万宏源证券独立 (来自 entity_alias.py)
 托管行归并：分行名 → XX银行（同银行不同分行合并计算, 来自 entity_alias.py）
 
 v2.0.0 改造（2026-07-05）：
@@ -717,7 +717,7 @@ def _build_section_by_key(key, mgr, sales, custody):
         table = build_stat_table(cols, build_manager_rows(mgr), c['thead'])
         return build_section(
             '表一：管理人统计表',
-            f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 申万宏源系合并',
+            f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 申万资管简称归一、证券/资管独立',
             table, 'manager'
         )
     if key == 'sales':
@@ -732,7 +732,7 @@ def _build_section_by_key(key, mgr, sales, custody):
         table = build_stat_table(cols, build_sales_rows(sales), c['thead'])
         return build_section(
             '表二：销售机构统计表',
-            f'{len(sales)}家券商 · 联席承销商=销售机构 · 申万宏源系合并',
+            f'{len(sales)}家券商 · 联席承销商=销售机构 · 申万资管简称归一、证券/资管独立',
             table, 'sales'
         )
     if key == 'custodian':
@@ -791,7 +791,7 @@ def render_body(data, section_key=None):
       <div class="banner-title">机构统计看板</div>
       <div class="banner-subtitle">
         管理人/销售机构/托管行 三维度统计 ·
-        申万宏源系合并 · 托管行分行归并 · 券商only
+        申万资管简称归一、证券/资管独立 · 托管行分行归并 · 券商only
       </div>
     </div>
     <div class="banner-badge">
@@ -803,7 +803,7 @@ def render_body(data, section_key=None):
 
 <div class="note-bar">
   <span>管理人/销售机构：仅统计券商，剔除信托/银行/保险</span>
-  <span>申万宏源/申万宏源资管/申万资管合并为同一主体</span>
+  <span>申万资管归入申万宏源资管，证券与资管分别统计</span>
   <span>联席承销商即销售机构；多联席承销项目按参与机构重复归属</span>
   <span>托管行分行名归并为总行名（XX银行），同名合并</span>
   <span>管理/参与/托管规模=项目去重后J列发行规模；投行认购规模=U列投行记录的V列中标份额</span>
@@ -1033,14 +1033,13 @@ def run_qc(df, projects, mgr, sales, custody, total_scale,
     # ── 【2】业务逻辑正确性 ──────────────────────────────────
     print('\n【2】业务逻辑正确性')
 
-    # 2-1 申万宏源合并：不应存在"申万宏源资管"或"申万资管"独立条目
+    # 2-1 资管实体不得被当作证券公司的名称变体；仅归并申万资管简称。
     for col_name, tbl in [('计划管理人', mgr), ('机构名称', sales)]:
-        merged_names = tbl[col_name].tolist()
-        for old_name in ['申万宏源资管', '申万资管']:
-            if old_name in merged_names:
-                fail(f'{col_name}列存在未合并实体：{old_name}')
-            else:
-                ok(f'{col_name}列已合并"申万宏源"系实体')
+        names = tbl[col_name].tolist()
+        if '申万资管' in names:
+            fail(f'{col_name}列仍有未归一化简称：申万资管')
+        else:
+            ok(f'{col_name}列申万资管简称归一化，资管与证券公司独立统计')
 
     # 2-2 托管行归并：所有名称应以"银行"结尾（不含分行字样）
     bank_names = custody['托管行'].tolist()
@@ -1213,8 +1212,8 @@ def init_pitfall_log():
         '## v1.0.0 初始已知问题\n\n'
         '### 2026-05-13 初始化\n'
         '- **类别**: 数据\n'
-        '- **问题**: 申万宏源/申万宏源资管/申万资管在台账中为不同条目，需合并统计\n'
-        '- **修复**: ENTITY_MERGE_MAP映射合并为"申万宏源"\n\n'
+        '- **问题**: 申万资管为简称，应归入申万宏源资管；申万宏源证券保持独立\n'
+        '- **修复**: ENTITY_MERGE_MAP仅归并申万资管至申万宏源资管\n\n'
         '### 2026-05-13 初始化\n'
         '- **类别**: 数据\n'
         '- **问题**: 托管行列含分行名（如"江苏北分"），需归并至总行名\n'

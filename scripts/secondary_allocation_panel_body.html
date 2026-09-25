@@ -1,0 +1,54 @@
+  <header class="banner">
+    <p class="banner-tag">ABS ALLOCATION · INSTITUTION LOOKUP</p>
+    <h1>次级与夹层配售速查</h1>
+    <p class="banner-sub">按机构、月份快速定位逐笔分量 · 一笔次级或夹层占一行</p>
+  </header>
+  <main class="container">
+    <section class="control-card" aria-label="配售筛选">
+      <div class="control-row">
+        <div class="control-group">
+          <label class="control-label" for="inst-search">机构名称搜索</label>
+          <div class="search-wrap">
+            <div class="search-field">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m16 16 5 5"/></svg>
+              <input id="inst-search" type="text" role="combobox" aria-autocomplete="list" aria-controls="inst-options" aria-expanded="false" placeholder="输入机构关键词，从下拉列表中选择" autocomplete="off">
+            </div>
+            <button id="clear-search" type="button" aria-label="清空机构搜索">×</button>
+            <div id="inst-options" class="dropdown" role="listbox" aria-label="匹配机构"></div>
+          </div>
+        </div>
+        <div class="control-group month-group">
+          <label class="control-label" for="month-select">月份选择</label>
+          <select id="month-select" aria-label="月份选择">
+            <option value="1月">2026年 1月</option><option value="2月">2026年 2月</option>
+            <option value="3月">2026年 3月</option><option value="4月">2026年 4月</option>
+            <option value="5月">2026年 5月</option><option value="6月">2026年 6月</option>
+            <option value="7月">2026年 7月</option><option value="8月">2026年 8月</option>
+            <option value="9月" selected>2026年 9月</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="empty-card" id="empty-state" hidden aria-live="polite"><div class="empty-icon" aria-hidden="true">⌕</div><h2 id="empty-title">输入机构名称开始查询</h2><p id="empty-copy">支持模糊搜索；从下拉列表中选择机构查看获配明细</p></section>
+
+    <section class="result-card" id="result-panel" aria-label="配售明细">
+      <div class="result-head"><div><h2 id="result-title"></h2><p id="result-subtitle"></p></div><span class="snapshot-label" id="snapshot-label"></span></div>
+      <div class="stats" aria-label="分量汇总">
+        <div class="stat"><span class="label">获配合计</span><strong id="total-amount">—</strong><span class="unit">万元</span></div>
+        <div class="stat secondary"><span class="label">次级分量</span><strong id="junior-amount">—</strong><span class="unit">万元</span></div>
+        <div class="stat mezz"><span class="label">夹层分量</span><strong id="mezz-amount">—</strong><span class="unit">万元</span></div>
+        <div class="stat"><span class="label">涉及项目 / 明细笔数</span><strong id="count-stat">—</strong></div>
+      </div>
+      <div class="table-header"><h3>获配明细</h3><span>横向可滚动查看完整字段 · 价格与项目属性取项目所属块</span></div>
+      <div class="table-scroller" role="region" aria-label="获配明细表（可横向滚动）" tabindex="0">
+        <table>
+          <thead><tr><th>资产类型</th><th>项目名称</th><th>牵头管理</th><th>期限</th><th>获配层级</th><th>投资人名称</th><th class="num">分量（万）</th><th class="num">价格</th><th class="num">溢价率</th><th class="num">项目规模（亿）</th><th>分层比例</th><th>原始权益人</th></tr></thead>
+          <tbody id="detail-rows"></tbody>
+        </table>
+      </div>
+      <div id="month-alert" class="alert" role="note"></div>
+      <div class="note"><strong>统计口径</strong><span>仅累加所选机构及<strong>已确认映射别名</strong>的正分量记录，明细保留原表投资人名称；同一项目同时获配次级和夹层分别列示。项目小计不按机构重复计算，夹层无单独溢价率时显示“—”；特殊分层缺失的项目字段也显示“—”。</span></div>
+    </section>
+    <footer>数据来源：JoySpace《终版-26年次级分配》2026年各月 sheet；本面板使用<strong>本地快照，不实时同步</strong>。月份按 sheet 归属，不等同于缴款月份。原表可能包含“开放”“备”“换券”等状态，本页显示表内分量，不代表已完成最终交割。<span id="footer-date"></span></footer>
+  </main>
