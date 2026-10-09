@@ -67,8 +67,19 @@ class SecondaryAllocationIntegrationTest(unittest.TestCase):
         rows = allocation.load_snapshot()['records']
         original_names = {r['investor'] for r in rows}
         grouped_names = {aliases.get(r['investor'], r['investor']) for r in rows}
-        self.assertEqual((len(rows), len(original_names), len(grouped_names)), (989, 70, 52))
-        self.assertEqual(sum(r['amount_wan'] for r in rows), 1492845)
+        self.assertEqual((len(rows), len(original_names), len(grouped_names)), (1095, 73, 55))
+        self.assertEqual(sum(r['amount_wan'] for r in rows), 1657845)
+        previous = [r for r in rows if r['month'] != '10月']
+        october = [r for r in rows if r['month'] == '10月']
+        self.assertEqual((len(previous), sum(r['amount_wan'] for r in previous)), (989, 1492845))
+        self.assertEqual((len(october), sum(r['amount_wan'] for r in october)), (106, 165000))
+        self.assertEqual(len({r['project'] for r in october}), 19)
+        self.assertEqual(sum(r['level'] == '次级' for r in october), 51)
+        self.assertEqual(sum(r['level'] == '夹层' for r in october), 55)
+        self.assertTrue(all(r['source'].startswith('10月!') for r in october))
+        self.assertNotIn('中信自营（换券）', aliases)
+        self.assertNotIn('粤财信托（协助展期）', aliases)
+        self.assertIn('<option value="10月" selected>', allocation._BODY_HTML)
         self.assertTrue(set(historical).issubset(original_names))
         self.assertEqual(aliases['中泰自营'], aliases['中泰证券'])
 

@@ -1,6 +1,6 @@
 """JoySpace 次级/夹层配售速查的 lab 独立预览。
 
-首次导入: python3 scripts/lab/secondary_allocation_quick.py --import-dir <含1月.tsv…9月.tsv的目录>
+首次导入: python3 scripts/lab/secondary_allocation_quick.py --import-dir <含1月.tsv…10月.tsv的目录>
 后续预览: python3 scripts/lab/secondary_allocation_quick.py
 
 TSV 必须从用户有权访问的 JoySpace 月份 sheet 复制取得；此脚本不连接线上表格。
@@ -25,7 +25,7 @@ from secondary_allocation_panel import ALLOCATION_CSS, SNAPSHOT_PATH, render_bod
 TEMPLATE_PATH = LAB_DIR / 'secondary_allocation_quick_template.html'
 PREVIEW_PATH = LAB_DIR.parent.parent / 'deliverables' / 'dashboards' / '02_history' / 'lab_viz' / 'secondary_allocation_quick_preview.html'
 SOURCE_URL = 'https://joyspace.jd.com/sheets/89PMGlBmUHUueYQ6Cl7L'
-MONTHS = tuple(f'{m}月' for m in range(1, 10))
+MONTHS = tuple(f'{m}月' for m in range(1, 11))
 
 
 def cell(row: list[str], index: int) -> str:
@@ -245,7 +245,7 @@ def import_snapshot(directory: Path, snapshot_date: str) -> dict:
     return {
         'source_url': SOURCE_URL, 'source_title': '终版-26年次级分配',
         'snapshot_date': snapshot_date,
-        'scope': '2026年1–9月；主项目块按投资人分量，另含中保登及3:1结构化分层；3月主表次级报量暂不计入',
+        'scope': '2026年1–10月；主项目块按投资人分量，另含中保登及3:1结构化分层；3月主表次级报量暂不计入',
         'records': records,
     }
 
@@ -260,8 +260,31 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--import-dir', type=Path, help='临时 JoySpace 月份 TSV 所在目录')
     parser.add_argument('--snapshot-date', default=date.today().isoformat())
+    parser.add_argument('--update-month', choices=MONTHS, help='仅更新指定月份，保留现有其他月份快照')
+    parser.add_argument('--month-tsv', type=Path, help='指定月份的 JoySpace TSV，与 --update-month 同用')
     args = parser.parse_args()
-    if args.import_dir:
+    if bool(args.update_month) != bool(args.month_tsv):
+        parser.error('--update-month 与 --month-tsv 必须同时指定')
+    if args.import_dir and args.update_month:
+        parser.error('--import-dir 与 --update-month 不能同用')
+    if args.update_month:
+        snapshot = json.loads(SNAPSHOT_PATH.read_text(encoding='utf-8'))
+        with args.month_tsv.open(encoding='utf-8-sig', newline='') as stream:
+            rows = list(csv.reader(stream, delimiter='\t'))
+        if not rows or '项目名称' not in rows[0]:
+            raise ValueError(f'{args.update_month}: 未识别 JoySpace 项目明细表头')
+        refreshed = parse_month(args.update_month, rows)
+        if not refreshed:
+            raise ValueError(f'{args.update_month}: 无可计入的正分量，拒绝覆盖现有快照')
+        snapshot['records'] = [r for r in snapshot['records'] if r['month'] != args.update_month] + refreshed
+        snapshot['records'].sort(key=lambda r: int(r['month'].rstrip('月')))
+        snapshot['snapshot_date'] = args.snapshot_date
+        latest = max(int(r['month'].rstrip('月')) for r in snapshot['records'])
+        snapshot['scope'] = (f'2026年1–{latest}月；主项目块按投资人分量，另含中保登及3:1结构化分层；'
+                             '3月主表次级报量暂不计入')
+        print(f'更新 {args.update_month}: {len(refreshed)} 条正分量; 原表 {len(rows)} 行')
+        SNAPSHOT_PATH.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    elif args.import_dir:
         snapshot = import_snapshot(args.import_dir, args.snapshot_date)
         SNAPSHOT_PATH.parent.mkdir(parents=True, exist_ok=True)
         SNAPSHOT_PATH.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
