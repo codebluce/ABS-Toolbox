@@ -18,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 class InstitutionIdentityTest(unittest.TestCase):
     def test_approved_aliases_and_distinct(self):
         self.assertEqual(normalize_investor_name('中信证券（换券）'), '中信证券')
+        self.assertEqual(normalize_investor_name('中信自营（换券）'), '中信证券')
+        self.assertEqual(normalize_investor_name('粤财信托（协助展期）'), '粤财信托')
         self.assertEqual(normalize_investor_name('青岸投资'), '青岸资本')
         self.assertEqual(normalize_investor_name('广发证券资管'), '广发资管')
         self.assertEqual(normalize_entity('申万资管'), '申万宏源资管')

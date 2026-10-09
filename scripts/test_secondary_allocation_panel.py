@@ -54,7 +54,7 @@ class SecondaryAllocationIntegrationTest(unittest.TestCase):
         from institution_identity import aliases as global_aliases
         historical = json.loads(allocation.ALIASES_PATH.read_text(encoding='utf-8'))
         self.assertEqual(aliases, global_aliases())
-        self.assertEqual(len(historical), 18)
+        self.assertEqual(len(historical), 20)
         for old, target in historical.items():
             self.assertEqual(aliases[old], normalize_investor_name(target))
         self.assertEqual(aliases['广发证券（资管）'], '广发资管')
@@ -67,7 +67,7 @@ class SecondaryAllocationIntegrationTest(unittest.TestCase):
         rows = allocation.load_snapshot()['records']
         original_names = {r['investor'] for r in rows}
         grouped_names = {aliases.get(r['investor'], r['investor']) for r in rows}
-        self.assertEqual((len(rows), len(original_names), len(grouped_names)), (1095, 73, 55))
+        self.assertEqual((len(rows), len(original_names), len(grouped_names)), (1095, 73, 53))
         self.assertEqual(sum(r['amount_wan'] for r in rows), 1657845)
         previous = [r for r in rows if r['month'] != '10月']
         october = [r for r in rows if r['month'] == '10月']
@@ -77,8 +77,16 @@ class SecondaryAllocationIntegrationTest(unittest.TestCase):
         self.assertEqual(sum(r['level'] == '次级' for r in october), 51)
         self.assertEqual(sum(r['level'] == '夹层' for r in october), 55)
         self.assertTrue(all(r['source'].startswith('10月!') for r in october))
-        self.assertNotIn('中信自营（换券）', aliases)
-        self.assertNotIn('粤财信托（协助展期）', aliases)
+        self.assertEqual(aliases['中信自营（换券）'], '中信证券')
+        self.assertEqual(aliases['粤财信托（协助展期）'], '粤财信托')
+        for canonical, original, expected_count, expected_amount in (
+            ('中信证券', '中信自营（换券）', 5, 7600),
+            ('粤财信托', '粤财信托（协助展期）', 4, 3500),
+        ):
+            selected = [r for r in october if aliases.get(r['investor'], r['investor']) == canonical]
+            self.assertEqual((len(selected), sum(r['amount_wan'] for r in selected)),
+                             (expected_count, expected_amount))
+            self.assertIn(original, {r['investor'] for r in selected})
         self.assertIn('<option value="10月" selected>', allocation._BODY_HTML)
         self.assertTrue(set(historical).issubset(original_names))
         self.assertEqual(aliases['中泰自营'], aliases['中泰证券'])
