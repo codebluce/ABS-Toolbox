@@ -292,7 +292,12 @@ def parse_contacts(raw: str) -> list[dict]:
 def build_prog_quick(html: str) -> list[dict]:
     prog_all = load_json_literal(html, "const PROG_ALL_DATA =", "[")
     itl_rows = load_json_literal(html, "window.ITL_ALL_DATA=", "[")
-    name_map = load_json_literal(html, "const PROG_NAME_MAP =", "{")
+    if "const PROG_NAME_MAP =" in html:
+        name_map = load_json_literal(html, "const PROG_NAME_MAP =", "{")
+    else:
+        # 新桌面版使用全局机构别名；保留旧版本读法，明确转成列表值。
+        aliases = load_json_literal(html, "const PROG_ALIASES =", "{")
+        name_map = {name: [target] for name, target in aliases.items()}
     credit = load_json_literal(html, "const PROG_CREDIT_DATA =", "{")
     profile = build_ledger_profile(itl_rows)
 
@@ -660,6 +665,29 @@ PAGE = """<!DOCTYPE html>
 """
 
 
+def verify_mobile_bookkeeping(desktop_html, mobile_html):
+    """拒绝将陈旧手机版与新桌面版混合打包。"""
+    if 'id="latest-bookkeeping"' not in desktop_html:
+        return
+    import latest_bookkeeping_qc as qc
+    qc.verify_html(desktop_html)
+    # 外部双端打包也必须核对实际应用脚本，隐藏JSON存在不能代替入口可用。
+    marker_match = re.search(r'<script id="abs-mobile-app">(.*?)</script>', mobile_html, re.S)
+    if not marker_match or marker_match.group(1) != APP_JS.read_text(encoding='utf-8'):
+        raise ValueError('手机版实际导航应用脚本陈旧或被篡改，请重新生成')
+    marker = 'window.ABS_MOBILE_DATA='
+    start = mobile_html.find(marker)
+    if start < 0:
+        raise ValueError('手机版缺少数据注入块，须重新生成')
+    value, _ = json.JSONDecoder().raw_decode(mobile_html[start + len(marker):])
+    component = value.get('bookkeepingHtml')
+    if not component:
+        raise ValueError('手机版缺少最新簿记，须重新生成')
+    qc.verify_html(component)
+    if qc.extract_data(component) != qc.extract_data(desktop_html):
+        raise ValueError('手机版簿记源数据与桌面版不同步，须重新生成')
+
+
 def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Path:
     dashboard_path = Path(dashboard_path).resolve()
     html = dashboard_path.read_text(encoding="utf-8")
@@ -671,6 +699,16 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
         raise RuntimeError("机构画像数据为空,手机版生成中止")
 
     inject = {"meta": build_meta(html, dashboard_path)}
+    # 手机版复用同一簿记组件和源数据，不另写一份聚合逻辑。
+    if 'id="latest-bookkeeping"' in html:
+        import latest_bookkeeping_panel as bookkeeping
+        import latest_bookkeeping_qc as bookkeeping_qc
+        bookkeeping_qc.verify_html(html)
+        data = bookkeeping_qc.extract_data(html)
+        inject['bookkeepingHtml'] = ('<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1.0">'
+            '<style>body{margin:0;}' + bookkeeping.BOOKKEEPING_CSS + '</style></head><body>'
+            + bookkeeping.render_body(data) + '</body></html>')
     asset = build_asset(html)
     peer = build_peer(html)
     missing = [name for name, val in (("消金资产", asset), ("同业发行", peer)) if val is None]
@@ -684,11 +722,18 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
     if inst_stats:
         inject["instStats"] = inst_stats
 
+    def safe_json(value):
+        return (json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+            .replace('&', '\\u0026').replace('<', '\\u003c').replace('>', '\\u003e')
+            .replace('\u2028', '\\u2028').replace('\u2029', '\\u2029'))
+
     page = PAGE.format(
-        prog_quick=json.dumps(prog_quick, ensure_ascii=False, separators=(",", ":")),
-        inject=json.dumps(inject, ensure_ascii=False, separators=(",", ":")),
+        prog_quick=safe_json(prog_quick),
+        inject=safe_json(inject),
         app_js=APP_JS.read_text(encoding="utf-8"),
     )
+
+    verify_mobile_bookkeeping(html, page)
 
     out_path = Path(out_path) if out_path else dashboard_path.with_name(dashboard_path.stem + "_手机版.html")
     out_path.parent.mkdir(parents=True, exist_ok=True)

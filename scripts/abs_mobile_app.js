@@ -581,6 +581,7 @@
       ['asset', '资产大盘', '<path d="M3.5 18.5h15"></path><rect x="4.5" y="10" width="3.6" height="6"></rect><rect x="9.7" y="6" width="3.6" height="10"></rect><rect x="14.9" y="12.5" width="3.6" height="3.5"></rect>'],
       ['peer', '同业发行', '<path d="M3.5 14.5 8 9.5l3.6 3.2L18.5 6"></path><path d="M14.4 6h4.1v4"></path>']
     ];
+    if (INJ.bookkeepingHtml) items.push(['bookkeeping', '最新簿记', '<rect x="4" y="4" width="14" height="15" rx="1"></rect><path d="M7 8h8M7 12h8M7 16h5"></path>']);
     // 顶部标签栏:安全区留白包在栏内,图标与文字横向并排,选中态用底部 2px 下划线
     var h = '<div style="flex:0 0 auto; background:#fff; border-bottom:1px solid #e2e6ee; box-shadow:0 1px 3px rgba(13,27,46,.05);">' +
       '<div style="height:env(safe-area-inset-top, 0px);"></div>' +
@@ -626,6 +627,7 @@
   var root, scroller;
 
   function body() {
+    if (S.tab === 'bookkeeping') return '<iframe id="m-bookkeeping-frame" title="最新簿记明细" style="width:100%;height:100%;border:0;display:block;"></iframe>';
     if (S.tab === 'asset') return viewAsset();
     if (S.tab === 'peer') return viewPeer();
     if (S.sel) return viewDetail();
@@ -644,6 +646,8 @@
         sheet() +
       '</div>';
     scroller = document.getElementById('m-scroll');
+    var bookkeepingFrame = document.getElementById('m-bookkeeping-frame');
+    if (bookkeepingFrame) bookkeepingFrame.srcdoc = INJ.bookkeepingHtml;
     if (keepScroll && scroller) scroller.scrollTop = top;
     var inp = document.getElementById('m-q');
     if (inp) {

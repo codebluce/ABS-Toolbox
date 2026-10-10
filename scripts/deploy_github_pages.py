@@ -197,11 +197,11 @@ def generate_dashboard(
     if not out_path.exists():
         raise RuntimeError(f"生成器已退出但未找到产物: {out_path}")
     # 产物结构验证:QC 失败时生成器非零退出,这里再校验一次关键结构双保险
-    verify_dashboard_artifact(out_path)
+    verify_dashboard_artifact(out_path, ledger_path)
     return out_path
 
 
-def verify_dashboard_artifact(dashboard_path: Path) -> None:
+def verify_dashboard_artifact(dashboard_path: Path, ledger_path: Path | None = None) -> None:
     """部署侧产物验证:关键结构缺失即中止发布(P1-01 双保险)。"""
     content = dashboard_path.read_text(encoding="utf-8")
     problems = []
@@ -211,6 +211,14 @@ def verify_dashboard_artifact(dashboard_path: Path) -> None:
         problems.append("缺少 selectModule")
     if "function selectSub" not in content:
         problems.append("缺少 selectSub")
+    try:
+        from latest_bookkeeping_qc import verify_html
+        source = ledger_path or find_latest_ledger()
+        verify_html(content, source)
+        from dashboard_provenance import verify_full_generation
+        verify_full_generation(content, source)
+    except ValueError as error:
+        problems.append(str(error))
     if problems:
         raise RuntimeError(f"综合看板产物结构异常: {'; '.join(problems)}")
 
@@ -579,6 +587,7 @@ def build_site(
     protected: bool = False,
     password: str | None = None,
     iterations: int = 10_000,
+    ledger_path: Path | None = None,
 ) -> Path:
     print("\n[2/4] 组装静态站点包...")
     dashboards = find_dashboard_files()
@@ -592,6 +601,9 @@ def build_site(
     latest_dashboard = latest_dashboard.resolve()
     if not latest_dashboard.is_absolute():  # resolve 后必为绝对,防御性断言
         raise ValueError(f"看板路径解析失败: {latest_dashboard}")
+
+    # skip-generate同样核对来源哈希和当前规则，失败不清空上一版站点包。
+    verify_dashboard_artifact(latest_dashboard, ledger_path)
 
     if SITE_STAGING_DIR.exists():
         shutil.rmtree(SITE_STAGING_DIR)
@@ -673,7 +685,7 @@ def build_site(
         "安全说明：站点包为**客户端加密**门禁版本，`index.html` 只包含密文和本地解密逻辑，不包含明文看板。\n"
         "注意：这是客户端加密而非服务端鉴权——密文、salt、IV 均随页面下发，访问者可离线尝试口令，无身份校验、撤销与审计能力。请使用高熵口令并定期轮换；若需身份级管控请迁移至 Cloudflare Access 等方案。"
         if protected
-        else "安全说明：站点包只包含静态 HTML，不包含源 Excel、簿记明细、脚本、`.env` 等文件。"
+        else "安全说明：站点包包含静态HTML及内嵌机构簿记数据，不包含源Excel或`.env`；明文模式可直接读取簿记明细，敏感数据请使用protected模式并经授权发布。"
     )
     readme = f"""# ABS综合看板静态站点包
 
@@ -895,6 +907,7 @@ def main() -> None:
         protected=args.protected,
         password=password,
         iterations=args.pbkdf2_iterations,
+        ledger_path=args.ledger or find_latest_ledger(),
     )
     # 提交消息日期直接取自本次实际发布的产物(v26-B2),不再二次 mtime 扫描,
     # 避免"构建用 A 产物、消息记 B 日期"的错配

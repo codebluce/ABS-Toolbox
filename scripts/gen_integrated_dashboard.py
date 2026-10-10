@@ -27,6 +27,7 @@ import gen_investment_ledger
 import gen_pricing_insight
 import gen_institution_profile
 import secondary_allocation_panel
+import latest_bookkeeping_panel
 import gen_institution_stats
 import peer_issuance_panel
 # 总授信额度监控模块必须在 lab 路径加入前导入，避免误加载旧实验版。
@@ -191,7 +192,7 @@ def build_integrated_html(panels, all_css):
                 sub_label = sub_label_map.get(sub, sub)
             else:
                 # 发行定价的子 Tab 名固定
-                sub_label_map = {'compare': '定价测试', 'invest': '投资明细', 'cost': '成本分布', 'spread': '利差分析'}
+                sub_label_map = {'compare': '定价测试', 'invest': '投资明细', 'cost': '成本分布', 'spread': '利差分析', 'bookkeeping': '最新簿记'}
                 sub_label = sub_label_map.get(sub, sub)
             sub_buttons.append(
                 f'<button class="sub-tab-button" data-sub="{sub}" '
@@ -294,6 +295,7 @@ def main():
     parser.add_argument('--peer-issuance-xlsx', default=None, help='当期同业发行动态 Excel（提供时展示同业发行一级模块）')
     parser.add_argument('--peer-issuance-baseline-xlsx', default=None, help='同业发行同比基准 Excel（默认使用受控 2025 基准）')
     parser.add_argument('--peer-issuance-previous-xlsx', default=None, help='上周同业发行快照；存在漂移 FAIL 时阻断生成')
+    parser.add_argument('--bookkeeping-demo', action='store_true', help='兼容旧参数：最新簿记默认生成；传入时保留Demo标识')
     args = parser.parse_args()
     if bool(args.baitiao_xlsx) != bool(args.jintiao_xlsx):
         parser.error('--baitiao-xlsx 与 --jintiao-xlsx 必须成对传入')
@@ -312,6 +314,13 @@ def main():
     print('=' * 60)
     print('  ABS 综合看板生成器（数据驱动）')
     print('=' * 60)
+
+    # 必选模块先读原始总表并对账；FAIL在任何正式产物替换前终止。
+    latest_bookkeeping_panel.qc.component_self_check()
+    booking_data = latest_bookkeeping_panel.compute_data(xlsx_path)
+    from latest_bookkeeping_runtime import verify_runtime
+    verify_runtime(booking_data)
+    print(f"[簿记QC] {booking_data['qc']['status']} · {booking_data['qc']['checks']} · WARN {len(booking_data['qc']['issues'])}")
 
     # 1. 单次预处理:产出共享 tmp,注入各子模块(原 8 次 preprocess → 1 次,预期省 ~80s)
     #    shared_tmp 全生命周期由 finally 管理,任何异常路径均兜底删除。
@@ -348,6 +357,8 @@ def main():
             ('progress',    'allocation_quick', secondary_allocation_panel.render_body()),
             ('progress',    'quick',      gen_institution_profile.render_body()),
         ]
+
+        panels.append(('pricing', 'bookkeeping', latest_bookkeeping_panel.render_body(booking_data, preview=args.bookkeeping_demo)))
 
         # 机构画像模块:机构统计 panel(管理人/销售机构/托管行三表合并,嵌入模式)
         print('\n[3.05/4] 生成机构画像 > 机构统计 panel...')
@@ -420,6 +431,7 @@ def main():
         gen_compare_tool.INVEST_CSS,
         gen_institution_profile.PROFILE_CSS,
         secondary_allocation_panel.ALLOCATION_CSS,
+        latest_bookkeeping_panel.BOOKKEEPING_CSS,
         gen_institution_stats.INST_STATS_EMBED_CSS,
         consumer_asset_panel.CONSUMER_ASSET_CSS,
         peer_issuance_panel.PEER_ISSUANCE_COMPONENT_CSS,
@@ -427,6 +439,8 @@ def main():
         gen_investment_ledger.LEDGER_CSS,
     ])
     html = build_integrated_html(panels, all_css)
+    from dashboard_provenance import add_full_generation_provenance
+    html = add_full_generation_provenance(html, xlsx_path, source_hash=booking_data["provenance"]["sourceSha256"])
 
     # 写入同目录临时文件,QC 通过后 os.replace 原子替换正式产物(v26-A1):
     # 失败分支只删临时文件,上一版正式产物的内容与哈希保持不变。
@@ -438,8 +452,14 @@ def main():
     # 结构 QC(硬阻断):失败即删除临时产物并以非零退出,绝不覆盖上一版、绝不让异常页面进入发布链路
     with open(tmp_out, 'r', encoding='utf-8') as f:
         content = f.read()
-    expected_panel_count = 8 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled)  # 机构画像4 + 资产大盘可选1 + 发行定价4 + 同业发行可选1 + 各年份投资台账
+    expected_panel_count = 8 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled) + 1  # 机构画像4 + 资产大盘可选1 + 发行定价4 + 同业发行可选1 + 各年份投资台账
     problems = verify_integrated_html(content, expected_panel_count)
+    try:
+        latest_bookkeeping_panel.qc.verify_html(content, xlsx_path)
+        from dashboard_provenance import verify_full_generation
+        verify_full_generation(content, xlsx_path)
+    except ValueError as error:
+        problems.append(str(error))
     ledger_years_str = '+'.join(sorted(led_data['by_year'].keys(), reverse=True))
     if not problems:
         os.replace(tmp_out, out_path)  # 原子替换:此瞬间之前正式产物始终是旧版
@@ -449,7 +469,8 @@ def main():
         asset_overview_count = int(consumer_asset_enabled)
         peer_issuance_count = int(peer_issuance_enabled)
         panel_count_ok = content.count('<div class="panel"')
-        print(f'[QC] 综合看板结构检查通过：{panel_count_ok} 个 panel(机构画像4 + 投资台账[{ledger_years_str}] + 资产大盘{asset_overview_count} + 发行定价4 + 同业发行{peer_issuance_count}) + Tab 切换 JS 齐全')
+        pricing_panel_count = 5
+        print(f'[QC] 综合看板结构检查通过：{panel_count_ok} 个 panel(机构画像4 + 投资台账[{ledger_years_str}] + 资产大盘{asset_overview_count} + 发行定价{pricing_panel_count} + 同业发行{peer_issuance_count}) + Tab 切换 JS 齐全')
     else:
         print(f'[QC FAILED] 综合看板结构异常: {"; ".join(problems)}')
         try:

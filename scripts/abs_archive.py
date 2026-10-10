@@ -69,8 +69,16 @@ def archive_ledger():
             stem, ext = f.stem, f.suffix
             dst = final / f"{stem}_{datetime.now().strftime('%H%M%S')}{ext}"
             print(f"    ⚠ 03_final 已存在同名,新文件重命名: {dst.name}")
+        from update_latest_bookkeeping import validate_pending_final
+        validate_pending_final(f, dst)
         shutil.move(str(f), str(dst))
         print(f"    {f.name} → {dst.name}")
+
+    # 受控定稿晋升完成后，刷新业务日期最新定稿的簿记面板。
+    from update_latest_bookkeeping import refresh_if_controlled_final
+    from latest_bookkeeping_panel import find_latest_final
+    if any(f.name.endswith('-定稿.xlsx') for f in processing_files):
+        refresh_if_controlled_final(find_latest_final(final))
 
     print("✅ 台账晋升完成(旧定稿归档请人工执行: 03_final/* → 04_archive/)")
 

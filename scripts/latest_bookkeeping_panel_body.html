@@ -1,0 +1,32 @@
+<header class="lb-banner">
+  <div class="lb-banner-top"><span class="lb-eyebrow">BOOKBUILDING · LATEST BY ASSET</span><span class="lb-demo">DEMO · 真实台账预览</span></div>
+  <h1>最新项目簿记明细</h1>
+  <p>各类资产最近3期项目 · 分档成本与申购明细 / 最终配售</p>
+  <div id="lb-source" class="lb-source"></div>
+</header>
+<main class="lb-container">
+  <section class="lb-card lb-controls" aria-label="资产与项目选择">
+    <div class="lb-section-heading"><h2>资产类型</h2><span id="lb-asset-count"></span></div>
+    <div id="lb-assets" class="lb-assets" role="group" aria-label="选择资产类型"></div>
+    <div class="lb-project-row"><label for="lb-project">最近3期项目</label><select id="lb-project"></select><span id="lb-tie-note"></span></div>
+  </section>
+  <section class="lb-card lb-project-summary" aria-label="项目概况">
+    <div><div class="lb-kicker">LATEST PROJECT</div><h2 id="lb-project-name"></h2><div id="lb-project-meta" class="lb-muted"></div></div>
+    <div class="lb-date-box"><span>簿记日期</span><strong id="lb-project-date"></strong></div>
+  </section>
+  <section id="lb-tiers" class="lb-tiers" aria-label="各档位成本利率"></section>
+  <section class="lb-card lb-details" aria-label="簿记明细表">
+    <div class="lb-section-heading"><div><h2>簿记明细</h2></div><button id="lb-export" class="lb-export" type="button">导出当前明细 CSV</button></div>
+    <div class="lb-filter-row">
+      <div class="lb-view-switch" role="group" aria-label="明细口径"><button type="button" data-view="bids">申购明细</button><button type="button" data-view="allocations">最终配售</button></div>
+      <label>档位 <select id="lb-layer"><option value="">全部档位</option></select></label>
+      <label class="lb-search-label"><span class="lb-sr-only">搜索机构</span><input id="lb-search" type="search" placeholder="搜索机构名称…"></label>
+      <span id="lb-row-count" class="lb-muted" aria-live="polite"></span>
+    </div>
+    <div class="lb-table-scroll"><table><thead><tr id="lb-columns"></tr></thead><tbody id="lb-rows"></tbody></table></div>
+    <div id="lb-empty" class="lb-empty" hidden></div>
+    <div id="lb-totals" class="lb-totals"></div>
+    <div class="lb-footnote">口径说明：仅纳入上交所、深交所及银行间项目，剔除非标、保登和其他发行场所后，白条取现与信托白取合并为白条取现后，各资产按有效簿记日期选取最近3期（3个不同簿记日期），按日期从新到旧排列，同日多个项目全部保留；不足3期时展示全部可用期次。成本利率来自 T 列；最终配售为 U/V 列，申购明细为 W/X/Y 列，两套记录不按行配对、不以申购规模替代配售规模。“未披露”表示源表缺失。保留自持及台账原始机构名称，未套用其他分析面板的机构剔除规则。</div>
+  </section>
+  <p class="lb-preview-note">Demo 仅供本地评审 · 数据来自定稿台账，不实时更新 · 不代表实时发行情况</p>
+</main>

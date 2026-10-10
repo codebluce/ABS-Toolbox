@@ -142,3 +142,9 @@ skills/ABS工具箱/
 
 - 踩坑记录追加到 `pitfall_log.md` 第 D 节(从 #ABS-001 续编)
 - 重大问题触发审计,生成 `Inbox/auditReport_GLM52_YYYYMMDD_ABS工具箱.md`
+
+## 最新簿记面板同步
+
+综合看板默认包含“发行定价 > 最新簿记”。台账直接写入受控最新定稿及定稿晋升会同步刷新；手工改 Excel 后执行 `.venv/bin/python scripts/update_latest_bookkeeping.py`。每次更新执行源表逐笔、来源/规则指纹和实际 JS/CSV 运行时门禁，失败保留上一有效面板；发布前禁止使用与最新台账不同步的旧面板。
+
+自检入口：`.venv/bin/python scripts/self_check_latest_bookkeeping.py --dashboard <综合看板.html> --report <检查报告.json>`。详细规则、FAIL/WARN口径及手工更新约束见 `deliverables/dashboards/README.md`。

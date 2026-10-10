@@ -1,0 +1,74 @@
+/* 样式限定在新面板内，沿用综合看板深蓝横幅、浅灰背景、白色卡片与表格。 */
+#latest-bookkeeping { --lb-ink:#0d1b2e; --lb-navy:#1a3a5c; --lb-muted:#6b7a95; --lb-border:#dce4ef; background:#f0f2f5; color:#1a1a2e; font:14px/1.5 "PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif; }
+#latest-bookkeeping, #latest-bookkeeping * { box-sizing:border-box; }
+#latest-bookkeeping [hidden] { display:none!important; }
+#latest-bookkeeping button, #latest-bookkeeping input, #latest-bookkeeping select { font:inherit; }
+#latest-bookkeeping button { cursor:pointer; }
+#latest-bookkeeping button:focus-visible, #latest-bookkeeping select:focus-visible, #latest-bookkeeping input:focus-visible { outline:2px solid #2563a8; outline-offset:3px; }
+#latest-bookkeeping .lb-banner { background:linear-gradient(135deg,#0d1b2e,#1a3a5c,#0d2a40); padding:22px max(24px,calc((100vw - 1560px)/2)); color:#fff; }
+#latest-bookkeeping .lb-banner-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+#latest-bookkeeping .lb-eyebrow { color:#7db8e8; font-size:11px; letter-spacing:2px; }
+#latest-bookkeeping .lb-demo { font-size:11px; padding:3px 9px; border:1px solid #6e859b; border-radius:4px; color:#d9e7f3; }
+#latest-bookkeeping h1 { font-size:22px; margin:8px 0 0; }
+#latest-bookkeeping .lb-banner p { margin:6px 0 12px; color:#a0bfd4; font-size:12px; }
+#latest-bookkeeping .lb-source { font-size:11px; color:#a0bfd4; }
+#latest-bookkeeping .lb-container { max-width:1600px; padding:22px 20px 40px; margin:auto; }
+#latest-bookkeeping .lb-card { padding:20px 24px; margin-bottom:18px; background:#fff; border-radius:8px; box-shadow:0 1px 5px rgba(14,36,65,.08); }
+#latest-bookkeeping h2 { font-size:15px; color:var(--lb-ink); margin:0; }
+#latest-bookkeeping .lb-section-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:15px; }
+#latest-bookkeeping .lb-section-heading>span, #latest-bookkeeping .lb-muted { font-size:12px; color:var(--lb-muted); }
+#latest-bookkeeping .lb-assets { display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:9px; }
+#latest-bookkeeping .lb-asset { text-align:left; padding:12px 14px; border:1px solid var(--lb-border); border-radius:6px; color:var(--lb-navy); background:#fafbfd; min-height:76px; min-width:0; overflow-wrap:anywhere; }
+#latest-bookkeeping .lb-asset strong { display:block; font-size:13px; }
+#latest-bookkeeping .lb-asset span { display:block; font-size:11px; color:var(--lb-muted); margin-top:5px; }
+#latest-bookkeeping .lb-asset:hover { background:#eef3fa; }
+#latest-bookkeeping .lb-asset.active { background:#1a3a5c; border-color:#1a3a5c; color:#fff; }
+#latest-bookkeeping .lb-asset.active span { color:#bbd1e3; }
+#latest-bookkeeping .lb-project-row { margin-top:18px; padding-top:16px; border-top:1px solid #edf0f5; display:flex; align-items:center; flex-wrap:wrap; gap:12px; font-size:12px; }
+#latest-bookkeeping select, #latest-bookkeeping input { padding:8px 10px; border:1px solid var(--lb-border); border-radius:5px; color:var(--lb-navy); background:#fff; max-width:100%; }
+#latest-bookkeeping #lb-project { min-width:240px; }
+#latest-bookkeeping #lb-tie-note { color:var(--lb-muted); }
+#latest-bookkeeping .lb-project-summary { display:flex; justify-content:space-between; align-items:center; gap:20px; border-left:3px solid var(--lb-navy); }
+#latest-bookkeeping .lb-kicker { color:var(--lb-muted); font-size:10px; letter-spacing:1.7px; margin-bottom:5px; }
+#latest-bookkeeping #lb-project-name { font-size:20px; margin-bottom:5px; }
+#latest-bookkeeping .lb-date-box { text-align:right; }
+#latest-bookkeeping .lb-date-box span { display:block; color:var(--lb-muted); font-size:11px; }
+#latest-bookkeeping .lb-date-box strong { font-size:20px; font-variant-numeric:tabular-nums; color:var(--lb-navy); }
+#latest-bookkeeping .lb-tiers { display:grid; grid-template-columns:repeat(auto-fit,minmax(185px,1fr)); gap:12px; margin-bottom:18px; }
+#latest-bookkeeping .lb-tier { border:1px solid var(--lb-border); background:#fff; border-radius:7px; text-align:left; padding:15px 18px; }
+#latest-bookkeeping .lb-tier.active { border-color:#1a3a5c; background:#eef3fa; }
+#latest-bookkeeping .lb-tier-head { color:var(--lb-navy); font-size:12px; font-weight:600; }
+#latest-bookkeeping .lb-tier-rate { font-size:24px; color:var(--lb-ink); font-weight:650; margin:5px 0; font-variant-numeric:tabular-nums; }
+#latest-bookkeeping .lb-tier-caption { font-size:11px; color:var(--lb-muted); }
+#latest-bookkeeping .lb-tier-note { font-size:11px; color:var(--lb-muted); margin-top:8px; }
+#latest-bookkeeping .lb-filter-row { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding-bottom:16px; font-size:12px; }
+#latest-bookkeeping .lb-view-switch { display:flex; background:#f0f2f5; border-radius:5px; padding:3px; }
+#latest-bookkeeping .lb-view-switch button { border:none; background:transparent; color:var(--lb-muted); padding:7px 14px; border-radius:4px; font-size:12px; }
+#latest-bookkeeping .lb-view-switch button.active { background:var(--lb-navy); color:#fff; }
+#latest-bookkeeping .lb-search-label { margin-left:auto; }
+#latest-bookkeeping .lb-export { padding:7px 12px; background:#fff; border:1px solid var(--lb-border); border-radius:5px; color:var(--lb-navy); font-size:12px; }
+#latest-bookkeeping .lb-table-scroll { overflow:auto; max-height:570px; }
+#latest-bookkeeping table { border-collapse:collapse; width:100%; font-size:12px; white-space:nowrap; }
+#latest-bookkeeping th { position:sticky; top:0; background:#f3f6fa; color:#68768c; text-align:left; font-size:11px; font-weight:600; padding:11px 12px; border-bottom:2px solid #e2e6ec; }
+#latest-bookkeeping td { padding:12px; border-bottom:1px solid #eef1f5; }
+#latest-bookkeeping tbody tr:hover { background:#f7f9fc; }
+#latest-bookkeeping .lb-num { text-align:right; font-variant-numeric:tabular-nums; }
+#latest-bookkeeping .lb-layer-tag { font-size:11px; padding:3px 7px; border-radius:3px; color:var(--lb-navy); background:#edf2f8; }
+/* 档位色：A蓝 / B青 / C金 / D橙 / 中间级紫 / 次级红；不只依赖颜色传达档位。 */
+#latest-bookkeeping .lb-layer-tag { border:1px solid #d2dae5; font-weight:600; }
+#latest-bookkeeping .lb-layer-senior-a { color:#174ea6; background:#e8f0fe; border-color:#b4c9f3; }
+#latest-bookkeeping .lb-layer-senior-a1 { color:#174ea6; background:#e8f0fe; border-color:#789bda; }
+#latest-bookkeeping .lb-layer-senior-a2 { color:#fff; background:#315fa8; border-color:#174ea6; }
+#latest-bookkeeping .lb-layer-senior-b { color:#00695c; background:#e0f2ee; border-color:#9ed8cd; }
+#latest-bookkeeping .lb-layer-senior-c { color:#805600; background:#fff4ce; border-color:#e9ce75; }
+#latest-bookkeeping .lb-layer-senior-d { color:#9a4600; background:#fff0df; border-color:#f0c095; }
+#latest-bookkeeping .lb-layer-mezzanine { color:#6936a0; background:#f1e9fc; border-color:#d1b8ee; }
+#latest-bookkeeping .lb-layer-junior { color:#a32e43; background:#fce8ed; border-color:#edb1be; }
+#latest-bookkeeping .lb-layer-neutral { color:#526174; background:#eef1f5; border-color:#ccd5df; }
+#latest-bookkeeping .lb-unavailable { color:#9ca6b5; font-size:11px; }
+#latest-bookkeeping .lb-totals { display:flex; gap:24px; justify-content:flex-end; flex-wrap:wrap; font-size:12px; color:var(--lb-navy); padding:14px 12px; background:#f7f9fc; }
+#latest-bookkeeping .lb-empty { padding:40px 15px; text-align:center; color:var(--lb-muted); }
+#latest-bookkeeping .lb-footnote { font-size:11px; line-height:1.8; color:var(--lb-muted); border-top:1px solid #edf0f5; margin-top:14px; padding-top:12px; }
+#latest-bookkeeping .lb-preview-note { color:#8b97a7; font-size:11px; text-align:center; }
+#latest-bookkeeping .lb-sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); }
+@media(max-width:700px) { #latest-bookkeeping .lb-container { padding:12px 10px; } #latest-bookkeeping .lb-card { padding:16px; } #latest-bookkeeping .lb-assets { grid-template-columns:repeat(2,minmax(0,1fr)); } #latest-bookkeeping .lb-tiers { grid-template-columns:repeat(2,minmax(0,1fr)); } #latest-bookkeeping .lb-banner { padding:18px 16px; } #latest-bookkeeping .lb-eyebrow { font-size:9px; letter-spacing:1px; } #latest-bookkeeping .lb-project-summary { align-items:flex-start; } #latest-bookkeeping .lb-date-box strong { font-size:15px; } #latest-bookkeeping #lb-project-name { font-size:17px; } #latest-bookkeeping .lb-search-label { margin-left:0; } #latest-bookkeeping .lb-section-heading { align-items:flex-start; } #latest-bookkeeping .lb-tier-rate { font-size:20px; } }

@@ -283,6 +283,12 @@ def main() -> None:
         if not p.exists():
             raise FileNotFoundError(f"未找到输入文件: {p}")
 
+    # 与标准发布路径同样拒绝缺失/陈旧簿记面板。
+    from deploy_github_pages import verify_dashboard_artifact
+    verify_dashboard_artifact(desktop)
+    from gen_mobile_dashboard import verify_mobile_bookkeeping
+    verify_mobile_bookkeeping(desktop.read_text(encoding="utf-8"), mobile.read_text(encoding="utf-8"))
+
     password = os.environ.get(args.password_env)
     if not password:
         raise RuntimeError(f"未设置密码环境变量 {args.password_env}")

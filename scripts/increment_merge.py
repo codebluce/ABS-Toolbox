@@ -40,7 +40,10 @@ def save_workbook_atomic(wb, output_path):
     os.close(tmp_fd)
     try:
         wb.save(tmp_path)
+        from update_latest_bookkeeping import refresh_if_controlled_final, validate_pending_final
+        validate_pending_final(tmp_path, output_path)
         os.replace(tmp_path, output_path)
+        refresh_if_controlled_final(output_path)
     except Exception:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
@@ -1591,8 +1594,18 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     close_workbook(wb_orig)
     close_workbook(wb_b)
     close_workbook(wb_a)
+    from update_latest_bookkeeping import validate_pending_final
+    try:
+        validate_pending_final(tmp_path, output_path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
     os.replace(tmp_path, output_path)
     print(f"\nSaved: {output_path}")
+    # 最新受控定稿写入后同步簿记；失败非零退出，旧看板保留，不静默跳过。
+    from update_latest_bookkeeping import refresh_if_controlled_final
+    refresh_if_controlled_final(output_path)
 
     # 字段同步审计报告（有变更或保护项时才落盘，便于逐条复核与回溯）
     if field_changes or field_protected:

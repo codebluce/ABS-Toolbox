@@ -394,3 +394,7 @@ diff <merge包里的新文件> <本地当前文件>
 - 送审报告归档在 `audit/submissions/`(不再散落 Inbox)
 - skill 长期审计基线见 `AUDIT_REPORT.md`
 - 回滚:仓库已从 `skills/ABS工具箱/` 迁移为仓库根目录,历史回滚说明见 git 历史
+
+## 最新簿记面板更新约束
+
+用户已约定：每次定稿台账或综合看板更新必须同步“最新簿记”面板。完整看板生成器默认包含该面板；直接写入受控最新定稿、定稿晋升已接入同步。若手工编辑/拷贝定稿，执行 `scripts/update_latest_bookkeeping.py`；随后 `scripts/self_check_latest_bookkeeping.py --dashboard <本次看板> --report <检查报告>`。FAIL不得覆盖上一有效面板或发布；不得以旧 Demo/跳过生成绕过来源哈希和规则指纹校验。具体业务列、资产顺序/合并及门禁规则见 `deliverables/dashboards/README.md`。
