@@ -1,12 +1,19 @@
 {
-  "generatedAt": "2026-10-09T11:26:40",
+  "generatedAt": "2026-10-11T01:22:49",
   "latest": "ABS综合看板_20260924.html",
   "latestDate": "20260924",
-  "dashboardCount": 2,
-  "archive": [
-    "ABS综合看板_20260924.html",
-    "ABS综合看板_20260918.html"
-  ],
-  "protected": false,
-  "source": "scripts/deploy_github_pages.py"
+  "dashboardCount": 1,
+  "archive": [],
+  "protected": true,
+  "source": "scripts/deploy_github_pages.py",
+  "encryption": {
+    "algorithm": "PBKDF2-SHA256 + AES-256-GCM + gzip",
+    "iterations": 10000,
+    "plainBytes": 8009032,
+    "gzipBytes": 485821,
+    "cipherBytes": 485837,
+    "mobileCipherBytes": 100189,
+    "layout": "external-bin",
+    "shellBytes": 12081
+  }
 }
