@@ -37,6 +37,54 @@
     #viewer{display:none;position:fixed;inset:0;border:0;width:100vw;height:100vh;background:white}
     #flip{display:none;position:fixed;z-index:9;right:14px;bottom:14px;padding:8px 14px;border:1px solid #d8dee8;border-radius:18px;background:rgba(255,255,255,.94);color:#1a3a5c;font:600 12px/1 'PingFang SC',Helvetica,Arial,sans-serif;box-shadow:0 4px 14px rgba(15,23,42,.12);cursor:pointer}
   </style>
+<script id="abs-anonymous-access-log">
+/* Anonymous browser ID stored per origin; never collect identity, password or IP. */
+(() => {
+  'use strict';
+  try {
+    const config = {"endpoint":"https://abs-anonymous-access-log.codebluce.workers.dev/api/events","version":"79b8443d0f5662fd"};
+    const randomId = () => crypto.randomUUID ? crypto.randomUUID() : (() => {
+      const bytes = crypto.getRandomValues(new Uint8Array(16));
+      bytes[6] = (bytes[6] & 15) | 64;
+      bytes[8] = (bytes[8] & 63) | 128;
+      const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    })();
+    const pageId = randomId();
+    let terminalId = null;
+    try {
+      const key = 'abs_anonymous_terminal_v1';
+      const stored = localStorage.getItem(key);
+      if (stored && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(stored)) {
+        terminalId = stored.toLowerCase();
+      } else {
+        const candidate = randomId();
+        localStorage.setItem(key, candidate);
+        // If persistence is unavailable, still count events, not fictitious terminals.
+        if (localStorage.getItem(key) === candidate) terminalId = candidate;
+      }
+    } catch (_) { /* Private/restricted storage: leave terminalId null. */ }
+    const device = /iPhone|iPod|Android.*Mobile|Windows Phone|HarmonyOS/i.test(navigator.userAgent || '') ? 'mobile' : 'desktop';
+    const sent = new Set();
+    function record(event) {
+      try {
+        if (!['page_view', 'unlock_success'].includes(event) || sent.has(event)) return;
+        sent.add(event);
+        // Fire-and-forget: logging must never delay or break dashboard decryption.
+        Promise.resolve(fetch(config.endpoint, {
+          method: 'POST', mode: 'cors', credentials: 'omit', keepalive: true,
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          referrerPolicy: 'no-referrer',
+          body: JSON.stringify({ event, pageId, terminalId, version: config.version, device, clientAt: new Date().toISOString() })
+        })).catch(() => {});
+      } catch (_) { /* Network/privacy tooling may disable telemetry. */ }
+    }
+    window.__absAccessLog = Object.freeze({ record });
+    record('page_view');
+  } catch (_) { /* Older or restricted browsers must still open the dashboard. */ }
+})();
+
+</script>
 </head>
 <body>
   <main class="card" id="gate">
@@ -167,6 +215,7 @@
         msg('<span class="load">载入中 · 解密解压 ' + Math.round(PARAMS[VIEW].bytes / 1024) + ' KB,请稍候</span>', '', true);
         PASSWORD = password;
         await render(VIEW);
+        try { window.__absAccessLog?.record('unlock_success'); } catch (_) {}
         msg('✅ 解锁成功,正在打开看板... ' + Math.round(performance.now() - t0) + 'ms', 'ok');
       } catch (err) {
         console.error(err);

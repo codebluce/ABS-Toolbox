@@ -14,6 +14,17 @@
     "cipherBytes": 485905,
     "mobileCipherBytes": 100635,
     "layout": "external-bin",
-    "shellBytes": 12081
+    "shellBytes": 14594
+  },
+  "anonymousAccessLog": {
+    "enabled": true,
+    "events": [
+      "page_view",
+      "unlock_success"
+    ],
+    "terminalIdentity": "per-origin-localStorage-uuid",
+    "endpoint": "https://abs-anonymous-access-log.codebluce.workers.dev/api/events",
+    "version": "79b8443d0f5662fd",
+    "versionBasis": "encrypted-desktop-sha256"
   }
 }
