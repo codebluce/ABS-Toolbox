@@ -683,9 +683,8 @@ def verify_mobile_bookkeeping(desktop_html, mobile_html):
     component = value.get('bookkeepingHtml')
     if not component:
         raise ValueError('手机版缺少最新簿记，须重新生成')
-    qc.verify_html(component)
-    if qc.extract_data(component) != qc.extract_data(desktop_html):
-        raise ValueError('手机版簿记源数据与桌面版不同步，须重新生成')
+    from mobile_bookkeeping_panel import verify_html
+    verify_html(component, qc.extract_data(desktop_html))
 
 
 def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Path:
@@ -705,10 +704,10 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
         import latest_bookkeeping_qc as bookkeeping_qc
         bookkeeping_qc.verify_html(html)
         data = bookkeeping_qc.extract_data(html)
-        inject['bookkeepingHtml'] = ('<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">'
-            '<meta name="viewport" content="width=device-width,initial-scale=1.0">'
-            '<style>body{margin:0;}' + bookkeeping.BOOKKEEPING_CSS + '</style></head><body>'
-            + bookkeeping.render_body(data) + '</body></html>')
+        from mobile_bookkeeping_panel import render_html
+        from latest_bookkeeping_runtime import verify_mobile_runtime
+        verify_mobile_runtime(data)
+        inject['bookkeepingHtml'] = render_html(data)
     asset = build_asset(html)
     peer = build_peer(html)
     missing = [name for name, val in (("消金资产", asset), ("同业发行", peer)) if val is None]

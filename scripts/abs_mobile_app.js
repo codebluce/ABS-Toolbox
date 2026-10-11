@@ -5,7 +5,7 @@
 
   var S = {
     q: '', owner: '', cat: '', sel: null, limit: 24, openPr: {}, prAll: false,
-    tab: 'progress', sub: 'quick', sheet: null,
+    tab: 'bookkeeping', sub: 'quick', sheet: null,
     assetSide: 'consume', caliber: false,
     peerView: 'overview', peerOpen: {}, peerCaliber: false,
     statSec: 0, statCaliber: false
@@ -13,6 +13,8 @@
 
   var INJ = (typeof window !== 'undefined' && window.ABS_MOBILE_DATA) || {};
   var META = INJ.meta || { snapshot: '2026-08-16', assetDate: '08-14', peerDate: '08-14', progYear: 2026 };
+
+  if (!INJ.bookkeepingHtml) S.tab = 'progress';
 
   // 资产集团配色优先取电脑端图例(gen_mobile_dashboard 从 peer_issuance_panel
   // 渲染出的图例回读注入),电脑端调色手机端自动跟随。下面只是解析失败时的兜底,
@@ -582,6 +584,7 @@
       ['peer', '同业发行', '<path d="M3.5 14.5 8 9.5l3.6 3.2L18.5 6"></path><path d="M14.4 6h4.1v4"></path>']
     ];
     if (INJ.bookkeepingHtml) items.push(['bookkeeping', '最新簿记', '<rect x="4" y="4" width="14" height="15" rx="1"></rect><path d="M7 8h8M7 12h8M7 16h5"></path>']);
+    items.sort(function(a,b){return ['bookkeeping','peer','asset','progress'].indexOf(a[0])-['bookkeeping','peer','asset','progress'].indexOf(b[0]);});
     // 顶部标签栏:安全区留白包在栏内,图标与文字横向并排,选中态用底部 2px 下划线
     var h = '<div style="flex:0 0 auto; background:#fff; border-bottom:1px solid #e2e6ee; box-shadow:0 1px 3px rgba(13,27,46,.05);">' +
       '<div style="height:env(safe-area-inset-top, 0px);"></div>' +

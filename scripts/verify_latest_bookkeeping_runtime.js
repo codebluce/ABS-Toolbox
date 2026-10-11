@@ -2,7 +2,9 @@
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const data = JSON.parse(fs.readFileSync(0, 'utf8'));
+const input = JSON.parse(fs.readFileSync(0, 'utf8'));
+const mobile = input.mobile === true;
+const data = mobile ? input.data : input;
 const nodes = new Map();
 function el(id) {
   if (!nodes.has(id)) nodes.set(id, {innerHTML:'',textContent:'',value:'',listeners:{},
@@ -16,7 +18,8 @@ let exported,filename;
 const context={document:{getElementById(id){return id==='latest-bookkeeping'?root:el(id);},
   createElement(){return {set download(value){filename=value;},click(){}};}},Blob,
   URL:{createObjectURL(blob){exported=blob;return 'blob:check';},revokeObjectURL(){}},setTimeout(fn){fn();}};
-vm.runInNewContext(fs.readFileSync(__dirname+'/latest_bookkeeping_panel.js','utf8'),context);
+const componentScript = mobile ? input.script : fs.readFileSync(__dirname+'/latest_bookkeeping_panel.js','utf8');
+vm.runInNewContext(componentScript,context);
 const click=dataset=>root.listeners.click({target:{closest(){return {dataset};}}});
 const decode=value=>value.replace(/<[^>]*>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');
 const shown=()=>[...el('lb-rows').innerHTML.matchAll(/<tr>(.*?)<\/tr>/g)].map(match=>[...match[1].matchAll(/<td[^>]*>(.*?)<\/td>/g)].map(cell=>decode(cell[1])));
@@ -39,7 +42,7 @@ async function main(){
         assert.deepEqual([...el('lb-columns').innerHTML.matchAll(/<th[^>]*>(.*?)<\/th>/g)].map(x=>decode(x[1])),header);
         assert.deepEqual(shown(),rows,`${project.name}/${view}显示明细`);details+=rows.length;
         assert.equal(el('lb-empty').hidden,rows.length>0);
-        if(rows.length){
+        if(rows.length && !mobile){
           el('lb-export').listeners.click();
           assert.equal(await exported.text(),[header,...rows].map(row=>row.map(quote).join(',')).join('\r\n'));
           assert.ok(filename.includes(project.name));exports++;
@@ -54,8 +57,23 @@ async function main(){
           assert.deepEqual(shown(),rows.filter(row=>row[1].toLowerCase().includes(rows[0][1].toLowerCase())));filters++;
         }
         el('lb-search').value='__不存在的机构校验__';el('lb-search').listeners.input();
-        assert.deepEqual(shown(),[]);assert.equal(el('lb-export').disabled,true);filters++;
+        assert.deepEqual(shown(),[]);if(!mobile) assert.equal(el('lb-export').disabled,true);filters++;
         el('lb-search').value='';el('lb-search').listeners.input();
+      }
+    }
+  }
+  if(mobile) {
+    assert.ok(!componentScript.includes("$('lb-export')"));
+    assert.ok(!componentScript.includes('URL.createObjectURL'));
+    assert.ok(!componentScript.includes("$('lb-row-count')"));
+    const formatter=componentScript.match(/const balancedAssetLabel = (name => \{[\s\S]*?\n  \});/)[1];
+    for (const asset of data.assets) {
+      const label=vm.runInNewContext('('+formatter+')('+JSON.stringify(asset.name)+')',{esc:s=>s});
+      const lines=[...label.matchAll(/<span[^>]*>(.*?)<\/span>/g)].map(m=>m[1]);
+      assert.equal(lines.join(''),asset.name);
+      if(lines.length===2) {
+        assert.ok(lines.every(line=>[...line].length>=2));
+        assert.ok(Math.abs([...lines[0]].length-[...lines[1]].length)<=1);
       }
     }
   }

@@ -1,0 +1,619 @@
+{
+  "checkedAt": "2026-10-11T09:03:48+08:00",
+  "status": "PASS",
+  "tests": [
+    {
+      "command": [
+        "/Users/wupeizhi.nolan/Documents/LikeCodeNex/abs-toolbox/.venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "/Users/wupeizhi.nolan/Documents/LikeCodeNex/abs-toolbox/scripts",
+        "-p",
+        "test_latest_bookkeeping*.py",
+        "-v"
+      ],
+      "returncode": 0
+    },
+    {
+      "command": [
+        "/Users/wupeizhi.nolan/Documents/LikeCodeNex/abs-toolbox/.venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "/Users/wupeizhi.nolan/Documents/LikeCodeNex/abs-toolbox/scripts",
+        "-p",
+        "test_mobile_bookkeeping_panel.py",
+        "-v"
+      ],
+      "returncode": 0
+    },
+    {
+      "command": [
+        "/usr/local/bin/node",
+        "/Users/wupeizhi.nolan/Documents/LikeCodeNex/abs-toolbox/scripts/test_latest_bookkeeping_panel.js"
+      ],
+      "returncode": 0
+    }
+  ],
+  "schema": "latest-bookkeeping/v2",
+  "source": "2026年ABS发行台账-0924-定稿.xlsx",
+  "issues": [
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕10号二期/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕10号二期/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕10号三期/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕10号三期/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕10号四期/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕10号四期/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕9号四期/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕9号四期/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕10号一期/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕10号一期/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕9号三期/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "26东裕9号三期/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "耘睿28-6/优先A辅助档位金额公式无缓存（R2713等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "耘睿28-6/优先B辅助档位金额公式无缓存（R2728等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "耘睿28-6/中间级辅助档位金额公式无缓存（R2733等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿28-6/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "耘睿28-6/受益权辅助档位金额公式无缓存（R2736等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿28-6/受益权未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿28-5/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿28-5/受益权未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿28-4/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿28-4/受益权未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "2026东樾4号3期（东樾4-5）/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "2026东樾4号3期（东樾4-5）/受益权未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "ALLOCATION_SIZE_DIFF",
+      "message": "2026东樾4号3期（东樾4-5）已披露配售合计9.7亿与发行规模10.0亿不同"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "耘睿24-10/优先A辅助档位金额公式无缓存（R1545等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "耘睿24-10/优先B辅助档位金额公式无缓存（R1571等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "耘睿24-10/中间级辅助档位金额公式无缓存（R1577等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿24-10/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "耘睿24-10/次级辅助档位金额公式无缓存（R1579等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿24-10/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿22-5/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿22-5/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿22-3/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿22-3/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿24-9/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿24-9/受益权未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿24-8/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿23-8/优先A未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿23-8/优先B未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿23-8/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "耘睿23-8/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚赢3-1/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚赢3-1/受益权未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "启赢3-3/优先A辅助档位金额公式无缓存（R1906等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "启赢3-3/优先B辅助档位金额公式无缓存（R1930等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "启赢3-3/中间级辅助档位金额公式无缓存（R1936等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "启赢3-3/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "启赢3-3/次级辅助档位金额公式无缓存（R1940等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "启赢3-3/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚赢2-9/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚赢2-9/受益权未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "ALLOCATION_SIZE_DIFF",
+      "message": "尚赢2-9已披露配售合计14.99亿与发行规模15.0亿不同"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "盛赢4-5/优先A辅助档位金额公式无缓存（R2658等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "盛赢4-5/优先B辅助档位金额公式无缓存（R2678等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "盛赢4-5/中间级辅助档位金额公式无缓存（R2686等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "盛赢4-5/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "盛赢4-5/次级辅助档位金额公式无缓存（R2689等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "盛赢4-5/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "盛赢3-8/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "盛赢3-8/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "盛赢3-7/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "盛赢3-7/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "盛赢4-4/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "盛赢4-4/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "京诚16-4/优先级辅助档位金额公式无缓存（R2692等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "京诚16-4/次级辅助档位金额公式无缓存（R2712等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "京诚16-4/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "京诚16-3/优先级辅助档位金额公式无缓存（R2566等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "京诚16-3/次级辅助档位金额公式无缓存（R2582等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "京诚16-3/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "京诚14-13/优先级辅助档位金额公式无缓存（R2391等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "京诚14-13/次级辅助档位金额公式无缓存（R2403等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "京诚14-13/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "金采9-1/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "金采9-1/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "金采8-11/优先级辅助档位金额公式无缓存（R2188等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "金采8-11/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "金采8-11/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "金采8-9/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "金采8-9/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "盛澜1-2/优先级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "盛澜1-2/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "盛澜1-2/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "尚亦2-4/优先A辅助档位金额公式无缓存（R2404等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "尚亦2-4/优先B辅助档位金额公式无缓存（R2417等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "尚亦2-4/中间级辅助档位金额公式无缓存（R2421等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚亦2-4/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "尚亦2-4/受益权辅助档位金额公式无缓存（R2423等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚亦2-4/受益权未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "尚亦2-3/优先A辅助档位金额公式无缓存（R1801等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "尚亦2-3/优先B辅助档位金额公式无缓存（R1820等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "尚亦2-3/中间级辅助档位金额公式无缓存（R1824等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚亦2-3/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "LAYER_SIZE_UNCACHED",
+      "message": "尚亦2-3/受益权辅助档位金额公式无缓存（R1825等），无法校验档位上限，仍执行项目配售上限校验"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚亦2-3/受益权未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚亦2-2/优先B未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚亦2-2/中间级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚亦2-2/受益权未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚乘1-3/优先B未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚乘1-3/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚乘1-2/优先B未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚乘1-2/次级未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚乘1-1/优先B未披露申购明细，不回退历史"
+    },
+    {
+      "level": "WARN",
+      "code": "NO_BIDS",
+      "message": "尚乘1-1/次级未披露申购明细，不回退历史"
+    }
+  ],
+  "checks": {
+    "assets": 11,
+    "projects": 37,
+    "details": 1380
+  },
+  "provenance": {
+    "schema": "latest-bookkeeping/v2",
+    "sourceSha256": "10bbcc84664020862a3a847718813027b7e11521666dd57687fcc8ae7069d72f",
+    "rulesSha256": "98fcde16a53756d98b533bd3a31bae1f441d2098cd153a7f0990b49fa012084d"
+  },
+  "runtime": {
+    "status": "PASS",
+    "projects": 37,
+    "details": 1380,
+    "exports": 72,
+    "filters": 420
+  },
+  "mobileRuntime": {
+    "status": "PASS",
+    "projects": 37,
+    "details": 1380,
+    "exports": 0,
+    "filters": 420
+  },
+  "dashboard": "ABS综合看板_20260924.html",
+  "dashboardSha256": "43791d592387874796ce72e5070d143572f280a8b4ec869268895fc747c48f4d",
+  "scope": "手机版确认布局生产化；桌面组件及台账内容不变，不包含工作区匿名访问日志任务",
+  "regressions": {
+    "workspaceTests": 178,
+    "mobileTests": 8,
+    "status": "PASS"
+  },
+  "visualChecks": {
+    "viewport": 360,
+    "assetButtons": "六列等宽等高46px，2+2/3+3均衡断行，无截断",
+    "filter": "切换/档位/搜索单行",
+    "exportRemoved": true,
+    "recordSubtitleRemoved": true
+  },
+  "mobileFiles": {
+    "scripts/mobile_bookkeeping_panel.py": "fdbf8b91cc4b95c1bb283b98d39f6932a1a64250452b8064fd8825cb9fc10269",
+    "scripts/mobile_bookkeeping_panel.css": "e2ff87a3f54fa4695bc1c172d8aee16828c3c2ab92a221764699cc6b76d6753b",
+    "scripts/gen_mobile_dashboard.py": "35a89ae8e9a250cbc9a3be10d33ffe44e72fdf66b1940da011ba3188cb346f36",
+    "scripts/abs_mobile_app.js": "d4371bbeb0594231a73a03341ba6a2013e58872d3d8373ed4f104d915cad67ac",
+    "scripts/test_mobile_bookkeeping_panel.py": "78839475eec8a7bfa0320d28e7b179aa5039992d21a3bb9eedb192fbe5e86e0c",
+    "scripts/latest_bookkeeping_runtime.py": "0c83a3c4b3bef029ecfc46dc27bfa6e8a5b2a66d1fc9211ef817fe1034864167",
+    "scripts/verify_latest_bookkeeping_runtime.js": "c015655990e42fb8037ed2ebe1685ec27b143860fb76fc253ab1c4259bc70bfd",
+    "scripts/self_check_latest_bookkeeping.py": "590dc97c0e9d69ae61b103b0082238818efe053f94c6fefdf0007c2b08813708"
+  }
+}

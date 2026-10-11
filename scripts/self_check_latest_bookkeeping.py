@@ -28,7 +28,8 @@ def main():
         ledger = args.ledger or panel.find_latest_final()
         if not args.skip_tests:
             folder = Path(__file__).resolve().parent
-            commands = [[sys.executable,'-m','unittest','discover','-s',str(folder),'-p','test_latest_bookkeeping*.py','-v']]
+            commands = [[sys.executable,'-m','unittest','discover','-s',str(folder),'-p','test_latest_bookkeeping*.py','-v'],
+                        [sys.executable,'-m','unittest','discover','-s',str(folder),'-p','test_mobile_bookkeeping_panel.py','-v']]
             node = shutil.which('node')
             if not node:
                 raise ValueError('自检需要node执行真实面板交互及CSV回归，未找到node')
@@ -45,6 +46,8 @@ def main():
         report['provenance'] = data['provenance']
         from latest_bookkeeping_runtime import verify_runtime
         report['runtime'] = verify_runtime(data)
+        from latest_bookkeeping_runtime import verify_mobile_runtime
+        report['mobileRuntime'] = verify_mobile_runtime(data)
         if args.dashboard:
             report.update(qc.verify_html(args.dashboard.read_text(encoding='utf-8'),ledger))
             report['dashboard'] = args.dashboard.name
