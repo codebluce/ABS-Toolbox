@@ -153,6 +153,16 @@ class LatestBookkeepingTest(unittest.TestCase):
         self.assertEqual([p['date'] for p in projects],['2026-09-21','2026-09-18'])
         self.assertTrue(all(len(p['tiers'][0]['allocations'])==1 for p in projects))
 
+    def test_desktop_pricing_bookkeeping_first_preserves_other_order(self):
+        panels = [('pricing', name, '<section>'+name+'</section>')
+                  for name in ['compare','invest','cost','spread','bookkeeping']]
+        html=build_integrated_html(panels,'')
+        labels=re.findall(r'<button class="sub-tab-button"[^>]*>([^<]+)</button>',html)
+        self.assertEqual(labels,['最新簿记','定价测试','投资明细','成本分布','利差分析'])
+        routes=re.findall(r'<div class="panel" data-module="pricing" data-sub="([^"]+)"',html)
+        self.assertEqual(routes,['bookkeeping','compare','invest','cost','spread'])
+        self.assertEqual([item[1] for item in panels],['compare','invest','cost','spread','bookkeeping'])
+
     def test_real_final_latest_project_and_exact_values(self):
         data=panel.compute_data(panel.find_latest_final())
         self.assertTrue(all(p['venue'] in panel.ALLOWED_VENUES for a in data['assets'] for p in a['projects']))

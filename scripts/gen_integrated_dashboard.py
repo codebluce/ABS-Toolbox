@@ -175,6 +175,9 @@ def build_integrated_html(panels, all_css):
         # 该模块下的子 Tab 按钮
         sub_buttons = []
         module_panels = [p for p in panels if p[0] == module]
+        if module == 'pricing':
+            # 最新簿记固定首位，其余子标签保持原有相对顺序。
+            module_panels.sort(key=lambda item: item[1] != 'bookkeeping')
         for m, sub, body in module_panels:
             # 从 body 提取子 Tab 显示名（用 section-title 或 banner-title）
             if module == 'progress':
