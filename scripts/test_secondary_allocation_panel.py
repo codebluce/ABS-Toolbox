@@ -56,7 +56,7 @@ class SecondaryAllocationIntegrationTest(unittest.TestCase):
         self.assertEqual(aliases, global_aliases())
         self.assertEqual(len(historical), 20)
         for old, target in historical.items():
-            self.assertEqual(aliases[old], normalize_investor_name(target))
+            self.assertEqual(aliases[old], normalize_investor_name(target, investor_scope=False))
         self.assertEqual(aliases['广发证券（资管）'], '广发资管')
         self.assertNotIn('广发证券', aliases)
         for independent in (

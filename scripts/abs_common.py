@@ -12,7 +12,7 @@ from copy import copy
 
 import pandas as pd
 
-from institution_identity import canonical as canonical_institution, aliases as approved_institution_aliases
+from institution_identity import canonical as canonical_institution, aliases as approved_institution_aliases, canonical_investor, investor_aliases
 
 # ── 成本区间配置（工具一使用）──────────────────────────────────────
 # 整体 bin 下限 1.30%（保理类资产专用，保理成本低是正常现象）
@@ -308,7 +308,7 @@ _DEPT_SUFFIX_PATTERN = _re.compile(
 )
 
 
-def normalize_investor_name(name):
+def normalize_investor_name(name, *, investor_scope=True):
     """归并机构名变体
 
     规则顺序：
@@ -338,19 +338,19 @@ def normalize_investor_name(name):
 
     # 精确获批别名优先于通用部门后缀规则（如「中信自营」已明确归入中信证券）。
     if s in approved_institution_aliases():
-        return canonical_institution(s)
+        return canonical_investor(s) if investor_scope else canonical_institution(s)
 
     # 规则 4：括号统一（XX证券投行→XX证券（投行），不处理资管）
     m = _DEPT_SUFFIX_PATTERN.match(s)
     if m:
         s = f'{m.group(1)}（{m.group(2)}）'
 
-    return canonical_institution(s)
+    return canonical_investor(s) if investor_scope else canonical_institution(s)
 
 
 def investor_search_aliases():
     """为前端搜索输出显式别名，目标须与归一化后的记录名一致。"""
-    mapping = {**_INVESTOR_ALIAS_MAP, **approved_institution_aliases()}
+    mapping = {**_INVESTOR_ALIAS_MAP, **approved_institution_aliases(), **investor_aliases()}
     return {alias: normalize_investor_name(target) for alias, target in mapping.items()}
 
 

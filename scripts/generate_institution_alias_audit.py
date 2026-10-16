@@ -4,6 +4,7 @@ from __future__ import annotations
 import csv
 import json
 from collections import Counter
+from datetime import date
 from pathlib import Path
 
 import openpyxl
@@ -63,6 +64,7 @@ def audit_rows():
     finally:
         credit_wb.close()
     global_aliases = {a['alias']: a for a in registry()['aliases']}
+    investor_aliases = {a['alias']: a for a in registry().get('investor_aliases', [])}
     result = []
     for (source, field, raw), count in sorted(counts.items()):
         if field == '次级投资人':
@@ -85,10 +87,11 @@ def audit_rows():
                         'scripts/entity_alias.py:ENTITY_MERGE_MAP') if target != raw else ''
         else:
             target = normalize_investor_name(raw)
-            rule = ('跨面板精确别名' if raw in global_aliases else
+            rule = ('认购机构确认口径' if raw in investor_aliases or any(a['canonical'] == target for a in investor_aliases.values()) and target != raw else
+                    '跨面板精确别名' if raw in global_aliases else
                     '投资者旧版显式别名' if raw in _INVESTOR_ALIAS_MAP else
                     '投资者格式/后缀规则') if target != raw else '原名保留'
-            evidence = ('data/institution_alias_registry.json' if raw in global_aliases else
+            evidence = ('data/institution_alias_registry.json' if raw in global_aliases or rule == '认购机构确认口径' else
                         'scripts/abs_common.py:normalize_investor_name') if target != raw else ''
         result.append((source, field, raw, target, count, rule, evidence))
     return result
@@ -106,12 +109,17 @@ def main():
     secondary = json.loads(SECONDARY.read_text(encoding='utf-8'))
     lines = [
         '# 机构名称映射审计清单', '',
-        '数据版本：2026-09-24 定稿发行台账「总表」、次级速查/机构进展画像快照及 20260630 额度盘点（机构与历史认购列）；生成日期：2026-09-25。',
+        f'数据版本：2026-09-24 定稿发行台账「总表」、次级速查/机构进展画像快照及 20260630 额度盘点（机构与历史认购列）；生成日期：{date.today().isoformat()}。',
         '这里只定义报表**统计/检索口径**，不是法律主体一致性认定；不得据此推断授信主体同一。',
         '', '## 跨面板精确别名（仅登记项目归并）', '',
         '| 原始名称 | 统计名称 | 依据 / 用途 | 来源 |', '| --- | --- | --- | --- |',
     ]
     for item in global_rows:
+        lines.append(f"| {item['alias']} | {item['canonical']} | {item['reason']} | {item['source']} |")
+    lines.extend(['', '## 认购机构专用确认口径', '',
+                  '认购/申购机构及相关检索先应用全局别名，再应用以下确认口径。管理人、承销商等角色仍使用全局机构名称。',
+                  '', '| 原始名称或全局名称 | 认购机构统计名称 | 依据 | 来源 |', '| --- | --- | --- | --- |'])
+    for item in registry().get('investor_aliases', []):
         lines.append(f"| {item['alias']} | {item['canonical']} | {item['reason']} | {item['source']} |")
     lines.extend(['', '## 明确保留独立', '', '| A | B | 原因 |', '| --- | --- | --- |'])
     for item in registry()['distinct']:

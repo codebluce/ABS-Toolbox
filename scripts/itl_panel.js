@@ -63,9 +63,11 @@
     var arr = [];
     var aliases = window.ITL_ALIAS || {};
     var exactName = counts.has(q);
+    var exactTarget = exactName ? q : (field === 'inst' &&
+      Object.prototype.hasOwnProperty.call(aliases, q) && counts.has(aliases[q]) ? aliases[q] : null);
     counts.forEach(function (c, v) {
-      var found = exactName ? v === q : (!q || v.indexOf(q) >= 0);
-      if (!found && !exactName && ['mgr', 'underwriter', 'custodian', 'inst'].indexOf(field) >= 0) {
+      var found = exactTarget !== null ? v === exactTarget : (!q || v.indexOf(q) >= 0);
+      if (!found && exactTarget === null && ['mgr', 'underwriter', 'custodian', 'inst'].indexOf(field) >= 0) {
         found = Object.keys(aliases).some(function (alias) {
           var target = aliases[alias];
           return alias.indexOf(q) >= 0 && (v === target ||

@@ -34,7 +34,7 @@ def load_aliases() -> dict[str, str]:
     mapped = global_aliases()
     if not isinstance(historical, dict) or any(
         not isinstance(source, str) or not isinstance(target, str)
-        or not source or not target or mapped.get(source) != normalize_investor_name(target)
+        or not source or not target or mapped.get(source) != normalize_investor_name(target, investor_scope=False)
         for source, target in historical.items()
     ):
         raise ValueError(f'次级速查原有映射未完整推广至全局: {ALIASES_PATH}')
