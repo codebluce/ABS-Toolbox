@@ -902,7 +902,8 @@ def main() -> None:
             args.peer_issuance_previous_xlsx,
         )
 
-    password = os.environ.get(args.password_env) if args.protected else None
+    from dashboard_password import load_password
+    password = load_password(args.password_env) if args.protected else None
     site_dir = build_site(
         latest_dashboard,
         protected=args.protected,

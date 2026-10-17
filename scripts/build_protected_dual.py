@@ -289,9 +289,8 @@ def main() -> None:
     from gen_mobile_dashboard import verify_mobile_bookkeeping
     verify_mobile_bookkeeping(desktop.read_text(encoding="utf-8"), mobile.read_text(encoding="utf-8"))
 
-    password = os.environ.get(args.password_env)
-    if not password:
-        raise RuntimeError(f"未设置密码环境变量 {args.password_env}")
+    from dashboard_password import load_password
+    password = load_password(args.password_env)
 
     print(f"[1/3] 输入: 桌面={desktop.name} 手机={mobile.name}")
     payload = encrypt_pair(desktop, mobile, password, args.pbkdf2_iterations)
