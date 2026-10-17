@@ -19,6 +19,51 @@ from generate_institution_alias_audit import audit_rows
 ROOT = Path(__file__).resolve().parents[1]
 
 
+class ConfirmedBankInstitutionTest(unittest.TestCase):
+    def test_huishang_confirmed_typo(self):
+        self.assertEqual(normalize_investor_name('徵商银行'), '徽商银行')
+        self.assertEqual(normalize_entity('徵商银行'), '徽商银行')
+        self.assertEqual(investor_search_aliases()['徵商银行'], '徽商银行')
+        self.assertEqual(normalize_investor_name('浙商银行'), '浙商银行')
+
+    def test_guojin_self_trading_alias_preserves_asset_management(self):
+        for name in ('国金自营', '国金证券自营', '国金（自营）', '国金证券（自营）'):
+            self.assertEqual(normalize_investor_name(name), '国金证券（自营）')
+        self.assertEqual(normalize_investor_name('国金资管'), '国金证券资管')
+        self.assertNotEqual(normalize_investor_name('国金资管'), normalize_investor_name('国金自营'))
+        self.assertEqual(investor_search_aliases()['国金（自营）'], '国金证券（自营）')
+
+    def test_fumin_full_name_and_short_name_share_identity(self):
+        for name in ('重庆富民银行', '富民银行', '重庆富民银行股份有限公司'):
+            self.assertEqual(normalize_investor_name(name), '富民银行')
+        self.assertEqual(normalize_entity('重庆富民银行'), '富民银行')
+        self.assertEqual(investor_search_aliases()['重庆富民银行'], '富民银行')
+        self.assertEqual(normalize_investor_name('重庆银行'), '重庆银行')
+
+    def test_confirmed_full_name_and_short_name_share_identity(self):
+        for name in ('东莞农村商业银行', '东莞农商行', '东莞农村商业银行股份有限公司'):
+            self.assertEqual(normalize_investor_name(name), '东莞农商行')
+        self.assertEqual(normalize_entity('东莞农村商业银行'), '东莞农商行')
+        self.assertEqual(investor_search_aliases()['东莞农村商业银行'], '东莞农商行')
+        self.assertEqual(normalize_investor_name('东莞银行'), '东莞银行')
+
+
+class BulkConfirmedInstitutionTest(unittest.TestCase):
+    def test_confirmed_groups_and_original_boundaries(self):
+        groups = {
+            '利曦基金': ['利曦私募', '利曦私募基金', '上海利曦基金', '上海利曦私募', '上海利曦私募基金管理合伙企业'],
+            '远行基金': ['上海远行私募'],
+            '宝物财务': ['宝武集团财务公司'],
+            '国金证券资管': ['国金资管'],
+            '建信信托': ['建信信托单1', '建信信托单2', '建信信托（代建信理财）', '建信信托（建信理财）'],
+        }
+        for target, names in groups.items():
+            for name in names:
+                self.assertEqual(normalize_investor_name(name), target)
+        self.assertNotEqual(normalize_investor_name('国金自营'), normalize_investor_name('国金资管'))
+        self.assertNotEqual(normalize_investor_name('建信信托（代建信理财）'), normalize_investor_name('建信理财'))
+
+
 class InstitutionRegistryCacheTest(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='institution-registry-')

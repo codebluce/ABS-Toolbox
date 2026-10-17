@@ -330,9 +330,9 @@ class MonthlyDataTests(unittest.TestCase):
         monthly = demo.compute_monthly(ledger)
         totals = {'赊销白条': 326.475, '信托金条': 153.8, '信托企业主贷': 104.74,
                   '小贷企业主贷': 118, '京企贷': 18, '保理': 140, '动产质押': 20,
-                  '白条取现': 30, '金采': 113, '汽车融资租赁': 20.61, '金条白取混发': 142.7}
+                  '白条取现': 30, '金采': 113, '汽车融资租赁': 20.61, '金条白取混发': 143.0}
         self.assertEqual({name: a['totalAllocatedSize'] for name, a in monthly['assets'].items()}, totals)
-        self.assertEqual(sum(Decimal(str(a['totalAllocatedSize'])) for a in monthly['assets'].values()), Decimal('1187.325'))
+        self.assertEqual(sum(Decimal(str(a['totalAllocatedSize'])) for a in monthly['assets'].values()), Decimal('1187.625'))
         self.assertEqual(sum(a['projectCount'] for a in monthly['assets'].values()), 121)
         self.assertEqual(sum(a['bidCount'] for a in monthly['assets'].values()), 1997)
         self.assertEqual(len(monthly['fallbackRows']), 373)
