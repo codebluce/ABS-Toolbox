@@ -67,20 +67,20 @@ class SecondaryAllocationIntegrationTest(unittest.TestCase):
         rows = allocation.load_snapshot()['records']
         original_names = {r['investor'] for r in rows}
         grouped_names = {aliases.get(r['investor'], r['investor']) for r in rows}
-        self.assertEqual((len(rows), len(original_names), len(grouped_names)), (1095, 73, 53))
-        self.assertEqual(sum(r['amount_wan'] for r in rows), 1657845)
+        self.assertEqual((len(rows), len(original_names), len(grouped_names)), (1105, 72, 52))
+        self.assertEqual(sum(r['amount_wan'] for r in rows), 1669145)
         previous = [r for r in rows if r['month'] != '10月']
         october = [r for r in rows if r['month'] == '10月']
         self.assertEqual((len(previous), sum(r['amount_wan'] for r in previous)), (989, 1492845))
-        self.assertEqual((len(october), sum(r['amount_wan'] for r in october)), (106, 165000))
-        self.assertEqual(len({r['project'] for r in october}), 19)
-        self.assertEqual(sum(r['level'] == '次级' for r in october), 51)
-        self.assertEqual(sum(r['level'] == '夹层' for r in october), 55)
+        self.assertEqual((len(october), sum(r['amount_wan'] for r in october)), (116, 176300))
+        self.assertEqual(len({r['project'] for r in october}), 21)
+        self.assertEqual(sum(r['level'] == '次级' for r in october), 59)
+        self.assertEqual(sum(r['level'] == '夹层' for r in october), 57)
         self.assertTrue(all(r['source'].startswith('10月!') for r in october))
         self.assertEqual(aliases['中信自营（换券）'], '中信证券')
         self.assertEqual(aliases['粤财信托（协助展期）'], '粤财信托')
         for canonical, original, expected_count, expected_amount in (
-            ('中信证券', '中信自营（换券）', 5, 7600),
+            ('中信证券', '中信自营（换券）', 6, 9800),
             ('粤财信托', '粤财信托（协助展期）', 4, 3500),
         ):
             selected = [r for r in october if aliases.get(r['investor'], r['investor']) == canonical]

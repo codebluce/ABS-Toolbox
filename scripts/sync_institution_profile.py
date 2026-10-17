@@ -296,6 +296,12 @@ def build_assignment_index(inst_dict: dict) -> dict[str, list[tuple[str, dict]]]
 
 def resolve_assignment(name: str, assignment_index: dict[str, list[tuple[str, dict]]]) -> tuple[str, dict] | None:
     """Return the unique authoritative assignment for an institution, or None if ambiguous."""
+    # 同一证券公司可在分配表的管理人行和投资部门组合行各出现一次。
+    # 先尊重完整原名，避免部门组合变体把原本明确的负责人匹配变成歧义。
+    exact = {canonical_name: hit for canonical_name, hit in assignment_index.get(name.strip(), [])
+             if canonical_name == name.strip()}
+    if len(exact) == 1:
+        return next(iter(exact.items()))
     candidates: dict[str, dict] = {}
     for variant in _name_variants(name):
         for canonical_name, hit in assignment_index.get(variant, []):

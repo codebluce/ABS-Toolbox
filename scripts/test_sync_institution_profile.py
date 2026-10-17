@@ -6,6 +6,18 @@ from sync_institution_profile import merge_records_by_assignment, normalize_cont
 
 
 class InstitutionProfileSyncTest(unittest.TestCase):
+    def test_exact_assignment_precedes_department_combo_variant(self):
+        assignments = {
+            '中信证券': {'person': '吴沛智', 'category': 'ABS管理人(15家)'},
+            '中信证券：自营、资管': {'person': '吴沛智', 'category': '券商'},
+        }
+        records = [{'name': '中信证券', 'owner': '高雅', 'category': '其他',
+                    'contact': '', 'approval': '', 'quota': '', 'recent_progress': []}]
+        merged, warnings = merge_records_by_assignment(records, assignments)
+        self.assertEqual(warnings, [])
+        self.assertEqual(merged[0]['name'], '中信证券')
+        self.assertEqual(merged[0]['owner'], '吴沛智')
+
     def test_assignment_owner_overrides_source_owner_and_merges_history(self):
         assignments = {
             "招商银行/招银理财": {"person": "姜守园", "category": "国股行"},

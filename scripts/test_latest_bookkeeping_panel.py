@@ -164,7 +164,8 @@ class LatestBookkeepingTest(unittest.TestCase):
         self.assertEqual([item[1] for item in panels],['compare','invest','cost','spread','bookkeeping'])
 
     def test_real_final_latest_project_and_exact_values(self):
-        data=panel.compute_data(panel.find_latest_final())
+        # 固定0924业务样本用于精确数值回归，不让每周新增定稿改变测试预期。
+        data=panel.compute_data(panel.SCRIPT_DIR.parent / 'deliverables/ledger/03_final/2026年ABS发行台账-0924-定稿.xlsx')
         self.assertTrue(all(p['venue'] in panel.ALLOWED_VENUES for a in data['assets'] for p in a['projects']))
         white=next(a for a in data['assets'] if a['name']=='赊销白条')
         self.assertEqual(white['date'],'2026-09-21')

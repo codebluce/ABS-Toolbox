@@ -83,6 +83,17 @@ def snapshot(ws, rows_range):
 
 
 class TestBookkeepingFilenameAliases(unittest.TestCase):
+    def test_october_bookkeeping_names_are_precise(self):
+        projects = {'26东裕8号一期', '26东裕8号二期', '耘睿30-1', '耘睿25-1', '26东裕10号一期'}
+        files = {
+            '【26东裕ABN001】项目簿记明细-20261016.xlsx': '26东裕8号一期',
+            '【26东裕ABN002】项目簿记明细-20261016.xlsx': '26东裕8号二期',
+            '【耘睿30-1ABS】簿记明细-簿记日期2026年10月15日.xlsx': '耘睿30-1',
+            '耘睿25号1期项目簿记明细-20261013.xlsx': '耘睿25-1',
+        }
+        for filename, expected in files.items():
+            self.assertEqual(map_detail_to_project(filename, projects), expected)
+
     def test_dongyu10_details_map_to_distinct_ledger_projects(self):
         projects = {'26东裕10号二期', '26东裕10号三期', '26东裕10号四期'}
         files = {

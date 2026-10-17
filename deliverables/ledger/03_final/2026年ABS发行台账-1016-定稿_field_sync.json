@@ -1,0 +1,18 @@
+{
+  "processed": "2026年ABS发行台账-0924-定稿.xlsx",
+  "new_raw": "2026年ABS发行台账-1016.xlsx",
+  "change_count": 0,
+  "project_count": 0,
+  "changes": [],
+  "protected_count": 1,
+  "protected": [
+    {
+      "project": "金采7-12",
+      "field": "簿记时间",
+      "col": 12,
+      "kept": "2026-05-12",
+      "raw": "2025-05-12",
+      "reason": "已知年份笔误(2026误录为2025)，保留台账纠错值"
+    }
+  ]
+}

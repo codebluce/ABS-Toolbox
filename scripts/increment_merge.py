@@ -388,6 +388,10 @@ def map_detail_to_project(filename, project_names=None):
         "【26东裕10第三期】": "26东裕10号三期",
         "【26东裕10-4】": "26东裕10号四期",
         "【东裕10-5ABN】": "26东裕10号五期",
+        # 2026-10 文件名省略储架8号，以原始明细项目名称核实后精确登记。
+        "【26东裕ABN001】": "26东裕8号一期",
+        "【26东裕ABN002】": "26东裕8号二期",
+        "【耘睿30-1ABS】": "耘睿30-1",
     }
     name = explicit_aliases.get(name, name)
 
@@ -1308,10 +1312,10 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
             # Institutions not in ledger append to layer end
             detail_by_inst = OrderedDict()
             for it in detail_items:
-                key = normalize(it['name'])
-                if key not in detail_by_inst:
-                    detail_by_inst[key] = []
-                detail_by_inst[key].append(it)
+                inst_group_key = normalize(it['name'])
+                if inst_group_key not in detail_by_inst:
+                    detail_by_inst[inst_group_key] = []
+                detail_by_inst[inst_group_key].append(it)
 
             # Build U-row index: normalize(name) -> list of urow indices
             inst_to_urows = defaultdict(list)
