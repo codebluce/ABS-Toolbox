@@ -227,14 +227,18 @@ class MonthlyIntegrationTest(unittest.TestCase):
         self.assertNotIn('data-qc-status="FAIL"', body)
 
     def test_release_preserves_uncached_r_warning_and_project_fail(self):
-        self.write_source([source_row(layer_size='=J2*0.9')])
+        valid=source_row(layer_size='=J2*Q2')
+        valid[HEADERS.index('分层占比')]=0.9
+        self.write_source([valid])
         module, monthly_qc, monthly = generator._prepare_monthly_bookkeeping(self.ledger)
         self.assertTrue(any(item['code'] == 'MONTHLY_LAYER_SIZE_UNCACHED' and item['level'] == 'WARN'
                             for item in monthly['auditQc']['issues']))
         body = module.render_component(panel.compute_data(self.ledger), monthly, preview=False)
         html = generator.build_integrated_html([('pricing', 'bookkeeping', body)], module.component_css())
         self.assertEqual(monthly_qc.verify_html(html, self.ledger)['status'], 'PASS')
-        self.write_source([source_row(allocation=21, project_size=20, layer_size='=J2*0.9')])
+        invalid=source_row(allocation=21, project_size=20, layer_size='=J2*Q2')
+        invalid[HEADERS.index('分层占比')]=0.9
+        self.write_source([invalid])
         with self.assertRaisesRegex(ValueError, 'MONTHLY_ALLOCATION_PROJECT_OVER'):
             generator._prepare_monthly_bookkeeping(self.ledger)
 

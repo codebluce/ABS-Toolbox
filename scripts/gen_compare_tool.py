@@ -14,6 +14,10 @@
 import sys, os
 import pandas as pd
 import json
+import math
+from decimal import Decimal
+from numbers import Number
+import numpy as np
 
 from abs_common import (
     RESOLVED_COST_COL, RESOLVED_INST_COL, RESOLVED_SHARE_COL,
@@ -63,8 +67,63 @@ def build_product_list(dfa):
     return ordered + remaining
 
 
+def pricing_identity_key(row):
+    """Immutable JSON tuple: asset/date/project/venue/layer; no delimiter collisions."""
+    columns = ('资产类型', '簿记时间', '项目名称', '发行场所', '分层情况')
+    values = []
+    for column in columns:
+        value = row[column]
+        if pd.isna(value) or (isinstance(value, str) and not value.strip()):
+            raise ValueError(f'[R FAIL] incomplete identity: {column}, row={row.name}')
+        values.append(pd.Timestamp(value).strftime('%Y-%m-%d')
+                      if column == '簿记时间' else str(value).strip())
+    return json.dumps(values, ensure_ascii=False, separators=(',', ':'))
+
+
+def pricing_layer_size(value, identity, row_index):
+    """R is either genuinely missing or a finite positive numeric value."""
+    if value is None or value is pd.NA or (isinstance(value, str) and not value.strip()):
+        return None
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, (Number, Decimal)):
+        raise ValueError(f'[R FAIL] invalid R={value!r}, identity={identity}, row={row_index}')
+    numeric = float(value)
+    if math.isnan(numeric):  # pandas blank cells are represented by NaN
+        return None
+    if not math.isfinite(numeric) or numeric <= 0:
+        raise ValueError(f'[R FAIL] R must be finite positive: {value!r}, identity={identity}, row={row_index}')
+    return numeric
+
+
+def build_layer_sizes(frame):
+    """Validate every available row before latest-month selection; never sum R."""
+    sizes, exact_values = {}, {}
+    for index, row in frame.iterrows():
+        key = pricing_identity_key(row)
+        raw = row.get('对应金额（亿）')
+        size = pricing_layer_size(raw, key, index)
+        sizes.setdefault(key, None)
+        if size is None:
+            continue
+        exact = Decimal(str(raw))
+        if key in exact_values and exact_values[key] != exact:
+            raise ValueError(f'[R FAIL] conflicting R for identity={key}: '
+                             f'{exact_values[key]} vs {exact}, row={index}')
+        exact_values[key] = exact
+        sizes[key] = size
+    return sizes
+
+
+def pricing_project_size(value):
+    """J is separately exposed, never a replacement for a missing R."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, (Number, Decimal)):
+        return None
+    numeric = float(value)
+    return numeric if math.isfinite(numeric) and numeric > 0 else None
+
+
 def build_js_data(dfa, products):
     """生成JS数据：每产品取最新有数据的月份"""
+    build_layer_sizes(dfa)
     rows = []
     for product in products:
         sub = dfa[dfa['产品类型'] == product].copy()
@@ -75,17 +134,21 @@ def build_js_data(dfa, products):
         for _, r in latest_sub.iterrows():
             rows.append({
                 'product': product,
-                'asset': r['资产类型'],
+                'asset': str(r['资产类型']).strip(),
                 'tenor': r['期限分类'],
-                'project': str(r['项目名称']) if pd.notna(r.get('项目名称')) else '',
+                'project': str(r['项目名称']).strip() if pd.notna(r.get('项目名称')) else '',
                 'month': latest_month,
                 'date': r['簿记时间'].strftime('%Y-%m-%d') if pd.notna(r['簿记时间']) else '',
                 'cost': round(float(r['成本pct']), 4),
                 'spread': round(float(r['基准利差']), 4),
                 'inst': r['实际机构'],
                 'share': round(float(r['实际份额']), 4),
-                'layer': str(r['分层情况']) if pd.notna(r.get('分层情况')) else '优先A',
-                'total_size': round(float(r['对应金额（亿）']), 4) if pd.notna(r.get('对应金额（亿）')) else None
+                'layer': str(r['分层情况']).strip() if pd.notna(r.get('分层情况')) else '优先A',
+                'venue': str(r['发行场所']).strip(),
+                'identity_key': pricing_identity_key(r),
+                'layer_size': pricing_layer_size(r.get('对应金额（亿）'), pricing_identity_key(r), r.name),
+                'total_size': pricing_layer_size(r.get('对应金额（亿）'), pricing_identity_key(r), r.name),
+                'project_size': pricing_project_size(r.get('规模'))
             })
     return rows
 
@@ -204,6 +267,8 @@ CSS = """  * { box-sizing: border-box; margin: 0; padding: 0; }
 def compute_data(xlsx_path, preprocessed_path=None):
     """读取台账 + 计算 products/rows + QC precheck"""
     df, dfa = load_data(xlsx_path, preprocessed_path=preprocessed_path)
+    # All pricing-layer rows, including older months before output selection.
+    proj_sizes = build_layer_sizes(dfa)
     products = build_product_list(dfa)
     rows = build_js_data(dfa, products)
     data_js = json.dumps(rows, ensure_ascii=False, indent=2)
@@ -213,17 +278,8 @@ def compute_data(xlsx_path, preprocessed_path=None):
     if not qc_passed:
         raise RuntimeError(f'[QC] 机构比对工具预检未通过')
 
-    # Build PROJECT_SIZES mapping for insight panel
-    proj_sizes = {}
-    for _, r in dfa.iterrows():
-        proj = str(r['项目名称']) if pd.notna(r.get('项目名称')) else ''
-        amt = r.get('对应金额（亿）')
-        if proj and pd.notna(amt):
-            try:
-                proj_sizes[proj] = float(amt)
-            except:
-                pass
-    proj_sizes_js = json.dumps(proj_sizes, ensure_ascii=False)
+    # Compatibility mapping now uses full immutable layer identities, not names.
+    proj_sizes_js = json.dumps(proj_sizes, ensure_ascii=False, allow_nan=False)
 
     return {
         'df': df,

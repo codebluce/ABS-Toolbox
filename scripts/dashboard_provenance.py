@@ -15,6 +15,7 @@ PRODUCERS = (
     'gen_integrated_dashboard.py', 'gen_abs_cost_report.py', 'gen_spread_report.py',
     'gen_compare_tool.py', 'gen_investment_ledger.py', 'gen_pricing_insight.py',
     'gen_institution_profile.py', 'gen_institution_stats.py', 'abs_common.py',
+    'ledger_formula_tools.py',
     'entity_alias.py', 'institution_identity.py', 'dashboard_provenance.py',
     'itl_panel.js', 'itl_panel.css', 'itl_chat.js', 'itl_chat.css',
 )

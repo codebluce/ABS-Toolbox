@@ -21,6 +21,8 @@ import openpyxl, sys, os, argparse, json, datetime
 import tempfile
 from collections import OrderedDict, defaultdict, Counter
 from copy import copy
+from ledger_formula_tools import (expand_ledger_metadata, first_data_row, formula_translate, relocate_project_formula,
+    insert_rows_rebase, delete_rows_rebase, validate_r_formula, validate_project_j_update, LedgerFormulaError)
 
 
 def close_workbook(wb):
@@ -86,113 +88,20 @@ MATCH_HARD_MAP = {
 }
 
 def unmerge_and_fill_raw(ws):
-    """预处理新原始台账：取消合并+向下填充，保护P/U/V"""
-    protected_data = {}
-    for mrange in list(ws.merged_cells.ranges):
-        for row in range(mrange.min_row, mrange.max_row + 1):
-            for col in range(mrange.min_col, mrange.max_col + 1):
-                if col in (16, 21, 22):
-                    val = ws.cell(row=mrange.min_row, column=col).value
-                    if val is not None:
-                        protected_data[(row, col)] = val
-    for mrange in list(ws.merged_cells.ranges):
-        ws.unmerge_cells(str(mrange))
-    last_values = {}
-    last_cells = {}
-    for r in range(2, ws.max_row + 1):
-        for c in range(1, 21):
-            if c == 16: continue
-            cell = ws.cell(row=r, column=c)
-            if cell.value is not None:
-                last_values[c] = cell.value
-                last_cells[c] = cell
-            elif c in last_values and last_values[c] is not None:
-                cell.value = last_values[c]
-                src = last_cells[c]
-                if src:
-                    cell.font = copy(src.font)
-                    cell.border = copy(src.border)
-                    cell.alignment = copy(src.alignment)
-                    cell.number_format = src.number_format
-    for (row, col), val in protected_data.items():
-        ws.cell(row=row, column=col).value = val
-    return ws
+    """Expand bounded metadata without manufacturing U:Y detail values."""
+    return expand_ledger_metadata(ws)
 
 
 def unmerge_and_fill_processed(ws):
-    """预处理已加工台账：取消合并+向下填充，保护P/U/V/W/X/Y"""
-    # 1. Save P/U/V/W/X/Y from merged cells AND non-merged WXY data
-    protected_data = {}
-    for mrange in list(ws.merged_cells.ranges):
-        for row in range(mrange.min_row, mrange.max_row + 1):
-            for col in range(mrange.min_col, mrange.max_col + 1):
-                if col in (16, 21, 22):
-                    val = ws.cell(row=mrange.min_row, column=col).value
-                    if val is not None:
-                        protected_data[(row, col)] = val
-
-    # Save ALL WXY data (not just merged cells - WXY may not be merged)
-    wxy_data = {}  # (row, col) -> (value, font, border, alignment, number_format)
-    for r in range(1, ws.max_row + 1):
-        for c in (23, 24, 25):
-            cell = ws.cell(row=r, column=c)
-            if cell.value is not None:
-                wxy_data[(r, c)] = (
-                    cell.value,
-                    copy(cell.font), copy(cell.border),
-                    copy(cell.alignment), cell.number_format
-                )
-
-    # 2. Unmerge all
-    for mrange in list(ws.merged_cells.ranges):
-        ws.unmerge_cells(str(mrange))
-
-    # 3. Fill A~T (skip P), inherit format
-    last_values = {}
-    last_cells = {}
-    for r in range(2, ws.max_row + 1):
-        for c in range(1, 21):
-            if c == 16: continue
-            cell = ws.cell(row=r, column=c)
-            if cell.value is not None:
-                last_values[c] = cell.value
-                last_cells[c] = cell
-            elif c in last_values and last_values[c] is not None:
-                cell.value = last_values[c]
-                src = last_cells[c]
-                if src:
-                    cell.font = copy(src.font)
-                    cell.border = copy(src.border)
-                    cell.alignment = copy(src.alignment)
-                    cell.number_format = src.number_format
-
-    # 4. Restore P/U/V
-    for (row, col), val in protected_data.items():
-        ws.cell(row=row, column=col).value = val
-
-    # 5. Restore WXY data (critical: fill may have overwritten WXY in empty rows)
-    # First clear any WXY that was set by fill (shouldn't happen since we only fill A~T, but safe)
-    for r in range(1, ws.max_row + 1):
-        for c in (23, 24, 25):
-            if (r, c) not in wxy_data:
-                ws.cell(row=r, column=c).value = None
-    # Then restore original WXY
-    for (r, c), (val, font, border, alignment, nf) in wxy_data.items():
-        cell = ws.cell(row=r, column=c)
-        cell.value = val
-        cell.font = font
-        cell.border = border
-        cell.alignment = alignment
-        cell.number_format = nf
-
-    return ws
+    """Same metadata semantics as raw; preserve all existing U:Y cells."""
+    return expand_ledger_metadata(ws)
 
 
 def get_all_projects(ws):
     """Extract all project names with their row ranges from E column."""
     projects = {}
     current_name = None
-    for r in range(3, ws.max_row + 1):
+    for r in range(first_data_row(ws), ws.max_row + 1):
         e = ws.cell(row=r, column=5).value
         u = ws.cell(row=r, column=21).value
         p = ws.cell(row=r, column=16).value
@@ -480,6 +389,13 @@ def sync_existing_project_fields(ws_a, ws_b, projects_a, projects_b):
     已知年份笔误（2026 误录为 2025）不回填，保留台账中纠错后的值。
     """
     common = [p for p in projects_a.keys() if p in projects_b]
+    # Preflight every J change before mutating any project-level field.
+    for proj in common:
+        sa, ea = projects_a[proj]['start'], projects_a[proj]['end']
+        sb = projects_b[proj]['start']
+        new_j = ws_b.cell(sb, 10).value
+        if not _field_equal(ws_a.cell(sa, 10).value, new_j):
+            validate_project_j_update(ws_a, sa, ea, new_j)
     changes = []
     protected = []
     touched = set()
@@ -1085,11 +1001,14 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
             s, e = info['start'], info['end']
             rows = []
             for r in range(s, e + 1):
+                if ws_b.cell(r, 18).data_type == 'f':
+                    validate_r_formula(ws_b, r)
                 row_data = {}
                 for c in range(1, 26):
                     cell = ws_b.cell(row=r, column=c)
                     row_data[c] = {
                         'value': cell.value,
+                        'origin': cell.coordinate,
                         'font': copy(cell.font),
                         'border': copy(cell.border),
                         'alignment': copy(cell.alignment),
@@ -1112,10 +1031,15 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
 
         for proj_name in increment_ordered:
             rows = increment_rows[proj_name]
-            for row_data in rows:
+            row_map = {openpyxl.utils.cell.coordinate_from_string(data[1]['origin'])[1]: current_row + idx
+                       for idx, data in enumerate(rows)}
+            # Preflight the complete project before writing any appended cell.
+            relocated = [[relocate_project_formula(data[c]['value'], row_map, ws_b.title, ws_a.title)
+                          for c in range(1, 26)] for data in rows]
+            for row_index, row_data in enumerate(rows):
                 for c in range(1, 26):
                     cell = ws_a.cell(row=current_row, column=c)
-                    cell.value = row_data[c]['value']
+                    cell.value = relocated[row_index][c - 1]
                     cell.font = row_data[c]['font']
                     cell.border = row_data[c]['border']
                     cell.alignment = row_data[c]['alignment']
@@ -1123,6 +1047,10 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
                 current_row += 1
             print(f"  Appended {proj_name}: {len(rows)} rows starting at row {append_start}")
             append_start = current_row
+
+        for rr in range(last_row_a + 1, current_row):
+            if ws_a.cell(rr, 18).data_type == 'f':
+                validate_r_formula(ws_a, rr)
 
     # === Step 5: Bookkeeping ===
     step5_label = "rebook projects" if rebook else ("supplement projects" if supplement else "increment projects")
@@ -1206,7 +1134,7 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
 
             # Delete rows from back to front
             for r in sorted(rows_to_delete, reverse=True):
-                ws_a.delete_rows(r, 1)
+                delete_rows_rebase(ws_a, r, 1)
                 print(f"      Deleted Row{r} (unmatched new row)")
             # Clear WXY cells on remaining U rows
             for r in rows_to_clear:
@@ -1301,7 +1229,7 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
 
             print(f"      U rows: {len(urows)}, Details: {len(detail_items)}")
 
-            header = {}
+            header = {'_row': lstart}
             for c in range(1, 21):
                 header[c] = ws_a.cell(row=lstart, column=c).value
 
@@ -1401,11 +1329,24 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
         for anchor_row in sorted(inserts_by_anchor.keys(), reverse=True):
             items_with_header = inserts_by_anchor[anchor_row]
             insert_at = anchor_row + 1
-            ws_a.insert_rows(insert_at, len(items_with_header))
-            for idx, (it, header, layer_name) in enumerate(items_with_header):
+            # Re-read live anchors: earlier inserts may have rebased formulas.
+            live_headers = []
+            for it, header, layer_name in items_with_header:
+                origin_row = header['_row']
+                if ws_a.cell(origin_row, 18).data_type == 'f':
+                    validate_r_formula(ws_a, origin_row)
+                live_headers.append((it, origin_row, layer_name))
+            insert_rows_rebase(ws_a, insert_at, len(items_with_header))
+            for idx, (it, origin_row, layer_name) in enumerate(live_headers):
                 nr = insert_at + idx
                 for c in range(1, 21):
-                    ws_a.cell(row=nr, column=c).value = header.get(c)
+                    source_cell = ws_a.cell(origin_row, c)
+                    # R repeats this tier's verified fixed anchor, not a moved
+                    # stale formula snapshot; other formulas use copy semantics.
+                    ws_a.cell(nr, c).value = (source_cell.value if c == 18 else
+                        formula_translate(source_cell.value, source_cell.coordinate, ws_a.cell(nr, c).coordinate))
+                if ws_a.cell(nr, 18).data_type == 'f':
+                    validate_r_formula(ws_a, nr)
                 ws_a.cell(row=nr, column=23).value = it['rate']
                 ws_a.cell(row=nr, column=24).value = it['name']
                 ws_a.cell(row=nr, column=25).value = it['size']

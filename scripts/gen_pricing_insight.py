@@ -109,6 +109,16 @@ select#tenorSelect { min-width:120px; }
 
 _PRICING_INSIGHT_JS = """\
 // ====== HELPERS ======
+function layerRatio(row) {
+  const size = row.layer_size;
+  return typeof size === 'number' && Number.isFinite(size) && size > 0
+    ? row.share / size * 100 : null;
+}
+
+function formatLayerRatio(value) {
+  return value === null ? '--' : value.toFixed(1) + '%';
+}
+
 function getDataLatestDate() {
   const dates = ALL_DATA.map(r => r.date).filter(Boolean).sort();
   return dates[dates.length - 1] || '';
@@ -163,6 +173,7 @@ function computeWindowStats(instList, startDate, endDate) {
   const instSet = new Set(instList);
   const stats = {};
   instSet.forEach(inst => { stats[inst] = { count: 0, share: 0, costs: [], spreadSum: 0, spreadCount: 0, products: new Set(), dates: new Set(), ratios: [] }; });
+  const periods = new Map();
   ALL_DATA.forEach(r => {
     if (r.date >= startDate && r.date <= endDate && stats[r.inst]) {
       const s = stats[r.inst];
@@ -173,9 +184,20 @@ function computeWindowStats(instList, startDate, endDate) {
       s.spreadCount++;
       s.products.add(r.product);
       s.dates.add(r.date);
-      const ts = PROJECT_SIZES[r.project];
-      if (ts && ts > 0) s.ratios.push(r.share / ts * 100);
+      const key = JSON.stringify([r.inst, r.identity_key]);
+      if (!periods.has(key)) periods.set(key, { inst: r.inst, share: 0, layer_size: r.layer_size });
+      const period = periods.get(key);
+      // A missing denominator on any quote keeps this period unknown.
+      if (period.layer_size !== null && r.layer_size !== null && period.layer_size !== r.layer_size) {
+        throw new Error('[R FAIL] conflicting R for identity=' + r.identity_key);
+      }
+      if (r.layer_size == null) period.layer_size = null;
+      period.share += r.share;
     }
+  });
+  periods.forEach(period => {
+    const ratio = layerRatio(period);
+    if (ratio !== null) stats[period.inst].ratios.push(ratio);
   });
   return stats;
 }
@@ -244,7 +266,7 @@ function renderInsight(d, tab) {
     const maxAll = allCosts.length > 0 ? Math.max.apply(null, allCosts).toFixed(2) : '--';
     const allRatios = [];
     sorted.forEach(function(x) { allRatios.push.apply(allRatios, stats[x].ratios); });
-    const avgAllRatio = allRatios.length > 0 ? (allRatios.reduce(function(a,b){return a+b;},0) / allRatios.length).toFixed(1) : '--';
+    const avgAllRatio = formatLayerRatio(allRatios.length > 0 ? allRatios.reduce(function(a,b){return a+b;},0) / allRatios.length : null);
     const avgEntries = sorted.length > 0 ? (sorted.reduce(function(s,x){return s + stats[x].count;},0) / sorted.length).toFixed(1) : 0;
     const levelText = activeRate >= 80 ? '较高' : activeRate >= 50 ? '一般' : '偏低';
     html += '在' + label + '（' + fmtRange(startDate, latestDataDate) + '）内，';
@@ -253,7 +275,7 @@ function renderInsight(d, tab) {
     html += '利率区间 <strong>' + minAll + '% ~ ' + maxAll + '%</strong>，';
     html += '机构投标活跃度' + levelText + '，';
     html += '平均每家参与 ' + avgEntries + ' 次，';
-    html += '平均单期认购比例 <strong>' + avgAllRatio + '%</strong>。';
+    html += '平均单期认购比例 <strong>' + avgAllRatio + '</strong>。';
   }
   html += '</div>';
 
@@ -283,7 +305,7 @@ function renderInsight(d, tab) {
       const maxCost = s.costs.length > 0 ? Math.max(...s.costs).toFixed(2) : '--';
       const rangeStr = minCost === maxCost ? minCost + '%' : minCost + '~' + maxCost + '%';
       const avgCost = s.costs.length > 0 ? (s.costs.reduce((a,b)=>a+b,0) / s.costs.length).toFixed(2) : '--';
-      const avgRatio = s.ratios.length > 0 ? (s.ratios.reduce((a,b)=>a+b,0) / s.ratios.length).toFixed(1) : '--';
+      const avgRatio = formatLayerRatio(s.ratios.length > 0 ? s.ratios.reduce((a,b)=>a+b,0) / s.ratios.length : null);
       const isNew = !isWeek && weekStats[inst].count > 0;
 
       html += '<div class="inst-card">';
@@ -297,7 +319,7 @@ function renderInsight(d, tab) {
       html += '<div class="ic-stat"><div class="ic-stat-label">规模</div><div class="ic-stat-val">' + s.share.toFixed(2) + '亿</div></div>';
       html += '<div class="ic-stat"><div class="ic-stat-label">利率区间</div><div class="ic-stat-val">' + rangeStr + '</div></div>';
       html += '<div class="ic-stat"><div class="ic-stat-label">均价</div><div class="ic-stat-val">' + avgCost + '%</div></div>';
-      html += '<div class="ic-stat"><div class="ic-stat-label">均单期比</div><div class="ic-stat-val">' + avgRatio + '%</div></div>';
+      html += '<div class="ic-stat"><div class="ic-stat-label">均单期比</div><div class="ic-stat-val">' + avgRatio + '</div></div>';
       html += '</div></div>';
     });
     html += '</div>';
@@ -358,8 +380,7 @@ function doSearch() {
 
   const totalShare = filtered.reduce((s, r) => s + r.share, 0).toFixed(2);
   const rows = filtered.map(function(r, i) {
-    const totalSize = PROJECT_SIZES[r.project];
-    const ratio = (totalSize && totalSize > 0) ? (r.share / totalSize * 100).toFixed(1) + '%' : '--';
+    const ratio = formatLayerRatio(layerRatio(r));
     return '<tr>' +
       '<td class="rank-num">' + (i+1) + '</td>' +
       '<td class="inst-cell">' + r.inst + '</td>' +
@@ -507,7 +528,7 @@ _PRICING_INSIGHT_HTML = """\
 </div>
 
 <div class="lab-global-note">
-  Lab v5：筛选框贯穿顶部全宽，与洞察/明细解耦。洞察摘要横向排列。机构卡片数字字号统一，列均匀分布占满宽度。洞察与明细同一水平线。
+  均单期比：先合并同机构、同资产、同簿记日期、同项目、同场所、同档位的多笔份额，再除以档位金额，按已知档位期数取算术平均；缺失档位金额显示 --，不以项目规模替代。份额沿用完整申购记录，否则回退实际配售。窗口仅覆盖各产品最新有数据月份。
 </div>\
 """
 

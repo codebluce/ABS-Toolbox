@@ -164,8 +164,28 @@ class LatestBookkeepingTest(unittest.TestCase):
         self.assertEqual([item[1] for item in panels],['compare','invest','cost','spread','bookkeeping'])
 
     def test_real_final_latest_project_and_exact_values(self):
-        # 固定0924业务样本用于精确数值回归，不让每周新增定稿改变测试预期。
-        data=panel.compute_data(panel.SCRIPT_DIR.parent / 'deliverables/ledger/03_final/2026年ABS发行台账-0924-定稿.xlsx')
+        # 历史档案保留错引用，应被新门禁拒绝；精确值回归仅提取该无公式项目。
+        from openpyxl import load_workbook, Workbook
+        source=panel.SCRIPT_DIR.parent / 'deliverables/ledger/03_final/2026年ABS发行台账-0924-定稿.xlsx'
+        with self.assertRaisesRegex(ValueError, 'R_FORMULA_REFERENCE'):
+            panel.compute_data(source)
+        raw=load_workbook(source, data_only=False)
+        try:
+            sheet=raw['总表']
+            headers=[cell.value for cell in sheet[1]]
+            project_col=headers.index('项目名称')
+            selected=[values for values in sheet.iter_rows(min_row=2, values_only=True)
+                      if values[project_col]=='26东裕10号四期']
+        finally:
+            raw.close()
+        self.assertTrue(selected)
+        with tempfile.TemporaryDirectory() as temp:
+            isolated=Path(temp)/'2026年ABS发行台账-0924-定稿.xlsx'
+            book=Workbook(); sheet=book.active; sheet.title='总表'
+            sheet.append(headers)
+            for values in selected: sheet.append(values)
+            book.save(isolated); book.close()
+            data=panel.compute_data(isolated)
         self.assertTrue(all(p['venue'] in panel.ALLOWED_VENUES for a in data['assets'] for p in a['projects']))
         white=next(a for a in data['assets'] if a['name']=='赊销白条')
         self.assertEqual(white['date'],'2026-09-21')

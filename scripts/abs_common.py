@@ -104,80 +104,49 @@ MONTH_ACCENT = '#e8f0fc'
 
 # ── 合并单元格预处理（pandas只读场景）──────────────────────────
 def preprocess_xlsx_for_pandas(xlsx_path):
-    """预处理合并单元格Excel，返回临时文件路径供pandas读取。
+    """Build a values-only temporary workbook using original formula caches.
 
-    步骤：
-    1. 保存P/U/V/W/X/Y列原始值（pandas只读，无需保存格式）
-    2. 取消所有合并单元格
-    3. A~T列向下填充（跳过P列），继承格式
-    4. 恢复P/U/V/W/X/Y列原始值
-    5. 保存为临时文件，返回路径
-
-    调用方负责在pandas读取后删除临时文件（或由系统自动清理）。
+    Only direct J*Q R formulas with verified project/tier references may be
+    evaluated when the original cache is absent. Never save a formula-mode
+    workbook over the source; all U:Y values come from original cached input.
     """
     from openpyxl import load_workbook
+    from ledger_formula_tools import expand_ledger_metadata, validate_r_formula, _PRODUCT, _number, AMOUNT_TOLERANCE, LedgerFormulaError
 
-    wb = load_workbook(xlsx_path)
-    ws = wb.active
-
-    # 1. 保存P(16)/U(21)/V(22)列合并单元格原始值
-    protected_data = {}
-    for mrange in list(ws.merged_cells.ranges):
-        for row in range(mrange.min_row, mrange.max_row + 1):
-            for col in range(mrange.min_col, mrange.max_col + 1):
-                if col in (16, 21, 22):
-                    val = ws.cell(row=mrange.min_row, column=col).value
-                    if val is not None:
-                        protected_data[(row, col)] = val
-
-    # 保存W(23)/X(24)/Y(25)列全部数据（只保存值，pandas不需要格式）
-    wxy_values = {}
-    for r in range(1, ws.max_row + 1):
-        for c in (23, 24, 25):
-            cell = ws.cell(row=r, column=c)
-            if cell.value is not None:
-                wxy_values[(r, c)] = cell.value
-
-    # 2. 取消所有合并单元格
-    for mrange in list(ws.merged_cells.ranges):
-        ws.unmerge_cells(str(mrange))
-
-    # 3. A~T列向下填充（跳过P列=16），继承格式
-    last_values = {}
-    last_cells = {}
-    for r in range(2, ws.max_row + 1):
-        for c in range(1, 21):
-            if c == 16:
-                continue
-            cell = ws.cell(row=r, column=c)
-            if cell.value is not None:
-                last_values[c] = cell.value
-                last_cells[c] = cell
-            elif c in last_values and last_values[c] is not None:
-                cell.value = last_values[c]
-                src = last_cells[c]
-                if src:
-                    cell.font = copy(src.font)
-                    cell.border = copy(src.border)
-                    cell.alignment = copy(src.alignment)
-                    cell.number_format = src.number_format
-
-    # 4. 恢复P/U/V列原始值
-    for (row, col), val in protected_data.items():
-        ws.cell(row=row, column=col).value = val
-
-    # 恢复W/X/Y列原始值（填充范围1-20不含23-25，不会覆盖WXY，此处仅恢复原始值）
-    for (r, c), val in wxy_values.items():
-        ws.cell(row=r, column=c).value = val
-
-    # 5. 保存为临时文件(mkstemp 保证唯一性;save 异常时也确保关闭工作簿)
-    fd, tmp_path = tempfile.mkstemp(prefix=f'abs_preprocessed_{os.getpid()}_', suffix='.xlsx')
-    os.close(fd)  # 只借文件名,句柄交给 openpyxl
+    values_wb = load_workbook(xlsx_path, data_only=True)
+    formulas_wb = load_workbook(xlsx_path, data_only=False)
+    tmp_path = None
     try:
-        wb.save(tmp_path)
+        # pandas reads the first sheet; preprocess that same sheet.
+        ws = values_wb.worksheets[0]
+        fs = formulas_wb.worksheets[0]
+        for cells in fs.iter_rows():
+            for cell in cells:
+                if cell.data_type == 'f' and cell.column != 18:
+                    cell.value = ws.cell(cell.row, cell.column).value
+        expand_ledger_metadata(fs)
+        expand_ledger_metadata(ws)
+        for cells in fs.iter_rows(min_col=18, max_col=18):
+            cell = cells[0]
+            if cell.data_type == 'f' and _PRODUCT.fullmatch(cell.value):
+                calculated = validate_r_formula(fs, cell.row)
+                # Validated direct JQ is the only controlled cache fallback.
+                cached = ws.cell(cell.row, 18).value
+                if cached is None:
+                    ws.cell(cell.row, 18).value = float(calculated)
+                elif abs(_number(cached, cell.coordinate + ' cache') - calculated) > AMOUNT_TOLERANCE:
+                    raise LedgerFormulaError(f'{fs.title}!{cell.coordinate}: stale R cache differs from verified JQ')
+        fd, tmp_path = tempfile.mkstemp(prefix=f'abs_preprocessed_{os.getpid()}_', suffix='.xlsx')
+        os.close(fd)
+        values_wb.save(tmp_path)
+        return tmp_path
+    except Exception:
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
     finally:
-        wb.close()
-    return tmp_path
+        values_wb.close()
+        formulas_wb.close()
 
 
 # ── 公共函数 ───────────────────────────────────────────────────
@@ -554,7 +523,15 @@ def load_and_filter(xlsx_path, need_tenor=False, extra_required=None, fix_year=T
 
     colnames = clean_colnames(df_raw)
     df_raw.columns = colnames
-    df = df_raw.iloc[2:].copy()
+    # Detect a partial detail header; row 2 may already contain real data.
+    from ledger_formula_tools import first_data_row
+    from openpyxl import load_workbook
+    header_wb = load_workbook(tmp_path, data_only=True)
+    try:
+        data_start = first_data_row(header_wb.worksheets[0])
+    finally:
+        header_wb.close()
+    df = df_raw.iloc[data_start - 1:].copy()
     title_mask = df['成本'].astype(str).str.match(r'^成本$', na=False)
     df = df[~title_mask]
     df.reset_index(drop=True, inplace=True)

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from contextvars import ContextVar
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 import hashlib
 from html.parser import HTMLParser
 import json
@@ -53,7 +54,8 @@ def rules_sha256():
     root = Path(__file__).resolve().parent
     digest = hashlib.sha256()
     for name in ('latest_bookkeeping_panel.py', 'latest_bookkeeping_panel.js',
-                 'latest_bookkeeping_panel.css', 'latest_bookkeeping_panel_body.html', 'latest_bookkeeping_qc.py'):
+                 'latest_bookkeeping_panel.css', 'latest_bookkeeping_panel_body.html', 'latest_bookkeeping_qc.py',
+                 'ledger_formula_tools.py', 'repair_r_formulas.py'):
         digest.update(name.encode())
         digest.update((root / name).read_bytes())
     return digest.hexdigest()
@@ -84,6 +86,110 @@ def _date(value, epoch):
         return ''
 
 
+
+_R_PRODUCT = re.compile(r'^=\s*(\$?([JQ])\$?([1-9][0-9]*))\s*\*\s*(\$?([JQ])\$?([1-9][0-9]*))\s*$', re.I)
+_R_CONSTANT = re.compile(r'^=\s*([+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[Ee][+-]?[0-9]+)?)\s*$')
+_R_EPSILON = Decimal('0.0001')
+
+
+def validate_source_r_formulas(sheet, formulas, positions, merged, records):
+    """Independent source proof; explicit merges only, no producer aggregation/fill.
+
+    Literal R keeps existing business checks. Direct J*Q requires complete source
+    identities and plain numeric source operands; no Excel evaluation. Constants
+    compare with their literal, never with J*Q. Missing R caches remain WARN and
+    are never filled here: incremental inputs must arrive with prepared raw caches.
+    """
+    rcol = positions.get('对应金额（亿）')
+    if rcol is None:
+        return
+    anchors = {}
+    for area in formulas.merged_cells.ranges:
+        for rr in range(area.min_row, area.max_row + 1):
+            for cc in range(area.min_col, area.max_col + 1):
+                anchors[rr, cc] = (area.min_row, area.min_col)
+
+    def raw(rr, cc):
+        return merged.get((rr, cc), sheet.cell(rr, cc).value)
+
+    def identity(rr, tier=False):
+        fields = ('资产类型', '簿记时间', '项目名称', '发行场所')
+        key = tuple(_date(raw(rr, positions[f]), sheet.parent.epoch) if f == '簿记时间'
+                    else _text(raw(rr, positions[f])) for f in fields)
+        return key + ((_text(raw(rr, positions['分层情况'])),) if tier else ())
+
+    def numeric(value, label):
+        if isinstance(value, (bool, str)) or value is None:
+            raise ValueError(f'{label}: R_FORMULA_OPERAND 原始值必须是非负有限数值')
+        try:
+            result = Decimal(str(value))
+        except (InvalidOperation, ValueError, TypeError) as error:
+            raise ValueError(f'{label}: R_FORMULA_OPERAND 数值非法') from error
+        if not result.is_finite() or result < 0:
+            raise ValueError(f'{label}: R_FORMULA_OPERAND 数值非法')
+        return result
+
+    for record in records:
+        rr = record['_row']
+        ar, ac = anchors.get((rr, rcol), (rr, rcol))
+        expression = formulas.cell(ar, ac)
+        if expression.data_type != 'f':
+            continue
+        label = f'总表R{rr}'
+        formula = expression.value
+        constant = _R_CONSTANT.fullmatch(formula or '')
+        product = _R_PRODUCT.fullmatch(formula or '')
+        if constant:
+            expected = Decimal(constant[1])
+            if not expected.is_finite() or expected < 0:
+                raise ValueError(f'{label}: R_FORMULA_CONSTANT 常量须为非负有限数值')
+            record['_rFormulaKind'] = 'constant'
+        elif product:
+            refs = {product[2].upper(): int(product[3]), product[5].upper(): int(product[6])}
+            if set(refs) != {'J', 'Q'}:
+                raise ValueError(f'{label}: R_FORMULA_REFERENCE 须直接引用一个J和一个Q')
+            if positions.get('规模') != 10 or positions.get('对应金额（亿）') != 18:
+                raise ValueError(f'{label}: R_FORMULA_SCHEMA J/R列位置不符合源表定义')
+            key, layer = identity(rr), identity(rr, True)
+            if not all(layer):
+                raise ValueError(f'{label}: R_FORMULA_IDENTITY 项目/档位身份不完整')
+            if not all(2 <= ref <= sheet.max_row for ref in refs.values()):
+                raise ValueError(f'{label}: R_FORMULA_REFERENCE 引用不在源表数据范围')
+            if identity(refs['J']) != key or identity(refs['Q'], True) != layer:
+                raise ValueError(f'{label}: R_FORMULA_REFERENCE J跨项目或Q跨项目/档位 ({formula})')
+            operands = {}
+            for col, cc in (('J', 10), ('Q', 17)):
+                target = refs[col]
+                er, ec = anchors.get((target, cc), (target, cc))
+                if formulas.cell(er, ec).data_type == 'f':
+                    raise ValueError(f'{label}: R_FORMULA_OPERAND {col}{target}本身为公式，缓存不能证明其来源')
+                operands[col] = numeric(raw(target, cc), f'{label}/{col}{target}')
+            if operands['Q'] > 1:
+                raise ValueError(f'{label}: R_FORMULA_OPERAND Q比例超出[0,1]')
+            expected = operands['J'] * operands['Q']
+            record['_rFormulaKind'] = 'direct-jq'
+        else:
+            raise ValueError(f'{label}: R_FORMULA_UNSUPPORTED 复杂/跨sheet/范围公式阻断，不推算 ({formula})')
+        cached = raw(rr, rcol)
+        if cached is None:
+            record['_uncachedLayerSize'] = f'R{rr}'
+            continue
+        amount = numeric(cached, label)
+        if abs(amount - expected) > _R_EPSILON:
+            raise ValueError(f'{label}: R_FORMULA_CACHE 缓存{amount}与已验证值{expected}差异超过0.0001')
+
+
+def r_formula_evidence(records):
+    formulas = [r for r in records if r.get('_rFormulaKind')]
+    return {'reader': 'independent source parser', 'formulas': len(formulas),
+            'directJQ': sum(r['_rFormulaKind'] == 'direct-jq' for r in formulas),
+            'constants': sum(r['_rFormulaKind'] == 'constant' for r in formulas),
+            'uncached': sum(bool(r.get('_uncachedLayerSize')) for r in formulas),
+            'epsilonBillions': '0.0001',
+            'missingCachePolicy': 'WARN; QC never fills R; incremental input requires prepared raw caches',
+            'unsupportedPolicy': 'FAIL; no evaluation'}
+
+
 def read_source(path):
     """只展开明确合并的项目/层字段，不跨空行、项目或档位向下猜测填充。
 
@@ -111,13 +217,6 @@ def read_source(path):
                 cached = sheet.cell(r, column)
                 if expression.data_type == 'f' and (cached.value is None or cached.data_type == 'e'):
                     raise ValueError(f'总表{expression.coordinate}公式没有有效计算缓存，请用Excel重算后保存再生成')
-        optional_formulas = {}
-        if '对应金额（亿）' in positions:
-            column = positions['对应金额（亿）']
-            for r in range(2, formula_sheet.max_row + 1):
-                cell = formula_sheet.cell(r, column)
-                if cell.data_type == 'f' and sheet.cell(r, column).value is None:
-                    optional_formulas[r] = cell.coordinate
         merged = {}
         for area in sheet.merged_cells.ranges:
             if area.max_col >= positions['认购机构']:
@@ -134,9 +233,10 @@ def read_source(path):
             if complete_detail_header or _text(values.get('项目名称')) == '项目名称':
                 continue
             values['_row'] = index
-            values['_uncachedLayerSize'] = optional_formulas.get(index)
+            values['_uncachedLayerSize'] = None
             values['_date'] = _date(values.get('簿记时间'), book.epoch)
             records.append(values)
+        validate_source_r_formulas(sheet, formula_sheet, positions, merged, records)
         return records
     finally:
         book.close()
@@ -151,6 +251,7 @@ def check_data(data, source_path, *, raise_on_fail=True):
         report['issues'].append({'level': level, 'code': code, 'message': message})
     try:
         records = read_source(source_path)
+        report['checks']['rFormulas'] = r_formula_evidence(records)
     except (ValueError, OSError) as error:
         issue('FAIL', 'SOURCE_SCHEMA', str(error))
         records = []

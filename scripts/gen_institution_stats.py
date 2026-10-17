@@ -462,8 +462,14 @@ def load_data(xlsx_path, detail_paths=None, preprocessed_path=None):
     colnames = colnames_25 if n_cols >= 25 else colnames_22
     df_raw.columns = colnames + [f'col_{i}' for i in range(len(colnames), n_cols)]
 
-    # 跳过前2行标题 + 残余标题行
-    df = df_raw.iloc[2:].copy()
+    # 与共享预处理一致：第二行可能已经是真实配售，不固定丢弃。
+    from ledger_formula_tools import first_data_row
+    header_book = openpyxl.load_workbook(read_path, data_only=True)
+    try:
+        data_start = first_data_row(header_book.worksheets[0])
+    finally:
+        header_book.close()
+    df = df_raw.iloc[data_start - 1:].copy()
     title_mask = df['成本'].astype(str).str.match(r'^成本$', na=False)
     df = df[~title_mask]
     df.reset_index(drop=True, inplace=True)

@@ -56,7 +56,8 @@ def file_sha256(path):
 def dependency_fingerprints():
     """包括规则、分类、两层别名及真正内联的资源；不执行公募底稿。"""
     paths = [SCRIPTS / name for name in (
-        'abs_common.py', 'institution_identity.py', 'latest_bookkeeping_panel.py',
+        'abs_common.py', 'ledger_formula_tools.py', 'repair_r_formulas.py',
+        'institution_identity.py', 'latest_bookkeeping_panel.py',
         'latest_bookkeeping_panel.js', 'latest_bookkeeping_panel.css',
         'latest_bookkeeping_panel_body.html', 'latest_bookkeeping_qc.py',
         'latest_bookkeeping_runtime.py', 'verify_latest_bookkeeping_runtime.js',
@@ -169,7 +170,7 @@ def read_source(ledger):
             values = {}
             for name, col in positions.items():
                 cached, expression = sheet.cell(r, col), formulas.cell(r, col)
-                # 辅助层金额公式沿用最近三期 QC 的 WARN，不作为月度源字段。
+                # R公式在身份展开完成后独立核验；缺缓存保留WARN。
                 if name in FIELDS and expression.data_type == 'f' and (
                         cached.value is None or cached.data_type == 'e'):
                     raise ValueError(f'{expression.coordinate}关键公式没有有效计算缓存')
@@ -192,6 +193,8 @@ def read_source(ledger):
             except (ValueError, TypeError, OverflowError):
                 values['_date'] = ''
             rows.append(values)
+        from latest_bookkeeping_qc import validate_source_r_formulas
+        validate_source_r_formulas(sheet, formulas, positions, merged, rows)
         return rows
     finally:
         book.close()
@@ -424,7 +427,10 @@ def verify_source(ledger, *, raise_on_fail=True):
     report = _report(ledger)
     try:
         before = file_sha256(ledger)
-        scoped = _source_scope(read_source(ledger), ledger, report)
+        rows = read_source(ledger)
+        from latest_bookkeeping_qc import r_formula_evidence
+        report['checks']['rFormulas'] = r_formula_evidence(rows)
+        scoped = _source_scope(rows, ledger, report)
         _source_conservation(scoped, report)
         _expect(report, file_sha256(ledger), before, 'MONTHLY_SOURCE_CHANGED', '源校验期间台账改变')
         report['checks']['sourceSha256'] = before
@@ -453,6 +459,8 @@ def verify_data(monthly, ledger, *, raise_on_fail=True):
         _expect(report, monthly.get('year'), YEAR, 'MONTHLY_YEAR', '业务年份不一致')
         _expect(report, monthly.get('groups'), GROUPS, 'MONTHLY_GROUPS', '全局板块集合/顺序不一致')
         rows = read_source(ledger)
+        from latest_bookkeeping_qc import r_formula_evidence
+        report['checks']['rFormulas'] = r_formula_evidence(rows)
         aliases, lookup = _aliases(), _classification_lookup()
         from abs_common import normalize_investor_name
         from institution_identity import registry
