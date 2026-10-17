@@ -1,8 +1,11 @@
 """机构统计别名与证券/资管隔离回归。"""
 import json
+import os
 import shutil
 import subprocess
+import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from abs_common import investor_search_aliases, normalize_investor_name
@@ -10,9 +13,107 @@ from entity_alias import normalize_entity
 from fig6_credit_panel import approximate_match as fig6_match
 from fig8_credit_total_panel import approximate_match as fig8_match
 from institution_identity import aliases, registry
+import institution_identity as identity
 from generate_institution_alias_audit import audit_rows
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class InstitutionRegistryCacheTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='institution-registry-')
+        self.addCleanup(self.temp.cleanup)
+        self.path = Path(self.temp.name) / 'registry.json'
+        self.path.write_bytes(identity.REGISTRY.read_bytes())
+        self.source = json.loads(self.path.read_text(encoding='utf-8'))
+        patch = mock.patch.object(identity, 'REGISTRY', self.path)
+        patch.start()
+        self.addCleanup(patch.stop)
+        registry.cache_clear()
+        self.addCleanup(registry.cache_clear)
+
+    def write(self, source, path=None):
+        (path or self.path).write_text(json.dumps(source, ensure_ascii=False), encoding='utf-8')
+
+    def test_warm_cache_reloads_current_approved_mapping_without_clear(self):
+        self.assertEqual(normalize_investor_name('缓存测试机构'), '缓存测试机构')
+        old = registry()
+        self.source['aliases'].append({'alias': '缓存测试机构', 'canonical': '邮储银行',
+                                       'reason': '仅临时测试批准映射'})
+        self.write(self.source)
+        self.assertIsNot(registry(), old)
+        self.assertEqual(aliases()['缓存测试机构'], '邮储银行')
+        self.assertEqual(normalize_investor_name('缓存测试机构'), '邮储银行')
+        self.source['aliases'][-1]['canonical'] = '华夏基金'
+        self.write(self.source)
+        self.assertEqual(normalize_investor_name('缓存测试机构'), '华夏基金')
+
+    def test_content_change_same_size_and_mtime_reloads(self):
+        self.source['aliases'].append({'alias': '缓存测试机构', 'canonical': '邮储银行', 'reason': '临时'})
+        self.write(self.source)
+        self.assertEqual(identity.canonical('缓存测试机构'), '邮储银行')
+        stamp = self.path.stat()
+        self.source['aliases'][-1]['canonical'] = '华夏基金'
+        self.write(self.source)
+        os.utime(self.path, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
+        self.assertEqual(self.path.stat().st_size, stamp.st_size)
+        self.assertEqual(self.path.stat().st_mtime_ns, stamp.st_mtime_ns)
+        self.assertEqual(identity.canonical('缓存测试机构'), '华夏基金')
+
+    def test_registry_path_change_reloads_without_clear(self):
+        old = registry()
+        other = self.path.with_name('other.json')
+        self.source['aliases'].append({'alias': '路径测试机构', 'canonical': '邮储银行', 'reason': '临时'})
+        self.write(self.source, other)
+        with mock.patch.object(identity, 'REGISTRY', other):
+            self.assertIsNot(registry(), old)
+            self.assertEqual(identity.canonical('路径测试机构'), '邮储银行')
+        self.assertEqual(identity.canonical('路径测试机构'), '路径测试机构')
+
+    def test_unchanged_bytes_parse_once_and_cache_clear_remains_compatible(self):
+        with mock.patch.object(identity.json, 'loads', wraps=json.loads) as loads:
+            first = registry()
+            self.assertIs(registry(), first)
+            self.assertEqual(loads.call_count, 1)
+            self.assertEqual(registry.cache_info().hits, 1)
+            self.assertEqual(registry.cache_parameters()['maxsize'], 1)
+            registry.cache_clear()
+            self.assertEqual(registry.cache_info().currsize, 0)
+            self.assertEqual(registry(), first)
+            self.assertEqual(loads.call_count, 2)
+
+    def test_updated_invalid_chain_or_distinct_fails_instead_of_stale_success(self):
+        registry()
+        invalid = json.loads(json.dumps(self.source))
+        invalid['aliases'].extend([
+            {'alias': '缓存链甲', 'canonical': '缓存链乙', 'reason': '临时'},
+            {'alias': '缓存链乙', 'canonical': '邮储银行', 'reason': '临时'}])
+        self.write(invalid)
+        with self.assertRaisesRegex(ValueError, '单跳'):
+            registry()
+        invalid = json.loads(json.dumps(self.source))
+        invalid['distinct'].append({'left': '缓存独立甲', 'right': '缓存独立乙'})
+        invalid['aliases'].extend([
+            {'alias': '缓存独立甲', 'canonical': '邮储银行', 'reason': '临时'},
+            {'alias': '缓存独立乙', 'canonical': '邮储银行', 'reason': '临时'}])
+        self.write(invalid)
+        with self.assertRaisesRegex(ValueError, '独立机构'):
+            registry()
+        self.write(self.source)
+        self.assertEqual(registry(), self.source)
+
+    def test_investor_mapping_refreshes_and_invalid_file_never_uses_old_cache(self):
+        registry()
+        self.source.setdefault('investor_aliases', []).append(
+            {'alias': '缓存认购机构', 'canonical': '邮储银行', 'reason': '临时'})
+        self.write(self.source)
+        self.assertEqual(identity.canonical_investor('缓存认购机构'), '邮储银行')
+        self.path.write_text('{', encoding='utf-8')
+        with self.assertRaises(json.JSONDecodeError):
+            registry()
+        self.path.unlink()
+        with self.assertRaises(FileNotFoundError):
+            registry()
 
 
 class InstitutionIdentityTest(unittest.TestCase):

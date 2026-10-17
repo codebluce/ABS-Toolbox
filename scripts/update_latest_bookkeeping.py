@@ -24,6 +24,9 @@ def latest_dashboard(directory=LATEST):
 
 
 def replace_panel(document, data):
+    if qc.has_monthly_markers(document):
+        raise ValueError('月度簿记组件不能局部刷新；请显式使用gen_integrated_dashboard.py '
+                         '--monthly-bookkeeping和本地output完整生成对应renderer')
     body = panel.render_body(data)
     current = r'<div id="latest-bookkeeping">.*?</script></div>\s*<script>.*?</script>'
     if 'id="latest-bookkeeping"' in document:

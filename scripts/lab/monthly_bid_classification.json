@@ -1,0 +1,22 @@
+{
+  "schema": "monthly-bid-classification/v1",
+  "source": {
+    "path": "deliverables/analysis/20261017_公募历史获配/历史统计底稿.py",
+    "constant": "FUNDS",
+    "sha256": "64a79e12751df82e52b6c141ff687c2f77cd2a467670f6ee3f7148a389f1b700",
+    "note": "仅迁移原FUNDS名称；来源路径为溯源信息，不是运行时依赖。"
+  },
+  "publicFunds": [
+    "易方达基金", "华夏基金", "前海开源基金", "太平基金",
+    "华泰保兴基金", "上银基金", "富国基金", "中银基金",
+    "南方基金", "汇添富基金", "江信基金", "国投瑞银基金",
+    "平安基金", "建信基金", "工银瑞信基金", "国寿安保基金"
+  ],
+  "publicFundAliases": {
+    "前海开源": "前海开源基金"
+  },
+  "explicitCategoryOverrides": {
+    "国投资管（投行）": "券商",
+    "华泰资管（自营）": "券商"
+  }
+}

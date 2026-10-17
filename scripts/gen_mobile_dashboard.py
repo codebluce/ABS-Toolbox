@@ -3,8 +3,8 @@
 
 The desktop dashboard is the single source of truth: this script re-reads its embedded
 datasets (机构画像 / 投资台账 / 消金资产 / 同业发行) and emits a small self-contained
-HTML tuned for a 393pt viewport. Nothing here talks to Excel — run it after
-gen_integrated_dashboard.py so the two views can never drift apart.
+HTML tuned for a 393pt viewport. Monthly desktop input is verified against its
+controlled final ledger before reusing lb-data; run after gen_integrated_dashboard.py.
 
 Usage:
     python scripts/gen_mobile_dashboard.py <desktop.html> [<out.html>]
@@ -18,6 +18,7 @@ from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 APP_JS = SCRIPTS_DIR / "abs_mobile_app.js"
+MONTHLY_LEDGER_DIR = SCRIPTS_DIR.parent / 'deliverables/ledger/03_final'
 
 PRIORITY_LAYERS = ("优先A", "优先级", "优先A1", "优先A2", "优先A档")
 
@@ -665,12 +666,42 @@ PAGE = """<!DOCTYPE html>
 """
 
 
+def verify_desktop_bookkeeping_source(content):
+    """月度桌面只允许受控定稿台账；旧桌面保持原无源校验合同。"""
+    import latest_bookkeeping_qc as qc
+    if not qc.has_monthly_markers(content):
+        return qc.verify_html(content)
+    from lab import monthly_bookkeeping_qc
+    latest, monthly = monthly_bookkeeping_qc.extract_data(content)
+    if not isinstance(latest, dict):
+        raise ValueError('最近项目lb-data必须为对象')
+    provenance = monthly.get('provenance') if isinstance(monthly, dict) else None
+    source = provenance.get('source') if isinstance(provenance, dict) else None
+    if not isinstance(source, str) or not re.fullmatch(
+            r'2026年ABS发行台账-[0-9]{4}-定稿\.xlsx', source):
+        raise ValueError('月度来源缺失或非法：必须是2026年ABS发行台账-MMDD-定稿.xlsx文件名')
+    root = MONTHLY_LEDGER_DIR.resolve()
+    ledger = (root / source).resolve()
+    if ledger.parent != root or ledger.name != source:
+        raise ValueError('月度源台账必须位于受控03_final目录且不得重定向来源')
+    if not ledger.is_file():
+        raise ValueError(f'月度源台账缺失：{root / source}')
+    digest = qc.file_sha256(ledger)
+    latest_meta = latest.get('provenance', {}) if isinstance(latest, dict) else {}
+    if (not isinstance(latest_meta, dict) or latest.get('source') != source or
+            monthly.get('source', source) != source or
+            provenance.get('sourceSha256') != digest or
+            monthly.get('sourceSha256') != digest or latest_meta.get('sourceSha256') != digest):
+        raise ValueError('月度与最近项目来源文件名/sourceSha256不一致')
+    return qc.verify_html(content, ledger)
+
+
 def verify_mobile_bookkeeping(desktop_html, mobile_html):
     """拒绝将陈旧手机版与新桌面版混合打包。"""
-    if 'id="latest-bookkeeping"' not in desktop_html:
-        return
     import latest_bookkeeping_qc as qc
-    qc.verify_html(desktop_html)
+    if 'id="latest-bookkeeping"' not in desktop_html and not qc.has_monthly_markers(desktop_html):
+        return
+    verify_desktop_bookkeeping_source(desktop_html)
     # 外部双端打包也必须核对实际应用脚本，隐藏JSON存在不能代替入口可用。
     marker_match = re.search(r'<script id="abs-mobile-app">(.*?)</script>', mobile_html, re.S)
     if not marker_match or marker_match.group(1) != APP_JS.read_text(encoding='utf-8'):
@@ -699,10 +730,11 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
 
     inject = {"meta": build_meta(html, dashboard_path)}
     # 手机版复用同一簿记组件和源数据，不另写一份聚合逻辑。
-    if 'id="latest-bookkeeping"' in html:
+    import latest_bookkeeping_qc as bookkeeping_qc
+    if 'id="latest-bookkeeping"' in html or bookkeeping_qc.has_monthly_markers(html):
         import latest_bookkeeping_panel as bookkeeping
         import latest_bookkeeping_qc as bookkeeping_qc
-        bookkeeping_qc.verify_html(html)
+        verify_desktop_bookkeeping_source(html)
         data = bookkeeping_qc.extract_data(html)
         from mobile_bookkeeping_panel import render_html
         from latest_bookkeeping_runtime import verify_mobile_runtime

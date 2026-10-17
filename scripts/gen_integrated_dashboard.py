@@ -6,10 +6,13 @@
 用法:
   python gen_integrated_dashboard.py <xlsx_path> [output_path]
   默认输出 deliverables/dashboards/01_latest/ABS综合看板_YYYYMMDD.html
+  --monthly-bookkeeping 要求显式指定新的本地 HTML 路径，严格门禁通过才输出。
+  --monthly-bookkeeping-release 自动启用月表正式生成，允许门禁通过后原子替换 01_latest。
 """
 import os
 import sys
 import argparse
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -289,6 +292,54 @@ def verify_integrated_html(content: str, expected_panel_count: int) -> list:
     return problems
 
 
+def _monthly_output_path(parser, output_path, ledger, *, release=False):
+    flag = '--monthly-bookkeeping-release' if release else '--monthly-bookkeeping'
+    if release and output_path is None:
+        output_path = str(SCRIPT_DIR.parent / 'deliverables/dashboards/01_latest' /
+                          f'ABS综合看板_{datetime.now():%Y%m%d}.html')
+    if not output_path or '://' in output_path:
+        parser.error(f'{flag} 必须指定本地 .html output_path')
+    requested = Path(output_path).expanduser()
+    if release and requested.is_symlink():
+        parser.error(f'{flag} output_path不能是符号链接')
+    output = requested.resolve()
+    latest = (SCRIPT_DIR.parent / 'deliverables/dashboards/01_latest').resolve()
+    if not release and (output == latest or latest in output.parents):
+        parser.error('--monthly-bookkeeping 只允许本地接入验证，output_path不能位于01_latest')
+    if (output.suffix.lower() != '.html' or output == Path(ledger).resolve() or
+            (output.exists() and (not release or not output.is_file())) or
+            not output.parent.is_dir()):
+        parser.error(f'{flag} output_path须为现有目录下的' + ('本地 .html 文件' if release else '新 .html 文件'))
+    if release and output.exists() and Path(ledger).exists() and output.samefile(ledger):
+        parser.error(f'{flag} output_path不能指向源台账')
+    return str(output)
+
+
+def _require_monthly_pass(report):
+    if (report.get('status') != 'PASS' or report.get('releaseStatus') == 'BLOCK' or
+            report.get('releaseBlocked') is True or
+            any(item.get('level') == 'FAIL' for item in report.get('issues', []))):
+        failures = '; '.join(f"{item.get('code')}: {item.get('message')}"
+                             for item in report.get('issues', []) if item.get('level') == 'FAIL')
+        raise ValueError('月度簿记严格门禁阻断输出: ' + (failures or str(report.get('status'))))
+    return report
+
+
+def _prepare_monthly_bookkeeping(ledger):
+    # 仅显式opt-in时加载；在共享预处理、其它面板和任何输出之前独立核验全年源表。
+    from lab import monthly_bid_institutions_demo as renderer
+    from lab import monthly_bookkeeping_qc as gate
+    monthly = renderer.compute_monthly(ledger)
+    if monthly.get('provenance') != gate.build_provenance(ledger):
+        raise ValueError('月度簿记来源/规则在计算期间变化，停止生成；请重新读取源表')
+    report = _require_monthly_pass(gate.verify_data(monthly, ledger, raise_on_fail=True))
+    monthly['auditQc'] = {**report,
+                          'summary': {'failCount': 0,
+                                      'warnCount': sum(item.get('level') == 'WARN' for item in report.get('issues', []))},
+                          'releaseBlocked': False}
+    return renderer, gate, monthly
+
+
 def main():
     parser = argparse.ArgumentParser(description='ABS 综合看板生成器（路径 C · 数据驱动）')
     parser.add_argument('xlsx_path', help='台账文件路径（.xlsx）')
@@ -299,14 +350,22 @@ def main():
     parser.add_argument('--peer-issuance-baseline-xlsx', default=None, help='同业发行同比基准 Excel（默认使用受控 2025 基准）')
     parser.add_argument('--peer-issuance-previous-xlsx', default=None, help='上周同业发行快照；存在漂移 FAIL 时阻断生成')
     parser.add_argument('--bookkeeping-demo', action='store_true', help='兼容旧参数：最新簿记默认生成；传入时保留Demo标识')
+    parser.add_argument('--monthly-bookkeeping', action='store_true',
+                        help='显式启用月度renderer与严格源表/HTML门禁；需新的本地output_path，不发布')
+    parser.add_argument('--monthly-bookkeeping-release', action='store_true',
+                        help='正式生成月度面板（自动启用--monthly-bookkeeping）；默认01_latest，允许严格门禁通过后原子替换已有HTML；正式标签优先于--bookkeeping-demo，不执行部署')
     args = parser.parse_args()
+    args.monthly_bookkeeping = args.monthly_bookkeeping or args.monthly_bookkeeping_release
     if bool(args.baitiao_xlsx) != bool(args.jintiao_xlsx):
         parser.error('--baitiao-xlsx 与 --jintiao-xlsx 必须成对传入')
     consumer_asset_enabled = bool(args.baitiao_xlsx)
     peer_issuance_enabled = bool(args.peer_issuance_xlsx)
 
     xlsx_path = args.xlsx_path
-    if args.output_path:
+    if args.monthly_bookkeeping:
+        out_path = _monthly_output_path(parser, args.output_path, xlsx_path,
+                                       release=args.monthly_bookkeeping_release)
+    elif args.output_path:
         out_path = args.output_path
     else:
         date_tag = datetime.now().strftime('%Y%m%d')
@@ -317,6 +376,10 @@ def main():
     print('=' * 60)
     print('  ABS 综合看板生成器（数据驱动）')
     print('=' * 60)
+
+    monthly_renderer = monthly_gate = monthly_data = None
+    if args.monthly_bookkeeping:
+        monthly_renderer, monthly_gate, monthly_data = _prepare_monthly_bookkeeping(xlsx_path)
 
     # 必选模块先读原始总表并对账；FAIL在任何正式产物替换前终止。
     latest_bookkeeping_panel.qc.component_self_check()
@@ -361,7 +424,12 @@ def main():
             ('progress',    'quick',      gen_institution_profile.render_body()),
         ]
 
-        panels.append(('pricing', 'bookkeeping', latest_bookkeeping_panel.render_body(booking_data, preview=args.bookkeeping_demo)))
+        if args.monthly_bookkeeping:
+            booking_body = monthly_renderer.render_component(
+                booking_data, monthly_data, preview=not args.monthly_bookkeeping_release)
+        else:
+            booking_body = latest_bookkeeping_panel.render_body(booking_data, preview=args.bookkeeping_demo)
+        panels.append(('pricing', 'bookkeeping', booking_body))
 
         # 机构画像模块:机构统计 panel(管理人/销售机构/托管行三表合并,嵌入模式)
         print('\n[3.05/4] 生成机构画像 > 机构统计 panel...')
@@ -434,7 +502,7 @@ def main():
         gen_compare_tool.INVEST_CSS,
         gen_institution_profile.PROFILE_CSS,
         secondary_allocation_panel.ALLOCATION_CSS,
-        latest_bookkeeping_panel.BOOKKEEPING_CSS,
+        monthly_renderer.component_css() if args.monthly_bookkeeping else latest_bookkeeping_panel.BOOKKEEPING_CSS,
         gen_institution_stats.INST_STATS_EMBED_CSS,
         consumer_asset_panel.CONSUMER_ASSET_CSS,
         peer_issuance_panel.PEER_ISSUANCE_COMPONENT_CSS,
@@ -449,6 +517,11 @@ def main():
     # 失败分支只删临时文件,上一版正式产物的内容与哈希保持不变。
     out_path = str(out_path)
     tmp_out = out_path + '.qc-tmp'
+    if args.monthly_bookkeeping_release:
+        # 同目录唯一临时文件，避免已有.qc-tmp或其符号链接被截断。
+        fd, tmp_out = tempfile.mkstemp(prefix=Path(out_path).name + '.', suffix='.qc-tmp',
+                                       dir=Path(out_path).parent)
+        os.close(fd)
     with open(tmp_out, 'w', encoding='utf-8') as f:
         f.write(html)
 
@@ -458,7 +531,10 @@ def main():
     expected_panel_count = 8 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled) + 1  # 机构画像4 + 资产大盘可选1 + 发行定价4 + 同业发行可选1 + 各年份投资台账
     problems = verify_integrated_html(content, expected_panel_count)
     try:
-        latest_bookkeeping_panel.qc.verify_html(content, xlsx_path)
+        if args.monthly_bookkeeping:
+            _require_monthly_pass(monthly_gate.verify_html(content, xlsx_path, raise_on_fail=True))
+        else:
+            latest_bookkeeping_panel.qc.verify_html(content, xlsx_path)
         from dashboard_provenance import verify_full_generation
         verify_full_generation(content, xlsx_path)
     except ValueError as error:

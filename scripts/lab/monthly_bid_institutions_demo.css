@@ -1,0 +1,49 @@
+#latest-bookkeeping .lb-monthly{margin-top:18px;padding-top:16px;border-top:1px solid #edf0f5;}
+#latest-bookkeeping .lb-monthly-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+#latest-bookkeeping .lb-monthly-heading h2{font-size:14px;margin-bottom:3px;}
+#latest-bookkeeping .lb-monthly-actions{display:flex;align-items:center;gap:8px;}
+#latest-bookkeeping .lb-monthly-actions input{width:175px;padding:6px 9px;font-size:11px;}
+#latest-bookkeeping .lb-monthly-actions button{border:1px solid var(--lb-border);border-radius:5px;background:#fafbfd;color:var(--lb-navy);padding:5px 9px;font-size:11px;white-space:nowrap;}
+#latest-bookkeeping .lb-monthly-actions button:hover{background:#eef3fa;}
+#latest-bookkeeping .lb-monthly-scroll{max-height:310px;overflow:auto;border:1px solid var(--lb-border);border-radius:6px;position:relative;scrollbar-gutter:stable;}
+#latest-bookkeeping .lb-monthly-scroll.expanded{max-height:70vh;}
+#latest-bookkeeping .lb-monthly-table{table-layout:fixed;width:100%;min-width:1040px;border-collapse:separate;border-spacing:0;font-size:11px;}
+#latest-bookkeeping .lb-monthly-table th,#latest-bookkeeping .lb-monthly-table td{padding:3px 6px;text-align:center;height:33px;border-bottom:1px solid #edf0f5;border-right:1px solid #f0f3f8;}
+#latest-bookkeeping .lb-monthly-table thead{position:sticky;top:0;z-index:4;}
+#latest-bookkeeping .lb-monthly-table thead th{background:#f3f6fb;color:var(--lb-navy);font-size:11px;height:44px;font-weight:600;}
+#latest-bookkeeping .lb-monthly-table thead span{display:block;font-size:10px;font-weight:400;color:var(--lb-muted);}
+#latest-bookkeeping .lb-monthly-table .lb-monthly-name{width:290px;text-align:left;padding-left:12px;position:sticky;left:0;top:auto;z-index:2;background:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:400;color:var(--lb-ink);}
+#latest-bookkeeping .lb-monthly-table thead .lb-monthly-name{z-index:5;background:#f3f6fb;font-weight:600;}
+#latest-bookkeeping .lb-monthly-table .lb-monthly-group th{text-align:left;padding:5px 12px;background:#edf3fa;color:var(--lb-navy);font-weight:600;border-bottom:1px solid var(--lb-border);}
+#latest-bookkeeping .lb-monthly-group span{margin-left:9px;color:var(--lb-muted);font-size:10px;font-weight:400;}
+#latest-bookkeeping .lb-monthly-table .lb-monthly-unreported{background:#f7f8fa;}
+#latest-bookkeeping .lb-monthly-bubble{background:#2563a8;border-radius:50%;display:inline-block;vertical-align:middle;cursor:help;opacity:.8;}
+#latest-bookkeeping .lb-monthly-bubble:focus-visible{outline:2px solid #2563a8;outline-offset:3px;}
+#latest-bookkeeping .lb-monthly-institution:focus-within td,#latest-bookkeeping .lb-monthly-institution:focus-within th{background:#eef3fa;}
+#latest-bookkeeping .lb-monthly-tooltip{position:fixed;z-index:1000;box-sizing:border-box;max-width:min(520px,calc(100vw - 16px));max-height:40vh;overflow:auto;padding:10px 12px;border:1px solid var(--lb-border);border-radius:6px;background:#fff;color:var(--lb-ink);box-shadow:0 4px 18px #14253a26;font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;}
+#latest-bookkeeping .lb-monthly-tooltip[hidden]{display:none;}
+#latest-bookkeeping .lb-audit-warning,#latest-bookkeeping .lb-monthly-qc-banner[data-qc-status="FAIL"]{margin:14px 0;padding:12px 16px;border:1px solid #e4b17c;border-left:4px solid #b65d16;border-radius:6px;background:#fff4e8;color:#813d0d;font-size:13px;line-height:1.7;}
+#latest-bookkeeping .lb-audit-warning strong,#latest-bookkeeping .lb-monthly-qc-banner strong{font-weight:600;}
+#latest-bookkeeping .lb-monthly-legend-solid{width:8px;height:8px;border-radius:50%;display:inline-block;vertical-align:middle;background:#2563a8;}
+#latest-bookkeeping .lb-monthly-institution:hover td,#latest-bookkeeping .lb-monthly-institution:hover th{background:#eef3fa;}
+#latest-bookkeeping .lb-monthly-total{font-variant-numeric:tabular-nums;color:var(--lb-muted);}
+#latest-bookkeeping .lb-monthly-table .lb-monthly-share{width:98px;font-variant-numeric:tabular-nums;}
+#latest-bookkeeping .lb-monthly-note{margin-top:7px;color:var(--lb-muted);font-size:10px;line-height:1.7;}
+#latest-bookkeeping .lb-monthly-table .lb-monthly-empty{text-align:left;padding-left:12px;color:var(--lb-muted);font-size:10px;}
+@media(max-width:700px){#latest-bookkeeping .lb-monthly-heading{align-items:flex-start;flex-direction:column;}#latest-bookkeeping .lb-monthly-table{min-width:980px;}#latest-bookkeeping .lb-monthly-table .lb-monthly-name{width:230px;}}
+/* 最近项目选择、概况、分档与明细共用一张卡片。 */
+#latest-bookkeeping .lb-controls{margin-bottom:26px;}
+#latest-bookkeeping .lb-project-block{padding:0;overflow:hidden;border:1px solid var(--lb-border);}
+#latest-bookkeeping .lb-project-block-heading{padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:#f5f8fc;border-bottom:1px solid var(--lb-border);}
+#latest-bookkeeping .lb-project-block-heading h2{font-size:15px;white-space:nowrap;color:var(--lb-navy);}
+#latest-bookkeeping .lb-project-block-heading .lb-project-row{margin:0;padding:0;border:0;gap:10px;}
+#latest-bookkeeping .lb-project-block-heading .lb-project-row label{color:var(--lb-muted);font-size:11px;}
+#latest-bookkeeping .lb-project-block .lb-card{box-shadow:none;border-radius:0;margin:0;}
+#latest-bookkeeping .lb-project-block .lb-project-summary{padding:20px 24px;border:0;background:#fff;}
+#latest-bookkeeping .lb-project-block .lb-kicker{display:none;}
+#latest-bookkeeping .lb-project-block .lb-tiers{padding:0 24px 20px;margin:0;}
+#latest-bookkeeping .lb-project-block .lb-tier{background:#fafbfd;}
+#latest-bookkeeping .lb-project-block .lb-tier.active{background:#eef3fa;}
+#latest-bookkeeping .lb-project-block .lb-details{padding:20px 24px 24px;border-top:1px solid #edf0f5;}
+@media(max-width:900px){#latest-bookkeeping .lb-project-block-heading{align-items:flex-start;flex-direction:column;}#latest-bookkeeping .lb-project-block-heading .lb-project-row{width:100%;}#latest-bookkeeping .lb-project-block-heading #lb-project{flex:1;min-width:0;}}
+@media(max-width:700px){#latest-bookkeeping .lb-project-block{padding:0;}#latest-bookkeeping .lb-project-block-heading,#latest-bookkeeping .lb-project-block .lb-project-summary,#latest-bookkeeping .lb-project-block .lb-details{padding:16px;}#latest-bookkeeping .lb-project-block .lb-tiers{padding:0 16px 16px;}#latest-bookkeeping .lb-controls{margin-bottom:20px;}}

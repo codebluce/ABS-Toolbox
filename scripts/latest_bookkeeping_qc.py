@@ -1,6 +1,7 @@
 """最新簿记硬门禁：独立源表核对、业务规则和产物完整性；无网络/发布操作。"""
 from __future__ import annotations
 
+from contextvars import ContextVar
 from datetime import datetime
 import hashlib
 from html.parser import HTMLParser
@@ -23,6 +24,7 @@ ORDER = ('赊销白条', '金条白取混发', '信托金条', '白条取现', '
 ALIASES = {'信托白取': '白条取现', '金条&白取混发': '金条白取混发'}
 FIELDS = ('规模', '发行场所', '资产类型', '项目名称', '簿记时间', '分层情况', '成本',
           '认购机构', '认购份额', '申购利率', '穿透机构', '申购规模', '期限')
+_MONTHLY_GATE_ACTIVE = ContextVar('monthly_bookkeeping_gate_active', default=False)
 
 
 class BookkeepingGateError(ValueError):
@@ -337,7 +339,54 @@ def extract_data(content):
     return json.loads(parser.payloads[0])
 
 
+def has_monthly_markers(content):
+    """数据块、DOM、资源或renderer身份任一存在，都不能按旧组件放行。"""
+    pattern = r'lb-monthly|monthly[-_]bookkeeping|monthly_bid_institutions'
+    if re.search(pattern, content, flags=re.I):
+        return True
+    class Markers(HTMLParser):
+        found = False
+        def handle_starttag(self, tag, attrs):
+            if any(re.search(pattern, value or '', flags=re.I) for _, value in attrs):
+                self.found = True
+        handle_startendtag = handle_starttag
+    parser = Markers()
+    parser.feed(content)
+    return parser.found
+
+
+def _load_monthly_qc():
+    # 旧组件默认路径不加载实验模块及其额外依赖。
+    from lab import monthly_bookkeeping_qc
+    return monthly_bookkeeping_qc
+
+
 def verify_html(content, source_path=None):
+    if _MONTHLY_GATE_ACTIVE.get():
+        raise ValueError('月度门禁不得回调旧verify_html；最近项目请调用check_data，避免递归')
+    if has_monthly_markers(content):
+        if source_path is None:
+            raise ValueError('月度组件必须显式提供源台账并通过专门门禁')
+        monthly_qc = _load_monthly_qc()
+        _, monthly = monthly_qc.extract_data(content)
+        if (not isinstance(monthly, dict) or
+                not isinstance(monthly.get('provenance'), dict) or
+                monthly['provenance'].get('schema') != monthly_qc.SCHEMA_VERSION):
+            raise ValueError('孤立月度payload或不支持的月度schema/renderer，停止旧组件校验')
+        token = _MONTHLY_GATE_ACTIVE.set(True)
+        try:
+            report = monthly_qc.verify_html(content, source_path, raise_on_fail=True)
+            if (report.get('status') != 'PASS' or report.get('releaseStatus') == 'BLOCK' or
+                    any(item.get('level') == 'FAIL' for item in report.get('issues', []))):
+                raise ValueError('月度专门门禁未通过，停止旧组件校验')
+            return report
+        finally:
+            _MONTHLY_GATE_ACTIVE.reset(token)
+    return _verify_legacy_html(content, source_path)
+
+
+def _verify_legacy_html(content, source_path=None):
+    """原组件HTML/JS/CSS和源表合同保持严格；不接受月度组件。"""
     data = extract_data(content)
     if content.count('id="latest-bookkeeping"') != 1 or '<h2>簿记明细</h2>' not in content:
         raise ValueError('最新簿记面板容器或标题缺失/重复')

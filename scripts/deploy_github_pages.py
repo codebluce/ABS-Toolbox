@@ -185,6 +185,7 @@ def generate_dashboard(
     ledger_date = ledger_date_tag(ledger_path)
     out_path = LATEST_DIR / f"{DASHBOARD_PREFIX}{ledger_date}{DASHBOARD_SUFFIX}"
     command = [sys.executable, str(SCRIPTS_DIR / "gen_integrated_dashboard.py"), str(ledger_path), str(out_path)]
+    command.append("--monthly-bookkeeping-release")
     if baitiao_path and jintiao_path:
         command.extend(["--baitiao-xlsx", str(baitiao_path), "--jintiao-xlsx", str(jintiao_path)])
     if peer_issuance_path:
