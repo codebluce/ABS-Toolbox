@@ -288,15 +288,17 @@ def check_data(data, source_path, *, raise_on_fail=True):
         source_rows = source_assets.get(asset.get('name'), [])
         if not source_rows:
             continue
-        recent_dates = sorted({row['_date'] for row in source_rows}, reverse=True)[:RECENT_PERIODS]
+        ordered = sorted(source_rows, key=lambda row: row['_date'], reverse=True)
+        expected_projects = list(dict.fromkeys((row['_date'], _text(row['项目名称']), _text(row['发行场所'])) for row in ordered))[:RECENT_PERIODS]
+        recent_dates = list(dict.fromkeys(key[0] for key in expected_projects))
         recent = recent_dates[0]
-        selected = sorted([row for row in source_rows if row['_date'] in recent_dates], key=lambda row: row['_date'], reverse=True)
-        expected_projects = list(dict.fromkeys((row['_date'], _text(row['项目名称'])) for row in selected))
-        actual_projects = [(p.get('date'), p.get('name')) for p in asset.get('projects', [])]
+        keys = set(expected_projects)
+        selected = [row for row in ordered if (row['_date'], _text(row['项目名称']), _text(row['发行场所'])) in keys]
+        actual_projects = [(p.get('date'), p.get('name'), p.get('venue')) for p in asset.get('projects', [])]
         if asset.get('date') != recent or asset.get('dates') != recent_dates or actual_projects != expected_projects:
-            issue('FAIL', 'LATEST_PROJECTS', f"{asset.get('name')}不是最近3个簿记日期的完整项目集合")
+            issue('FAIL', 'LATEST_PROJECTS', f"{asset.get('name')}不是最新最多3个项目，或仍含旧项目")
         for project in asset.get('projects', []):
-            rows = [row for row in selected if _text(row['项目名称']) == project.get('name') and row['_date'] == project.get('date')]
+            rows = [row for row in selected if _text(row['项目名称']) == project.get('name') and row['_date'] == project.get('date') and _text(row['发行场所']) == project.get('venue')]
             if not rows:
                 continue
             if project.get('date') not in recent_dates or project.get('venue') not in VENUES:

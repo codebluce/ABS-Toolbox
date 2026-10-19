@@ -133,7 +133,7 @@ class LatestBookkeepingTest(unittest.TestCase):
         self.assertNotIn('lb-view-note', body)
         self.assertNotIn('申购明细（W/X/Y）：逐笔保留报价及申购规模，不表示最终获配。', body)
 
-    def test_recent_three_dates_not_three_projects_and_stable_ties(self):
+    def test_recent_three_projects_cap_same_day_and_stable_ties(self):
         records = [row(项目名称='旧第四期',簿记时间='2026-09-01'),
                    row(项目名称='第三期',簿记时间='2026-09-10'),
                    row(项目名称='第二期',簿记时间='2026-09-18'),
@@ -141,9 +141,22 @@ class LatestBookkeepingTest(unittest.TestCase):
                    row(项目名称='第一期乙',簿记时间='2026-09-21 15:00:00'),
                    row(项目名称='较新非标',簿记时间='2026-09-24',发行场所='非标')]
         asset = panel.compute_frame(pd.DataFrame(records), 'source')['assets'][0]
-        self.assertEqual(asset['dates'],['2026-09-21','2026-09-18','2026-09-10'])
-        self.assertEqual([p['name'] for p in asset['projects']],['第一期甲','第一期乙','第二期','第三期'])
-        self.assertEqual([p['date'] for p in asset['projects']],['2026-09-21','2026-09-21','2026-09-18','2026-09-10'])
+        self.assertEqual(asset['dates'],['2026-09-21','2026-09-18'])
+        self.assertEqual([p['name'] for p in asset['projects']],['第一期甲','第一期乙','第二期'])
+        self.assertEqual([p['date'] for p in asset['projects']],['2026-09-21','2026-09-21','2026-09-18'])
+
+    def test_new_three_projects_evict_old_three_without_losing_details(self):
+        old=[row(项目名称=f'旧{i}',簿记时间=f'2026-09-{10+i:02d}') for i in range(3)]
+        new=[row(项目名称=f'新{i}',簿记时间='2026-10-16') for i in range(3)]
+        repeated=[row(项目名称='新0',簿记时间='2026-10-16',穿透机构='第二机构')]
+        asset=panel.compute_frame(pd.DataFrame(old+new+repeated),'source')['assets'][0]
+        self.assertEqual([p['name'] for p in asset['projects']],['新0','新1','新2'])
+        self.assertEqual(len(asset['projects'][0]['tiers'][0]['bids']),2)
+
+    def test_same_name_date_different_venues_are_independent_projects(self):
+        rows=[row(项目名称='同名',发行场所=venue) for venue in ['上交所','深交所','银行间']]
+        asset=panel.compute_frame(pd.DataFrame(rows),'source')['assets'][0]
+        self.assertEqual([p['venue'] for p in asset['projects']],['上交所','深交所','银行间'])
 
     def test_reused_project_name_different_periods_not_merged(self):
         records = [row(项目名称='同名项目',簿记时间='2026-09-21'),

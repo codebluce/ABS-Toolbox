@@ -206,7 +206,7 @@ class GateTest(unittest.TestCase):
         with self.assertRaises(qc.BookkeepingGateError) as ctx:panel.compute_data(self.path)
         self.assertIn('计算缓存',str(ctx.exception))
 
-    def test_three_period_gate_preserves_each_period_and_rejects_omission(self):
+    def test_three_project_gate_caps_ties_rejects_omission_and_old_append(self):
         from latest_bookkeeping_runtime import verify_runtime
         rows=[]
         for stamp,name in [('2026-09-21','最新甲'),('2026-09-21','最新乙'),
@@ -215,13 +215,17 @@ class GateTest(unittest.TestCase):
         self.write_source(rows)
         data=panel.compute_data(self.path)
         asset=data['assets'][0]
-        self.assertEqual(len(asset['projects']),4)
-        self.assertEqual(asset['dates'],['2026-09-21','2026-09-18','2026-09-10'])
-        self.assertEqual(verify_runtime(data)['projects'],4)
+        self.assertEqual([p['name'] for p in asset['projects']],['最新甲','最新乙','次新'])
+        self.assertEqual(asset['dates'],['2026-09-21','2026-09-18'])
+        self.assertEqual(verify_runtime(data)['projects'],3)
         wrong=copy.deepcopy(data);wrong['assets'][0]['projects'].pop()
         self.assertEqual(qc.check_data(wrong,self.path,raise_on_fail=False)['status'],'FAIL')
         wrong=copy.deepcopy(data);wrong['assets'][0]['dates'].pop()
         self.assertEqual(qc.check_data(wrong,self.path,raise_on_fail=False)['status'],'FAIL')
+        old=copy.deepcopy(asset['projects'][-1]);old['name']='第三期';old['date']='2026-09-10'
+        wrong=copy.deepcopy(data);wrong['assets'][0]['projects'].append(old)
+        report=qc.check_data(wrong,self.path,raise_on_fail=False)
+        self.assertIn('LATEST_PROJECTS',[i['code'] for i in report['issues']])
 
     def test_invalid_project_and_layer_amounts_cannot_disable_upper_bounds(self):
         for field,value in [('规模','10亿元'),('规模',True),('规模',-1),('规模','NaN'),

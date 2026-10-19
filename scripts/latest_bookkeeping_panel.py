@@ -119,6 +119,7 @@ def compute_frame(frame, source_name):
     frame['_date'] = frame['簿记时间'].map(booking_date)
     frame['_asset'] = frame['资产类型'].map(text).map(lambda value: ASSET_ALIASES.get(value, value))
     frame['_project'] = frame['项目名称'].map(text)
+    frame['_venue'] = frame['发行场所'].map(text)
     valid = frame[frame['_date'].notna() & frame['_asset'].ne('') & frame['_project'].ne('')]
     if valid.empty:
         raise ValueError('台账没有有效的资产、项目和簿记日期，无法选择最近一期')
@@ -129,11 +130,15 @@ def compute_frame(frame, source_name):
         raise ValueError('台账没有发行场所为上交所、深交所或银行间的有效项目')
     assets = []
     for asset, group in valid.groupby('_asset', sort=False):
-        recent_dates = sorted(group['_date'].drop_duplicates(), reverse=True)[:RECENT_PERIODS]
+        ordered = group.sort_values('_date', ascending=False, kind='stable')
+        # 以完整项目事件去重后取前三个，不能按日期把同日项目全部扩进来。
+        recent_keys = list(dict.fromkeys(zip(ordered['_date'], ordered['_project'], ordered['_venue'])))[:RECENT_PERIODS]
+        recent_dates = list(dict.fromkeys(key[0] for key in recent_keys))
         latest_date = recent_dates[0]
-        latest = group[group['_date'].isin(recent_dates)].sort_values('_date', ascending=False, kind='stable')
+        keys = set(recent_keys)
+        latest = ordered[[key in keys for key in zip(ordered['_date'], ordered['_project'], ordered['_venue'])]]
         projects = []
-        for (project_date, project_name), rows in latest.groupby(['_date', '_project'], sort=False):
+        for (project_date, project_name, project_venue), rows in latest.groupby(['_date', '_project', '_venue'], sort=False):
             tiers = {}
             for _, row in rows.iterrows():
                 layer = text(row.get('分层情况')) or '未分层'

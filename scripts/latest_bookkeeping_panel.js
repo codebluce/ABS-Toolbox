@@ -47,7 +47,7 @@
   };
   $('lb-source').textContent = `数据来源：${data.source}　｜　台账最新簿记：${data.asOf}　｜　仅交易所 / 银行间 · 各资产查询最近3期`;
   $('lb-asset-count').textContent = `${data.assets.length} 类资产 · 点击切换`;
-  $('lb-assets').innerHTML = data.assets.map((item, index) => `<button type="button" class="lb-asset" data-asset="${index}" aria-pressed="false"><strong>${esc(item.name)}</strong><span>${esc(item.date)} · ${item.dates.length} 期 / ${item.projects.length} 个项目</span></button>`).join('');
+  $('lb-assets').innerHTML = data.assets.map((item, index) => `<button type="button" class="lb-asset" data-asset="${index}" aria-pressed="false"><strong>${esc(item.name)}</strong><span>${esc(item.date)} · ${item.projects.length} 期 / ${item.projects.length} 个项目</span></button>`).join('');
   function renderRows() {
     root.querySelectorAll('[data-view]').forEach(button => {
       const active = button.dataset.view === view;
@@ -90,7 +90,7 @@
       button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active));
     });
     $('lb-project').innerHTML = asset().projects.map((p,index) => `<option value="${index}">${esc(p.name)} · ${esc(p.date)}</option>`).join('');
-    $('lb-tie-note').textContent = `最近 ${asset().dates.length} 期 · ${asset().projects.length} 个项目 · 同日项目全部保留${asset().dates.length < 3 ? '（不足3期，展示全部可用期次）' : ''}`;
+    $('lb-tie-note').textContent = `最近 ${asset().projects.length} 期 · ${asset().projects.length} 个项目${asset().projects.length < 3 ? '（不足3期，展示全部可用期次）' : ''}`;
     renderProject();
   }
   root.addEventListener('click', event => {
