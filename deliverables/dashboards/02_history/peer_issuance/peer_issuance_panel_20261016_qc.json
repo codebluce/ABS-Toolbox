@@ -2,20 +2,20 @@
   {
     "level": "OK",
     "code": "PARSE_2026",
-    "message": "2026 源解析 554 期",
-    "rows": 554
+    "message": "2026 源解析 577 期",
+    "rows": 577
   },
   {
     "level": "OK",
     "code": "PARSE_2025",
-    "message": "2025 源解析 677 期",
-    "rows": 677
+    "message": "2025 源解析 678 期",
+    "rows": 678
   },
   {
     "level": "OK",
     "code": "JD_INCLUDED",
-    "message": "纳入京东系 2026 年 85 期 / 876 亿，2025 同期 161 期",
-    "count_2026": 85,
+    "message": "纳入京东系 2026 年 90 期 / 905 亿，2025 同期 161 期",
+    "count_2026": 90,
     "count_2025": 161
   },
   {
@@ -33,8 +33,8 @@
     "level": "OK",
     "code": "TRUST_CHANNEL_RECONCILIATION",
     "message": "信托渠道展示加总与全量信托渠道总额差额 0.00 亿元",
-    "displayed": "3678.81",
-    "total": "3678.81"
+    "displayed": "3796.05",
+    "total": "3796.05"
   },
   {
     "level": "OK",
@@ -69,12 +69,17 @@
   {
     "level": "OK",
     "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
+    "message": "中国对外经济贸易信托有限公司 分段加总与渠道总额差额 0.0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
     "message": "厦门信托 分段加总与渠道总额差额 0 亿元"
   },
   {
     "level": "OK",
     "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
-    "message": "中粮信托 分段加总与渠道总额差额 0.00 亿元"
+    "message": "其他 分段加总与渠道总额差额 0.00 亿元"
   },
   {
     "level": "OK",
@@ -84,17 +89,19 @@
   {
     "level": "OK",
     "code": "TRUST_UNKNOWN_ASSETS",
-    "message": "信托渠道存在 10 类未知资产，已归入未知资产分段",
+    "message": "信托渠道存在 12 类未知资产，已归入未知资产分段",
     "assets": {
       "乐信分期乐": "3",
       "奇富借条小微贷": "14",
       "奇富借条消费贷": "62",
-      "平安普惠经营贷": "120.33",
+      "平安普惠经营贷": "141.33",
       "度小满周转贷": "10",
+      "度小满广泰资产（待细分）": "50",
       "度小满满易贷": "150",
       "新网银行好人贷": "4",
       "新网银行好商贷": "37",
       "滴滴\"滴水贷\"": "10",
+      "金城银行贷款资产（待细分）": "16.94",
       "金城银行金企贷": "17.5"
     }
   },
@@ -131,11 +138,6 @@
   {
     "level": "OK",
     "code": "MONTHLY_RECONCILIATION",
-    "message": "京东自主支付资产 月度加总与卡片总量差额 0 亿元"
-  },
-  {
-    "level": "OK",
-    "code": "MONTHLY_RECONCILIATION",
     "message": "微众银行微粒贷 月度加总与卡片总量差额 0 亿元"
   },
   {
@@ -157,5 +159,10 @@
     "level": "OK",
     "code": "MONTHLY_RECONCILIATION",
     "message": "度小满满易贷 月度加总与卡片总量差额 0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "MONTHLY_RECONCILIATION",
+    "message": "平安普惠经营贷 月度加总与卡片总量差额 0.00 亿元"
   }
 ]

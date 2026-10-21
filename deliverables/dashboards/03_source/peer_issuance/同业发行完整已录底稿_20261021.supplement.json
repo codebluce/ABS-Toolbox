@@ -1,0 +1,251 @@
+{
+  "source": "deliverables/dashboards/03_source/peer_issuance/互联网金融ABS内部信息共享-更新至1016-截图补录.xlsx",
+  "output": "deliverables/dashboards/03_source/peer_issuance/同业发行完整已录底稿_20261021.xlsx",
+  "entries": [
+    {
+      "project": "京东科技荟享19号第4期资产支持专项计划(可续发型)(第2期次)",
+      "amount": "9.3",
+      "established": "2026-01-08",
+      "booking_inferred": "2026-01-05",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 10
+    },
+    {
+      "project": "华泰-平安-晨惠1期资产支持专项计划",
+      "amount": "2.5",
+      "established": "2026-01-15",
+      "booking_inferred": "2026-01-12",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 40
+    },
+    {
+      "project": "山证汇通-炽诚1号4期资产支持专项计划",
+      "amount": "4",
+      "established": "2026-02-06",
+      "booking_inferred": "2026-02-03",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 102
+    },
+    {
+      "project": "京东科技-尚亦1号第9期中小微企业融资支持资产支持专项计划",
+      "amount": "3",
+      "established": "2026-03-27",
+      "booking_inferred": "2026-03-24",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 250
+    },
+    {
+      "project": "山证汇通-炽诚1号中小微企业融资支持5期资产支持专项计划",
+      "amount": "4",
+      "established": "2026-04-02",
+      "booking_inferred": "2026-03-30",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 285
+    },
+    {
+      "project": "华泰-平安-晨惠2期资产支持专项计划",
+      "amount": "3",
+      "established": "2026-04-22",
+      "booking_inferred": "2026-04-17",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 349
+    },
+    {
+      "project": "京东科技-尚亦2号第2期中小微企业融资支持资产支持专项计划",
+      "amount": "7",
+      "established": "2026-05-29",
+      "booking_inferred": "2026-05-26",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 569
+    },
+    {
+      "project": "山证汇通-炽诚1号中小微企业融资支持6期资产支持专项计划",
+      "amount": "4",
+      "established": "2026-06-04",
+      "booking_inferred": "2026-06-01",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 577
+    },
+    {
+      "project": "山证汇通-炽诚1号7期资产支持专项计划",
+      "amount": "4",
+      "established": "2026-06-09",
+      "booking_inferred": "2026-06-04",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 587
+    },
+    {
+      "project": "广发广泰1号1期资产支持专项计划",
+      "amount": "5",
+      "established": "2026-06-18",
+      "booking_inferred": "2026-06-15",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 682
+    },
+    {
+      "project": "京东科技-尚亦2号第3期中小微企业融资支持资产支持专项计划",
+      "amount": "5",
+      "established": "2026-06-26",
+      "booking_inferred": "2026-06-23",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 728
+    },
+    {
+      "project": "广发广泰1号2期资产支持专项计划",
+      "amount": "5",
+      "established": "2026-07-23",
+      "booking_inferred": "2026-07-20",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 842
+    },
+    {
+      "project": "天风-启悦18期资产支持专项计划",
+      "amount": "2.75",
+      "established": "2026-07-28",
+      "booking_inferred": "2026-07-23",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 871
+    },
+    {
+      "project": "广发广泰1号3期资产支持专项计划",
+      "amount": "5",
+      "established": "2026-07-28",
+      "booking_inferred": "2026-07-23",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 878
+    },
+    {
+      "project": "广发广泰1号4期资产支持专项计划",
+      "amount": "10",
+      "established": "2026-08-04",
+      "booking_inferred": "2026-07-30",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": true,
+      "source_sheet": "交易所-2026年",
+      "source_row": 932
+    },
+    {
+      "project": "京东科技-尚亦2号第4期中小微企业融资支持资产支持专项计划",
+      "amount": "5",
+      "established": "2026-08-20",
+      "booking_inferred": "2026-08-17",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": true,
+      "source_sheet": "交易所-2026年",
+      "source_row": 986
+    },
+    {
+      "project": "天风-启悦17期资产支持专项计划",
+      "amount": "2.69",
+      "established": "2026-08-19",
+      "booking_inferred": "2026-08-14",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 994
+    },
+    {
+      "project": "招商证券-熠安3号1期资产支持专项计划",
+      "amount": "5",
+      "established": "2026-08-27",
+      "booking_inferred": "2026-08-24",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 1074
+    },
+    {
+      "project": "国联-启臻2期中小微企业融资支持资产支持专项计划",
+      "amount": "3",
+      "established": "2026-08-27",
+      "booking_inferred": "2026-08-24",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 1082
+    },
+    {
+      "project": "广发广泰1号5期资产支持专项计划",
+      "amount": "10",
+      "established": "2026-09-10",
+      "booking_inferred": "2026-09-07",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 1106
+    },
+    {
+      "project": "首创-启信1期中小微企业资产支持专项计划",
+      "amount": "3",
+      "established": "2026-09-17",
+      "booking_inferred": "2026-09-14",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 1175
+    },
+    {
+      "project": "广发广泰1号6期资产支持专项计划",
+      "amount": "10",
+      "established": "2026-09-29",
+      "booking_inferred": "2026-09-23",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 1194
+    },
+    {
+      "project": "广发广泰1号7期资产支持专项计划",
+      "amount": "5",
+      "established": "2026-09-30",
+      "booking_inferred": "2026-09-24",
+      "target_sheet": "2026同业发行底稿",
+      "AAA_missing": false,
+      "source_sheet": "交易所-2026年",
+      "source_row": 1199
+    },
+    {
+      "project": "中信信托有限责任公司2025年度芬郁第二期定向资产支持票据",
+      "amount": "6",
+      "established": "2026-01-05",
+      "booking_inferred": "2025-12-29",
+      "target_sheet": "跨年候选2025",
+      "AAA_missing": false,
+      "source_sheet": "交易商协会-2026年",
+      "source_row": 2
+    }
+  ],
+  "total_count": 24,
+  "total_amount": "123.24",
+  "2026_count": 23,
+  "2026_amount": "117.24",
+  "note": "本底稿涵盖现面板全部已录2026项目；24项华泰补录中23项计入2026，1项倒推至2025年并单列。补录簿记日按用户示例含设立日向前第4交易日推算，非公告实证；跳过周末与境内证券休市日。原有记录日期不改写。9月28日至10月11日仍未取得完整同业周表，补录不代表市场资料已完整。缺少AAA评级或利率不推断填充。"
+}
