@@ -42,7 +42,7 @@
 (() => {
   'use strict';
   try {
-    const config = {"endpoint":"https://abs-anonymous-access-log.codebluce.workers.dev/api/events","version":"71416e44e3e59f39"};
+    const config = {"endpoint":"https://abs-anonymous-access-log.codebluce.workers.dev/api/events","version":"8757e7bf6c0cd531"};
     const randomId = () => crypto.randomUUID ? crypto.randomUUID() : (() => {
       const bytes = crypto.getRandomValues(new Uint8Array(16));
       bytes[6] = (bytes[6] & 15) | 64;
@@ -92,8 +92,8 @@
     <h1>ABS 综合看板</h1>
     <p>请输入访问密码。看板数据已在发布前加密,密码只在本机浏览器中用于解密,不会发送到服务器。</p>
     <div class="meta">
-      <div><strong>版本</strong>：20261016</div>
-      <div><strong>来源</strong>：ABS综合看板_20261016.html</div>
+      <div><strong>版本</strong>：20261023</div>
+      <div><strong>来源</strong>：ABS综合看板_20261023.html</div>
       <div><strong>加密</strong>：PBKDF2-SHA256 / AES-GCM / gzip</div>
       <div><strong>终端</strong>：<span id="term"><span class="load">识别中</span></span></div>
       <script>document.getElementById('term').textContent=window.__absDetectedView==='mobile'?'手机版':'电脑版';</script>
@@ -106,7 +106,7 @@
   <iframe id="viewer" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups allow-forms"></iframe>
   <button id="flip" type="button"></button>
   <script>
-    const PARAMS = {"salt":"q8OWv12lzVGpQHWJKZjt0Q==","iterations":10000,"desktop":{"iv":"IrtM/niy6jdYOMCX","url":"p/d.bin?v=209f1e7e866a","bytes":600037},"mobile":{"iv":"PoTAYH0sDTGnnCcP","url":"p/m.bin?v=d31133722896","bytes":101525}};
+    const PARAMS = {"salt":"llfAcu+KVDM12kSLxg7DFA==","iterations":10000,"desktop":{"iv":"lwhwj9Rs5qQol59p","url":"p/d.bin?v=c35aff93fe58","bytes":618446},"mobile":{"iv":"Nrsa/vOkOa+V5yVb","url":"p/m.bin?v=7c67503fbb33","bytes":103604}};
     const VIEW_KEY = 'abs_dash_view';
     const $ = (id) => document.getElementById(id);
     const msg = (text, cls='', html=false) => {
