@@ -1,0 +1,2580 @@
+{
+  "before_count": 577,
+  "before_amount": "4878.05",
+  "after_count": 594,
+  "after_amount": "5031.05",
+  "added_count": 17,
+  "added_amount": "153",
+  "name_corrections": [
+    {
+      "before": "华泰资管诚昕3号4期资产支持专项计划",
+      "after": "华泰资管诚新3号4期资产支持专项计划",
+      "evidence": "设立日期、规模、首档AAA报价一致，华泰名称规范化",
+      "row": 555
+    },
+    {
+      "before": "华泰资管诚昕3号5期资产支持专项计划",
+      "after": "华泰资管诚新3号5期资产支持专项计划",
+      "evidence": "设立日期、规模、首档AAA报价一致，华泰名称规范化",
+      "row": 545
+    }
+  ],
+  "additions": [
+    {
+      "product": "国联-小满助业2号中小微企业融资支持4期资产支持专项计划",
+      "established": "2026-10-22",
+      "amount": "8",
+      "venue": "上海",
+      "originator": "重庆度小满小额贷款有限公司",
+      "manager": "国联证券资产管理有限公司",
+      "party": "度小满",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 1290,
+      "tiers": [
+        {
+          "layer": "优先A1",
+          "rating": "AAAsf",
+          "amount": "5.6",
+          "term": "1.08",
+          "rate": "1.8",
+          "row": 1290
+        },
+        {
+          "layer": "优先A2",
+          "rating": "AAAsf",
+          "amount": "1.12",
+          "term": "1.21",
+          "rate": "1.85",
+          "row": 1291
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.44",
+          "term": "1.29",
+          "rate": "1.9",
+          "row": 1292
+        },
+        {
+          "layer": "优先C",
+          "rating": "BBB+sf",
+          "amount": "0.44",
+          "term": "1.37",
+          "rate": "4.4",
+          "row": 1293
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.4",
+          "term": "1.75",
+          "rate": null,
+          "row": 1294
+        }
+      ],
+      "booking_inferred": "2026-10-19",
+      "base_asset": "度小满贷款资产（待细分）",
+      "asset_type": "小微toB"
+    },
+    {
+      "product": "晨曦第1期资产支持专项计划",
+      "established": "2026-10-23",
+      "amount": "10",
+      "venue": "深圳",
+      "originator": "上海国际信托有限公司",
+      "manager": "东方汇智资产管理有限公司",
+      "party": "蚂蚁",
+      "asset": "花呗",
+      "sheet": "交易所-2026年",
+      "row": 1295,
+      "tiers": [
+        {
+          "layer": "优先级",
+          "rating": "AAAsf",
+          "amount": "8.9",
+          "term": "1.01",
+          "rate": "1.55",
+          "row": 1295
+        },
+        {
+          "layer": "次优先级",
+          "rating": "AA+sf",
+          "amount": "0.5",
+          "term": "1.17",
+          "rate": "1.65",
+          "row": 1296
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.6",
+          "term": "1.75",
+          "rate": null,
+          "row": 1297
+        }
+      ],
+      "booking_inferred": "2026-10-20",
+      "base_asset": "蚂蚁花呗",
+      "asset_type": "消金分期类"
+    },
+    {
+      "product": "晨曦第2期资产支持专项计划",
+      "established": "2026-10-23",
+      "amount": "10",
+      "venue": "深圳",
+      "originator": "上海国际信托有限公司",
+      "manager": "东方汇智资产管理有限公司",
+      "party": "蚂蚁",
+      "asset": "花呗",
+      "sheet": "交易所-2026年",
+      "row": 1298,
+      "tiers": [
+        {
+          "layer": "优先级",
+          "rating": "AAAsf",
+          "amount": "8.9",
+          "term": "1.01",
+          "rate": "1.55",
+          "row": 1298
+        },
+        {
+          "layer": "次优先级",
+          "rating": "AA+sf",
+          "amount": "0.5",
+          "term": "1.17",
+          "rate": "1.65",
+          "row": 1299
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.6",
+          "term": "1.75",
+          "rate": null,
+          "row": 1300
+        }
+      ],
+      "booking_inferred": "2026-10-20",
+      "base_asset": "蚂蚁花呗",
+      "asset_type": "消金分期类"
+    },
+    {
+      "product": "晨曦第3期资产支持专项计划",
+      "established": "2026-10-23",
+      "amount": "10",
+      "venue": "深圳",
+      "originator": "上海国际信托有限公司",
+      "manager": "东方汇智资产管理有限公司",
+      "party": "蚂蚁",
+      "asset": "花呗",
+      "sheet": "交易所-2026年",
+      "row": 1301,
+      "tiers": [
+        {
+          "layer": "优先级",
+          "rating": "AAAsf",
+          "amount": "8.9",
+          "term": "1.01",
+          "rate": "1.55",
+          "row": 1301
+        },
+        {
+          "layer": "次优先级",
+          "rating": "AA+sf",
+          "amount": "0.5",
+          "term": "1.17",
+          "rate": "1.65",
+          "row": 1302
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.6",
+          "term": "1.75",
+          "rate": null,
+          "row": 1303
+        }
+      ],
+      "booking_inferred": "2026-10-20",
+      "base_asset": "蚂蚁花呗",
+      "asset_type": "消金分期类"
+    },
+    {
+      "product": "朔光1号第9期资产支持专项计划",
+      "established": "2026-10-23",
+      "amount": "10",
+      "venue": "深圳",
+      "originator": "华能贵诚信托有限公司",
+      "manager": "中国国际金融股份有限公司",
+      "party": "字节",
+      "asset": "放心借小微",
+      "sheet": "交易所-2026年",
+      "row": 1304,
+      "tiers": [
+        {
+          "layer": "优先A",
+          "rating": "AAAsf",
+          "amount": "8.24",
+          "term": "1.75",
+          "rate": "1.68",
+          "row": 1304
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.52",
+          "term": "1.75",
+          "rate": "1.75",
+          "row": 1305
+        },
+        {
+          "layer": "优先C",
+          "rating": "Asf",
+          "amount": "0.4",
+          "term": "1.75",
+          "rate": "2.8",
+          "row": 1306
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.84",
+          "term": "2.67",
+          "rate": null,
+          "row": 1307
+        }
+      ],
+      "booking_inferred": "2026-10-20",
+      "base_asset": "抖音放心借·小微",
+      "asset_type": "小微toC"
+    },
+    {
+      "product": "沐晓1号第5期资产支持专项计划(可续发型)",
+      "established": "2026-10-23",
+      "amount": "5",
+      "venue": "深圳",
+      "originator": "国投泰康信托有限公司",
+      "manager": "平安证券股份有限公司",
+      "party": "字节",
+      "asset": "月付",
+      "sheet": "交易所-2026年",
+      "row": 1308,
+      "tiers": [
+        {
+          "layer": "次优先A",
+          "rating": "AAAsf",
+          "amount": "4.3",
+          "term": "0.92",
+          "rate": "1.54",
+          "row": 1308
+        },
+        {
+          "layer": "次优先B",
+          "rating": "AA+sf",
+          "amount": "0.275",
+          "term": "0.92",
+          "rate": "1.57",
+          "row": 1309
+        },
+        {
+          "layer": "次优先C",
+          "rating": "Asf",
+          "amount": "0.175",
+          "term": "0.92",
+          "rate": "2.8",
+          "row": 1310
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.25",
+          "term": "2.92",
+          "rate": null,
+          "row": 1311
+        }
+      ],
+      "booking_inferred": "2026-10-20",
+      "base_asset": "抖音月付",
+      "asset_type": "消金分期类"
+    },
+    {
+      "product": "泓远2号第1期资产支持专项计划(可续发型)",
+      "established": "2026-10-23",
+      "amount": "10",
+      "venue": "深圳",
+      "originator": "深圳海豚小额贷款有限公司",
+      "manager": "中信证券股份有限公司",
+      "party": "字节",
+      "asset": "月付",
+      "sheet": "交易所-2026年",
+      "row": 1312,
+      "tiers": [
+        {
+          "layer": "次优先A",
+          "rating": "AAAsf",
+          "amount": "8.6",
+          "term": "0.92",
+          "rate": "1.54",
+          "row": 1312
+        },
+        {
+          "layer": "次优先B",
+          "rating": "AA+sf",
+          "amount": "0.55",
+          "term": "0.92",
+          "rate": "1.57",
+          "row": 1313
+        },
+        {
+          "layer": "次优先C",
+          "rating": "Asf",
+          "amount": "0.35",
+          "term": "0.92",
+          "rate": "2.8",
+          "row": 1314
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.5",
+          "term": "3.75",
+          "rate": null,
+          "row": 1315
+        }
+      ],
+      "booking_inferred": "2026-10-20",
+      "base_asset": "抖音月付",
+      "asset_type": "消金分期类"
+    },
+    {
+      "product": "耘睿25号第2期资产支持专项计划",
+      "established": "2026-10-23",
+      "amount": "10",
+      "venue": "上海",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "华泰证券(上海)资产管理有限公司",
+      "party": "京东",
+      "asset": "金条/白取",
+      "sheet": "交易所-2026年",
+      "row": 1316,
+      "tiers": [
+        {
+          "layer": "优先A",
+          "rating": "AAAsf",
+          "amount": "9",
+          "term": "1.92",
+          "rate": "1.72",
+          "row": 1316
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.3",
+          "term": "1.92",
+          "rate": "1.8",
+          "row": 1317
+        },
+        {
+          "layer": "中间级",
+          "rating": "AA-sf",
+          "amount": "0.2",
+          "term": "1.92",
+          "rate": "3.2",
+          "row": 1318
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.5",
+          "term": "3.83",
+          "rate": null,
+          "row": 1319
+        }
+      ],
+      "booking_inferred": "2026-10-20",
+      "base_asset": "京东金条白取混池",
+      "asset_type": "消金提现类"
+    },
+    {
+      "product": "北京京东世纪贸易有限公司2026年度东裕8号京东白条第一期定向资产支持票据",
+      "established": "2026-10-21",
+      "amount": "10",
+      "venue": "银行间",
+      "originator": "北京京东世纪贸易有限公司",
+      "manager": "国投泰康信托有限公司",
+      "party": "京东",
+      "asset": "白条",
+      "sheet": "交易商协会-2026年",
+      "row": 806,
+      "tiers": [
+        {
+          "layer": "优先A",
+          "rating": "AAAsf",
+          "amount": "8.7",
+          "term": "2",
+          "rate": "1.74",
+          "row": 806
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.4",
+          "term": "2",
+          "rate": "1.85",
+          "row": 807
+        },
+        {
+          "layer": "中间级",
+          "rating": "Asf",
+          "amount": "0.4",
+          "term": "2",
+          "rate": "3.2",
+          "row": 808
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.5",
+          "term": "2",
+          "rate": null,
+          "row": 809
+        }
+      ],
+      "booking_inferred": "2026-10-16",
+      "base_asset": "京东白条",
+      "asset_type": "消金分期类"
+    },
+    {
+      "product": "北京京东世纪贸易有限公司2026年度东裕8号京东白条第二期定向资产支持票据",
+      "established": "2026-10-21",
+      "amount": "10",
+      "venue": "银行间",
+      "originator": "北京京东世纪贸易有限公司",
+      "manager": "华鑫国际信托有限公司",
+      "party": "京东",
+      "asset": "白条",
+      "sheet": "交易商协会-2026年",
+      "row": 810,
+      "tiers": [
+        {
+          "layer": "优先A",
+          "rating": "AAAsf",
+          "amount": "8.7",
+          "term": "2",
+          "rate": "1.74",
+          "row": 810
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.4",
+          "term": "2",
+          "rate": "1.85",
+          "row": 811
+        },
+        {
+          "layer": "中间级",
+          "rating": "Asf",
+          "amount": "0.4",
+          "term": "2",
+          "rate": "3.2",
+          "row": 812
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.5",
+          "term": "2",
+          "rate": null,
+          "row": 813
+        }
+      ],
+      "booking_inferred": "2026-10-16",
+      "base_asset": "京东白条",
+      "asset_type": "消金分期类"
+    },
+    {
+      "product": "星旸2026年度第六期定向资产支持票据",
+      "established": "2026-10-22",
+      "amount": "10",
+      "venue": "银行间",
+      "originator": "国投泰康信托有限公司",
+      "manager": "国投泰康信托有限公司",
+      "party": "蚂蚁",
+      "asset": "借呗",
+      "sheet": "交易商协会-2026年",
+      "row": 814,
+      "tiers": [
+        {
+          "layer": "优先级",
+          "rating": "AAAsf",
+          "amount": "8.8",
+          "term": "1",
+          "rate": "1.55",
+          "row": 814
+        },
+        {
+          "layer": "次优先级",
+          "rating": "AA+sf",
+          "amount": "0.6",
+          "term": "1.08",
+          "rate": "1.65",
+          "row": 815
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.6",
+          "term": "1.67",
+          "rate": null,
+          "row": 816
+        }
+      ],
+      "booking_inferred": "2026-10-19",
+      "base_asset": "蚂蚁借呗",
+      "asset_type": "消金提现类"
+    },
+    {
+      "product": "澄启2026年度第二期定向资产支持票据",
+      "established": "2026-10-22",
+      "amount": "10",
+      "venue": "银行间",
+      "originator": "国投泰康信托有限公司",
+      "manager": "国投泰康信托有限公司",
+      "party": "蚂蚁",
+      "asset": "借呗",
+      "sheet": "交易商协会-2026年",
+      "row": 817,
+      "tiers": [
+        {
+          "layer": "优先级",
+          "rating": "AAAsf",
+          "amount": "8.8",
+          "term": "1",
+          "rate": "1.55",
+          "row": 817
+        },
+        {
+          "layer": "次优先级",
+          "rating": "AA+sf",
+          "amount": "0.6",
+          "term": "1.08",
+          "rate": "1.65",
+          "row": 818
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.6",
+          "term": "1.67",
+          "rate": null,
+          "row": 819
+        }
+      ],
+      "booking_inferred": "2026-10-19",
+      "base_asset": "蚂蚁借呗",
+      "asset_type": "消金提现类"
+    },
+    {
+      "product": "睿之2026年度第一期定向资产支持票据",
+      "established": "2026-10-22",
+      "amount": "10",
+      "venue": "银行间",
+      "originator": "华鑫国际信托有限公司",
+      "manager": "华鑫国际信托有限公司",
+      "party": "蚂蚁",
+      "asset": "花呗",
+      "sheet": "交易商协会-2026年",
+      "row": 820,
+      "tiers": [
+        {
+          "layer": "优先级",
+          "rating": "AAAsf",
+          "amount": "8.9",
+          "term": "1.92",
+          "rate": "1.72",
+          "row": 820
+        },
+        {
+          "layer": "次优先级",
+          "rating": "AA+sf",
+          "amount": "0.4",
+          "term": "2",
+          "rate": "1.83",
+          "row": 821
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.7",
+          "term": "2.67",
+          "rate": null,
+          "row": 822
+        }
+      ],
+      "booking_inferred": "2026-10-19",
+      "base_asset": "蚂蚁花呗",
+      "asset_type": "消金分期类"
+    },
+    {
+      "product": "北京京东世纪贸易有限公司2026年度东裕8号京东白条第三期定向资产支持票据",
+      "established": "2026-10-23",
+      "amount": "10",
+      "venue": "银行间",
+      "originator": "北京京东世纪贸易有限公司",
+      "manager": "兴业国际信托有限公司",
+      "party": "京东",
+      "asset": "白条",
+      "sheet": "交易商协会-2026年",
+      "row": 823,
+      "tiers": [
+        {
+          "layer": "优先A",
+          "rating": "AAAsf",
+          "amount": "8.7",
+          "term": "2",
+          "rate": "1.71",
+          "row": 823
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.4",
+          "term": "2",
+          "rate": "1.8",
+          "row": 824
+        },
+        {
+          "layer": "中间级",
+          "rating": "Asf",
+          "amount": "0.4",
+          "term": "2",
+          "rate": "3.2",
+          "row": 825
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.5",
+          "term": "2",
+          "rate": null,
+          "row": 826
+        }
+      ],
+      "booking_inferred": "2026-10-20",
+      "base_asset": "京东白条",
+      "asset_type": "消金分期类"
+    },
+    {
+      "product": "华能贵诚信托有限公司2026年度第四期启全定向资产支持票据",
+      "established": "2026-10-23",
+      "amount": "10",
+      "venue": "银行间",
+      "originator": "华能贵诚信托有限公司",
+      "manager": "华能贵诚信托有限公司",
+      "party": "微众银行",
+      "asset": "微业贷",
+      "sheet": "交易商协会-2026年",
+      "row": 827,
+      "tiers": [
+        {
+          "layer": "优先A",
+          "rating": "AAAsf",
+          "amount": "8.4",
+          "term": "1.82",
+          "rate": "1.64",
+          "row": 827
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.5",
+          "term": "1.9",
+          "rate": "1.68",
+          "row": 828
+        },
+        {
+          "layer": "优先C",
+          "rating": "Asf",
+          "amount": "0.3",
+          "term": "1.99",
+          "rate": "1.9",
+          "row": 829
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.8",
+          "term": "2.65",
+          "rate": null,
+          "row": 830
+        }
+      ],
+      "booking_inferred": "2026-10-20",
+      "base_asset": "微众银行微业贷",
+      "asset_type": "小微toB"
+    },
+    {
+      "product": "惠富2026年度第二期定向资产支持票据",
+      "established": "2026-10-23",
+      "amount": "5",
+      "venue": "银行间",
+      "originator": "国投泰康信托有限公司",
+      "manager": "国投泰康信托有限公司",
+      "party": "蚂蚁",
+      "asset": "花呗",
+      "sheet": "交易商协会-2026年",
+      "row": 831,
+      "tiers": [
+        {
+          "layer": "优先A",
+          "rating": "AAAsf",
+          "amount": "4.45",
+          "term": "1.7",
+          "rate": "1.68",
+          "row": 831
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.175",
+          "term": "1.96",
+          "rate": "1.83",
+          "row": 832
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.375",
+          "term": "2.45",
+          "rate": null,
+          "row": 833
+        }
+      ],
+      "booking_inferred": "2026-10-20",
+      "base_asset": "蚂蚁花呗",
+      "asset_type": "消金分期类"
+    },
+    {
+      "product": "澄启2026年度第三期定向资产支持票据",
+      "established": "2026-10-23",
+      "amount": "5",
+      "venue": "银行间",
+      "originator": "国投泰康信托有限公司",
+      "manager": "国投泰康信托有限公司",
+      "party": "蚂蚁",
+      "asset": "借呗",
+      "sheet": "交易商协会-2026年",
+      "row": 834,
+      "tiers": [
+        {
+          "layer": "优先级",
+          "rating": "AAAsf",
+          "amount": "4.4",
+          "term": "1.83",
+          "rate": "1.7",
+          "row": 834
+        },
+        {
+          "layer": "次优先级",
+          "rating": "AA+sf",
+          "amount": "0.3",
+          "term": "1.92",
+          "rate": "1.83",
+          "row": 835
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.3",
+          "term": "2.5",
+          "rate": null,
+          "row": 836
+        }
+      ],
+      "booking_inferred": "2026-10-20",
+      "base_asset": "蚂蚁借呗",
+      "asset_type": "消金提现类"
+    }
+  ],
+  "excluded": [
+    {
+      "product": "财通资管-云启1期资产支持专项计划(可续发型)",
+      "established": "2026-01-30",
+      "amount": "2",
+      "venue": "上海",
+      "originator": "华能贵诚信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 90,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "1.8",
+          "term": "0.55",
+          "rate": "1.8",
+          "row": 90
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.1",
+          "term": "0.55",
+          "rate": "1.93",
+          "row": 91
+        },
+        {
+          "layer": "次级A档",
+          "rating": "-",
+          "amount": "0.04",
+          "term": "3.02",
+          "rate": null,
+          "row": 92
+        },
+        {
+          "layer": "次级B档",
+          "rating": "-",
+          "amount": "0.06",
+          "term": "3.02",
+          "rate": null,
+          "row": 93
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-星朗1期资产支持专项计划(可续发型)(第3期次)",
+      "established": "2026-02-12",
+      "amount": "4.75",
+      "venue": "上海",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 145,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "4.47",
+          "term": "0.61",
+          "rate": "1.8",
+          "row": 145
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.28",
+          "term": "0.61",
+          "rate": "1.93",
+          "row": 146
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-星朗3期资产支持专项计划(可续发型)(第3期次)",
+      "established": "2026-03-05",
+      "amount": "5.7",
+      "venue": "上海",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 181,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "5.37",
+          "term": "0.61",
+          "rate": "1.75",
+          "row": 181
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.33",
+          "term": "0.61",
+          "rate": "1.95",
+          "row": 182
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-云启2期资产支持专项计划(可续发型)",
+      "established": "2026-03-13",
+      "amount": "2",
+      "venue": "上海",
+      "originator": "华能贵诚信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 198,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "1.8",
+          "term": "0.65",
+          "rate": "1.72",
+          "row": 198
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.1",
+          "term": "0.65",
+          "rate": "1.86",
+          "row": 199
+        },
+        {
+          "layer": "次级A档",
+          "rating": "-",
+          "amount": "0.04",
+          "term": "3.05",
+          "rate": null,
+          "row": 200
+        },
+        {
+          "layer": "次级B档",
+          "rating": "-",
+          "amount": "0.06",
+          "term": "3.05",
+          "rate": null,
+          "row": 201
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-星享2期资产支持专项计划",
+      "established": "2026-04-09",
+      "amount": "4",
+      "venue": "上海",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 298,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "3.56",
+          "term": "1.04",
+          "rate": "1.63",
+          "row": 298
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.24",
+          "term": "1.04",
+          "rate": "1.85",
+          "row": 299
+        },
+        {
+          "layer": "次级A档",
+          "rating": "-",
+          "amount": "0.08",
+          "term": "3.01",
+          "rate": null,
+          "row": 300
+        },
+        {
+          "layer": "次级B档",
+          "rating": "-",
+          "amount": "0.12",
+          "term": "3.01",
+          "rate": null,
+          "row": 301
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "兴证圆融-兴知1期资产支持专项计划(可续发型)(第3期次)",
+      "established": "2026-04-09",
+      "amount": "5.7",
+      "venue": "深圳",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "兴证证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 302,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "5.37",
+          "term": "1",
+          "rate": "1.6",
+          "row": 302
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.33",
+          "term": "1",
+          "rate": "1.84",
+          "row": 303
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-星朗2期资产支持专项计划(可续发型)(第4期次)",
+      "established": "2026-04-29",
+      "amount": "5.7",
+      "venue": "上海",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 404,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "5.37",
+          "term": "1.02",
+          "rate": "1.58",
+          "row": 404
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.33",
+          "term": "1.02",
+          "rate": "1.7",
+          "row": 405
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "兴证圆融-兴知5期资产支持专项计划(可续发型)",
+      "established": "2026-05-12",
+      "amount": "4",
+      "venue": "深圳",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "兴证证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 422,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "3.58",
+          "term": "0.82",
+          "rate": "1.58",
+          "row": 422
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.22",
+          "term": "0.82",
+          "rate": "1.7",
+          "row": 423
+        },
+        {
+          "layer": "次级A档",
+          "rating": "-",
+          "amount": "0.08",
+          "term": "3.07",
+          "rate": null,
+          "row": 424
+        },
+        {
+          "layer": "次级B档",
+          "rating": "-",
+          "amount": "0.12",
+          "term": "3.07",
+          "rate": null,
+          "row": 425
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-云启3期资产支持专项计划(可续发型)",
+      "established": "2026-05-14",
+      "amount": "2",
+      "venue": "上海",
+      "originator": "华能贵诚信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 442,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "1.8",
+          "term": "0.73",
+          "rate": "1.54",
+          "row": 442
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.1",
+          "term": "0.73",
+          "rate": "1.7",
+          "row": 443
+        },
+        {
+          "layer": "次级A档",
+          "rating": "-",
+          "amount": "0.04",
+          "term": "3.05",
+          "rate": null,
+          "row": 444
+        },
+        {
+          "layer": "次级B档",
+          "rating": "-",
+          "amount": "0.06",
+          "term": "3.05",
+          "rate": null,
+          "row": 445
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "中金-乘锐1期资产支持专项计划",
+      "established": "2026-05-21",
+      "amount": "3",
+      "venue": "深圳",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "中国国际金融股份有限公司",
+      "party": "马上消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 487,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "2.52",
+          "term": "1.77",
+          "rate": "2.5",
+          "row": 487
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.21",
+          "term": "1.77",
+          "rate": "2.5",
+          "row": 488
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.27",
+          "term": "1.77",
+          "rate": null,
+          "row": 489
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-星享3期资产支持专项计划",
+      "established": "2026-05-22",
+      "amount": "4",
+      "venue": "上海",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 495,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "3.6",
+          "term": "1.05",
+          "rate": "1.54",
+          "row": 495
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.2",
+          "term": "1.05",
+          "rate": "1.6",
+          "row": 496
+        },
+        {
+          "layer": "次级A档",
+          "rating": "-",
+          "amount": "0.08",
+          "term": "3.03",
+          "rate": null,
+          "row": 497
+        },
+        {
+          "layer": "次级B档",
+          "rating": "-",
+          "amount": "0.12",
+          "term": "3.03",
+          "rate": null,
+          "row": 498
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "兴证圆融-兴知3期资产支持专项计划(可续发型)(第3期次)",
+      "established": "2026-06-04",
+      "amount": "3.8",
+      "venue": "深圳",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "兴证证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 581,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "3.58",
+          "term": "0.59",
+          "rate": "1.54",
+          "row": 581
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.22",
+          "term": "0.59",
+          "rate": "1.6",
+          "row": 582
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-云启4期资产支持专项计划(可续发型)",
+      "established": "2026-06-05",
+      "amount": "3",
+      "venue": "上海",
+      "originator": "华能贵诚信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 583,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "2.7",
+          "term": "0.55",
+          "rate": "1.5",
+          "row": 583
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.15",
+          "term": "0.55",
+          "rate": "1.6",
+          "row": 584
+        },
+        {
+          "layer": "次级A档",
+          "rating": "-",
+          "amount": "0.06",
+          "term": "3.02",
+          "rate": null,
+          "row": 585
+        },
+        {
+          "layer": "次级B档",
+          "rating": "-",
+          "amount": "0.09",
+          "term": "3.02",
+          "rate": null,
+          "row": 586
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "中金-乘锐2期资产支持专项计划",
+      "established": "2026-06-18",
+      "amount": "5",
+      "venue": "深圳",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "中国国际金融股份有限公司",
+      "party": "马上消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 690,
+      "tiers": [
+        {
+          "layer": "优先A",
+          "rating": "AAAsf",
+          "amount": "4.2",
+          "term": "1.78",
+          "rate": "2.5",
+          "row": 690
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.35",
+          "term": "1.78",
+          "rate": "2.55",
+          "row": 691
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.45",
+          "term": "1.78",
+          "rate": null,
+          "row": 692
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "中金-乘锐3期资产支持专项计划",
+      "established": "2026-06-25",
+      "amount": "5",
+      "venue": "深圳",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "中国国际金融股份有限公司",
+      "party": "马上消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 720,
+      "tiers": [
+        {
+          "layer": "优先A",
+          "rating": "AAAsf",
+          "amount": "4.2",
+          "term": "1.84",
+          "rate": "2.5",
+          "row": 720
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.35",
+          "term": "1.84",
+          "rate": "2.55",
+          "row": 721
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.45",
+          "term": "1.84",
+          "rate": null,
+          "row": 722
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-星朗5期资产支持专项计划(可续发型)(第2期次)",
+      "established": "2026-07-02",
+      "amount": "3.8",
+      "venue": "上海",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 756,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "3.58",
+          "term": "0.76",
+          "rate": "1.6",
+          "row": 756
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.22",
+          "term": "0.76",
+          "rate": "1.65",
+          "row": 757
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "兴证圆融-兴知2期资产支持专项计划(可续发型)(第3期次)",
+      "established": "2026-07-02",
+      "amount": "4.75",
+      "venue": "深圳",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "兴证证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 758,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "4.475",
+          "term": "1.02",
+          "rate": "1.6",
+          "row": 758
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.275",
+          "term": "1.02",
+          "rate": "1.65",
+          "row": 759
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "申万宏源-华能惠沣嘉宇第1期资产支持专项计划",
+      "established": "2026-07-15",
+      "amount": "5",
+      "venue": "深圳",
+      "originator": "华能贵诚信托有限公司",
+      "manager": "申万宏源证券资产管理有限公司",
+      "party": "太平洋保险",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 786,
+      "tiers": [
+        {
+          "layer": "优先级",
+          "rating": "AAAsf",
+          "amount": "4.75",
+          "term": "0.81",
+          "rate": "2.2",
+          "row": 786
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.25",
+          "term": "1.24",
+          "rate": null,
+          "row": 787
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "中金-乘锐4期资产支持专项计划",
+      "established": "2026-07-17",
+      "amount": "5",
+      "venue": "深圳",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "中国国际金融股份有限公司",
+      "party": "马上消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 808,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "4.2",
+          "term": "1.95",
+          "rate": "2.4",
+          "row": 808
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.35",
+          "term": "1.95",
+          "rate": "2.55",
+          "row": 809
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.45",
+          "term": "1.95",
+          "rate": null,
+          "row": 810
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-云启5期资产支持专项计划(可续发型)",
+      "established": "2026-07-23",
+      "amount": "4",
+      "venue": "上海",
+      "originator": "华能贵诚信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 847,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "3.6",
+          "term": "0.71",
+          "rate": "1.5",
+          "row": 847
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.2",
+          "term": "0.71",
+          "rate": "1.53",
+          "row": 848
+        },
+        {
+          "layer": "次级A档",
+          "rating": "-",
+          "amount": "0.08",
+          "term": "3.02",
+          "rate": null,
+          "row": 849
+        },
+        {
+          "layer": "次级B档",
+          "rating": "-",
+          "amount": "0.12",
+          "term": "3.02",
+          "rate": null,
+          "row": 850
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "天风-圆通小贷中小微企业融资支持资产支持专项计划",
+      "established": "2026-07-24",
+      "amount": "2.88",
+      "venue": "上海",
+      "originator": "广州圆通互联网小额贷款有限公司",
+      "manager": "天风(上海)证券资产管理有限公司",
+      "party": "圆通小贷",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 859,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "2.31",
+          "term": "1.24",
+          "rate": "1.55",
+          "row": 859
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.28",
+          "term": "1.33",
+          "rate": "1.6",
+          "row": 860
+        },
+        {
+          "layer": "优先C级",
+          "rating": "-",
+          "amount": "0.29",
+          "term": "1.58",
+          "rate": null,
+          "row": 861
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-云启6期资产支持专项计划(可续发型)",
+      "established": "2026-08-07",
+      "amount": "4",
+      "venue": "上海",
+      "originator": "华能贵诚信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 978,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "3.6",
+          "term": "0.55",
+          "rate": "1.58",
+          "row": 978
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.2",
+          "term": "0.55",
+          "rate": "1.63",
+          "row": 979
+        },
+        {
+          "layer": "次级A档",
+          "rating": "-",
+          "amount": "0.08",
+          "term": "3.02",
+          "rate": null,
+          "row": 980
+        },
+        {
+          "layer": "次级B档",
+          "rating": "-",
+          "amount": "0.12",
+          "term": "3.02",
+          "rate": null,
+          "row": 981
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "中金-乘锐5期资产支持专项计划",
+      "established": "2026-08-26",
+      "amount": "3",
+      "venue": "深圳",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "中国国际金融股份有限公司",
+      "party": "马上消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 1026,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "2.52",
+          "term": "1.84",
+          "rate": "2.4",
+          "row": 1026
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.21",
+          "term": "1.84",
+          "rate": "2.5",
+          "row": 1027
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.27",
+          "term": "1.84",
+          "rate": null,
+          "row": 1028
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "星启1期资产支持专项计划",
+      "established": "2026-08-21",
+      "amount": "4",
+      "venue": "上海",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 1046,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "3.6",
+          "term": "1.03",
+          "rate": "1.58",
+          "row": 1046
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.2",
+          "term": "1.03",
+          "rate": "1.63",
+          "row": 1047
+        },
+        {
+          "layer": "次级A档",
+          "rating": "-",
+          "amount": "0.08",
+          "term": "3",
+          "rate": null,
+          "row": 1048
+        },
+        {
+          "layer": "次级B档",
+          "rating": "-",
+          "amount": "0.12",
+          "term": "3",
+          "rate": null,
+          "row": 1049
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "星启2期资产支持专项计划",
+      "established": "2026-09-11",
+      "amount": "5",
+      "venue": "上海",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "中国国际金融股份有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 1117,
+      "tiers": [
+        {
+          "layer": "优先A",
+          "rating": "AAAsf",
+          "amount": "4.4",
+          "term": "2.05",
+          "rate": "1.75",
+          "row": 1117
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.3",
+          "term": "2.05",
+          "rate": "1.8",
+          "row": 1118
+        },
+        {
+          "layer": "次A级",
+          "rating": "-",
+          "amount": "0.15",
+          "term": "2.05",
+          "rate": null,
+          "row": 1119
+        },
+        {
+          "layer": "次B级",
+          "rating": "-",
+          "amount": "0.15",
+          "term": "2.05",
+          "rate": null,
+          "row": 1120
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-云启7期资产支持专项计划(可续发型)",
+      "established": "2026-09-09",
+      "amount": "4",
+      "venue": "上海",
+      "originator": "华能贵诚信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 1142,
+      "tiers": [
+        {
+          "layer": "次优先A",
+          "rating": "AAAsf",
+          "amount": "3.52",
+          "term": "1.95",
+          "rate": "1.7",
+          "row": 1142
+        },
+        {
+          "layer": "次优先B",
+          "rating": "AA+sf",
+          "amount": "0.24",
+          "term": "1.95",
+          "rate": "1.76",
+          "row": 1143
+        },
+        {
+          "layer": "次A级",
+          "rating": "-",
+          "amount": "0.12",
+          "term": "1.95",
+          "rate": null,
+          "row": 1144
+        },
+        {
+          "layer": "次B级",
+          "rating": "-",
+          "amount": "0.12",
+          "term": "1.95",
+          "rate": null,
+          "row": 1145
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "中金-乘锐6期资产支持专项计划",
+      "established": "2026-09-23",
+      "amount": "4",
+      "venue": "深圳",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "中国国际金融股份有限公司",
+      "party": "马上消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 1216,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "3.36",
+          "term": "1.84",
+          "rate": "2.3",
+          "row": 1216
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.28",
+          "term": "1.84",
+          "rate": "2.5",
+          "row": 1217
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.36",
+          "term": "1.84",
+          "rate": null,
+          "row": 1218
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "中信证券-顺丰小贷第4期资产支持专项计划",
+      "established": "2026-10-16",
+      "amount": "3.6",
+      "venue": "深圳",
+      "originator": "深圳市顺丰合丰小额贷款有限公司",
+      "manager": "中信证券股份有限公司",
+      "party": "顺丰小贷",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 1264,
+      "tiers": [
+        {
+          "layer": "优先级",
+          "rating": "AAAsf",
+          "amount": "3.42",
+          "term": "2",
+          "rate": "1.64",
+          "row": 1264
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.18",
+          "term": "2",
+          "rate": null,
+          "row": 1265
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "财通资管-云启8期资产支持专项计划(可续发型)",
+      "established": "2026-10-20",
+      "amount": "4",
+      "venue": "上海",
+      "originator": "华能贵诚信托有限公司",
+      "manager": "财通证券资产管理有限公司",
+      "party": "宁银消金",
+      "asset": "",
+      "sheet": "交易所-2026年",
+      "row": 1286,
+      "tiers": [
+        {
+          "layer": "优先A",
+          "rating": "AAAsf",
+          "amount": "3.6",
+          "term": "0.71",
+          "rate": "1.54",
+          "row": 1286
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.2",
+          "term": "0.71",
+          "rate": "1.6",
+          "row": 1287
+        },
+        {
+          "layer": "次A级",
+          "rating": "-",
+          "amount": "0.12",
+          "term": "3.03",
+          "rate": null,
+          "row": 1288
+        },
+        {
+          "layer": "次B级",
+          "rating": "-",
+          "amount": "0.08",
+          "term": "3.03",
+          "rate": null,
+          "row": 1289
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "中国对外经济贸易信托有限公司2026年度拾穗丰润第一期定向资产支持票据(乡村振兴)",
+      "established": "2026-01-16",
+      "amount": "2",
+      "venue": "银行间",
+      "originator": "中国对外经济贸易信托有限公司",
+      "manager": "华润深国投信托有限公司",
+      "party": "中和农信",
+      "asset": "",
+      "sheet": "交易商协会-2026年",
+      "row": 24,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "1.66",
+          "term": "1.48",
+          "rate": "2.65",
+          "row": 24
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.16",
+          "term": "1.56",
+          "rate": "3.2",
+          "row": 25
+        },
+        {
+          "layer": "优先C级",
+          "rating": "a+sf",
+          "amount": "0.08",
+          "term": "1.65",
+          "rate": "4.5",
+          "row": 26
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.1",
+          "term": "1.98",
+          "rate": null,
+          "row": 27
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    },
+    {
+      "product": "重庆市中和农信小额贷款有限公司2026年度第一期定向资产支持票据(乡村振兴)",
+      "established": "2026-01-23",
+      "amount": "2",
+      "venue": "银行间",
+      "originator": "重庆市中和农信小额贷款有限公司",
+      "manager": "华润深国投信托有限公司",
+      "party": "中和农信",
+      "asset": "",
+      "sheet": "交易商协会-2026年",
+      "row": 46,
+      "tiers": [
+        {
+          "layer": "优先A级",
+          "rating": "AAAsf",
+          "amount": "1.74",
+          "term": "1.46",
+          "rate": "2.6",
+          "row": 46
+        },
+        {
+          "layer": "优先B级",
+          "rating": "AA+sf",
+          "amount": "0.08",
+          "term": "1.55",
+          "rate": "3.2",
+          "row": 47
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.18",
+          "term": "1.97",
+          "rate": null,
+          "row": 48
+        }
+      ],
+      "reason": "现有资产方范围外，不扩围"
+    }
+  ],
+  "possible_duplicates": [
+    {
+      "product": "深圳市财付通网络金融小额贷款有限公司2026年度和盛第2期定向资产支持票据",
+      "established": "2026-10-15",
+      "amount": "6",
+      "venue": "银行间",
+      "originator": "深圳市财付通网络金融小额贷款有限公司",
+      "manager": "国投泰康信托有限公司",
+      "party": "腾讯",
+      "asset": "分付",
+      "sheet": "交易商协会-2026年",
+      "row": 792,
+      "tiers": [
+        {
+          "layer": "优先A1",
+          "rating": "AAAsf",
+          "amount": "1.8",
+          "term": "1.34",
+          "rate": "1.58",
+          "row": 792
+        },
+        {
+          "layer": "优先A2",
+          "rating": "AAAsf",
+          "amount": "3.48",
+          "term": "1.92",
+          "rate": "1.68",
+          "row": 793
+        },
+        {
+          "layer": "优先B",
+          "rating": "AA+sf",
+          "amount": "0.36",
+          "term": "1.99",
+          "rate": "1.8",
+          "row": 794
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.36",
+          "term": "1.99",
+          "rate": null,
+          "row": 795
+        }
+      ],
+      "reason": "和富/和盛名称冲突，同发行机构、规模及期次相似，未重复追加",
+      "candidate": "深圳市财付通网络金融小额贷款有限公司2026年度和富第2期定向资产支持票据"
+    }
+  ],
+  "field_differences": [
+    {
+      "product": "国金资管-景熠1号中小微企业融资支持5期资产支持专项计划(可续发型)(第二期次)",
+      "sheet": "交易所-2026年",
+      "row": 54,
+      "differences": {
+        "aaa": {
+          "panel": "0.0265",
+          "huatai_percent": "2.6"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "华泰资管润泽4期中小微企业融资支持资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 78,
+      "differences": {
+        "aaa": {
+          "panel": "0.018",
+          "huatai_percent": "1.9"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "国联-度小满消费分期8号4期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 122,
+      "differences": {
+        "term": {
+          "panel": "1.04",
+          "huatai": "1.07"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "招商证券-美睦1期15号资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 130,
+      "differences": {
+        "term": {
+          "panel": "1",
+          "huatai": "1.04"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "京东科技盛澜1号第2期资产支持专项计划(中小微企业支持)",
+      "sheet": "交易所-2026年",
+      "row": 133,
+      "differences": {
+        "term": {
+          "panel": "1.46",
+          "huatai": "1.5"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "国联-度小满金融4号4期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 136,
+      "differences": {
+        "term": {
+          "panel": "1.04",
+          "huatai": "1.07"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "华泰资管诚新2号4期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 141,
+      "differences": {
+        "term": {
+          "panel": "1.05",
+          "huatai": "1.09"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "国金资管-景熠1号中小微企业融资支持6期资产支持专项计划(可续发型)(第二期次)",
+      "sheet": "交易所-2026年",
+      "row": 151,
+      "differences": {
+        "term": {
+          "panel": "1.06",
+          "huatai": "1"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "中信证券-泓晟1号第7期资产支持专项计划(中小微企业支持)",
+      "sheet": "交易所-2026年",
+      "row": 152,
+      "differences": {
+        "term": {
+          "panel": "1.08",
+          "huatai": "1.04"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "中信证券-泓远1号第7期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 156,
+      "differences": {
+        "term": {
+          "panel": "1.08",
+          "huatai": "1.04"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "国金资管-景熠2号中小微企业融资支持6期资产支持专项计划(可续发型)",
+      "sheet": "交易所-2026年",
+      "row": 160,
+      "differences": {
+        "term": {
+          "panel": "0.94",
+          "huatai": "1"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "华泰资管诚新2号6期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 212,
+      "differences": {
+        "aaa": {
+          "panel": "0.0173",
+          "huatai_percent": "1.74"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "东方汇智-至安中小微企业融资支持第4期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 226,
+      "differences": {
+        "aaa": {
+          "panel": "0.017",
+          "huatai_percent": "1.79"
+        },
+        "term": {
+          "panel": "0.62",
+          "huatai": "0.67"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "国泰海通-至微中小微企业融资支持第2期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 236,
+      "differences": {
+        "term": {
+          "panel": "0.67",
+          "huatai": "0.61"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "国金-锦盛3号资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 315,
+      "differences": {
+        "term": {
+          "panel": "1.33",
+          "huatai": "1.3507"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "铭睿1号7期中小微企业融资支持资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 377,
+      "differences": {
+        "term": {
+          "panel": "0.96",
+          "huatai": "0.99"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "国金资管-景熠1号中小微企业融资支持7期资产支持专项计划(可续发型)(第二期次)",
+      "sheet": "交易所-2026年",
+      "row": 603,
+      "differences": {
+        "aaa": {
+          "panel": "0.0235",
+          "huatai_percent": "2.6"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "国金资管-景熠2号中小微企业融资支持8期资产支持专项计划(可续发型)",
+      "sheet": "交易所-2026年",
+      "row": 633,
+      "differences": {
+        "aaa": {
+          "panel": "0.026",
+          "huatai_percent": "1.55"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "招商证券-至优中小微企业融资支持第5期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 693,
+      "differences": {
+        "aaa": {
+          "panel": "0.0159",
+          "huatai_percent": "1.51"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "中信建投-至毅中小微企业融资支持第3期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 714,
+      "differences": {
+        "aaa": {
+          "panel": "0.016",
+          "huatai_percent": "1.51"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "国金资管-景熠3号中小微企业融资支持1期资产支持专项计划(可续发型)",
+      "sheet": "交易所-2026年",
+      "row": 723,
+      "differences": {
+        "aaa": {
+          "panel": "0.026",
+          "huatai_percent": "0"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "晨瑞第2期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 725,
+      "differences": {
+        "term": {
+          "panel": "1",
+          "huatai": "8.9"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "国金资管-景熠2号1期资产支持专项计划(可续发型)(第二期次)",
+      "sheet": "交易所-2026年",
+      "row": 778,
+      "differences": {
+        "aaa": {
+          "panel": "0.0235",
+          "huatai_percent": "2.55"
+        },
+        "term": {
+          "panel": "0.01",
+          "huatai": "1.01"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "中信证券-泓远1号第9期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 804,
+      "differences": {
+        "aaa": {
+          "panel": "0.0157",
+          "huatai_percent": "1.56"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "招商证券-臻至第9期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 838,
+      "differences": {
+        "aaa": {
+          "panel": "0.0178",
+          "huatai_percent": "1.58"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "招证嘉和1号第7期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 851,
+      "differences": {
+        "aaa": {
+          "panel": "0.0184",
+          "huatai_percent": "1.58"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "东方汇智-朗煜1号中小微企业融资支持9期资产支持专项计划",
+      "sheet": "交易所-2026年",
+      "row": 1271,
+      "differences": {
+        "aaa": {
+          "panel": "0.023",
+          "huatai_percent": "2.6"
+        },
+        "term": {
+          "panel": "0.99",
+          "huatai": "1.99"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "华能贵诚信托有限公司2026年度恒信7号第一期定向资产支持商业票据",
+      "sheet": "交易商协会-2026年",
+      "row": 287,
+      "differences": {
+        "amount": {
+          "panel": "8",
+          "huatai": "7.52"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "惠裕2026年度第二期定向资产支持票据",
+      "sheet": "交易商协会-2026年",
+      "row": 343,
+      "differences": {
+        "term": {
+          "panel": "0.94",
+          "huatai": "1.95"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "北京京东世纪贸易有限公司2026年度东裕9号春裕京东白条第一期定向资产支持商业票据",
+      "sheet": "交易商协会-2026年",
+      "row": 362,
+      "differences": {
+        "term": {
+          "panel": "0.83",
+          "huatai": "0.79"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "惠臻2026年度第二期定向资产支持票据",
+      "sheet": "交易商协会-2026年",
+      "row": 371,
+      "differences": {
+        "term": {
+          "panel": "0.86",
+          "huatai": "0.94"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "深圳市财付通网络金融小额贷款有限公司2026年度和盛第一期定向资产支持票据",
+      "sheet": "交易商协会-2026年",
+      "row": 515,
+      "differences": {
+        "aaa": {
+          "panel": "0.0157",
+          "huatai_percent": "1.58"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "星琰2026年度第四期定向资产支持票据",
+      "sheet": "交易商协会-2026年",
+      "row": 573,
+      "differences": {
+        "aaa": {
+          "panel": "0.0175",
+          "huatai_percent": "1.85"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "华能贵诚信托有限公司2026年度第三期启全定向资产支持票据",
+      "sheet": "交易商协会-2026年",
+      "row": 595,
+      "differences": {
+        "term": {
+          "panel": "1.83",
+          "huatai": "1.91"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    },
+    {
+      "product": "深圳市财付通网络金融小额贷款有限公司2026年度和盛9号第一期定向资产支持商业票据",
+      "sheet": "交易商协会-2026年",
+      "row": 731,
+      "differences": {
+        "aaa": {
+          "panel": "0.0158",
+          "huatai_percent": "1.6"
+        }
+      },
+      "action": "原有值保留，待公告核实；华泰原值完整留档"
+    }
+  ],
+  "cross_year": [
+    {
+      "product": "中信信托有限责任公司2025年度芬郁第二期定向资产支持票据",
+      "established": "2026-01-05",
+      "amount": "6",
+      "venue": "银行间",
+      "originator": "中信信托有限责任公司",
+      "manager": "中信信托有限责任公司",
+      "party": "蚂蚁",
+      "asset": "小微贷",
+      "sheet": "交易商协会-2026年",
+      "row": 2,
+      "tiers": [
+        {
+          "layer": "优先级",
+          "rating": "AAAsf",
+          "amount": "5.4",
+          "term": "0.76",
+          "rate": "1.84",
+          "row": 2
+        },
+        {
+          "layer": "次优先级",
+          "rating": "AA+sf",
+          "amount": "0.24",
+          "term": "1",
+          "rate": "1.95",
+          "row": 3
+        },
+        {
+          "layer": "次级",
+          "rating": "-",
+          "amount": "0.36",
+          "term": "1.5",
+          "rate": null,
+          "row": 4
+        }
+      ],
+      "booking_inferred": "2025-12-29",
+      "reason": "跨年，已有底稿另行留档，不重复2026计入"
+    }
+  ],
+  "source_sha256": "1efe44779ec108996d12897cee9cabfbdfbb0f36c8e3d3d58507105bdccc98d7",
+  "policy": "完整已录底稿已使用华泰截至2026-10-23明细补录现有资产方范围项目；新项目簿记日按设立日含当日第4交易日推算，非实际簿记公告。京东动产质押纳入京东系；范围外主体未加入。原有日期及未公告核实的数值保留，名称冲突单列复核。本统计表示已录入覆盖，不保证市场无缺漏；缺失AAA字段不补造。"
+}

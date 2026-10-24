@@ -241,8 +241,17 @@ APPROVED_REVISIONS: dict[str, tuple[str, ...]] = {
 def compare_weekly_snapshot(previous: list[dict[str, Any]], current: list[dict[str, Any]]) -> tuple[dict[str, Any], list[dict]]:
     """比较两份追加式快照，识别周新增、历史回补、删除与实质修订。"""
     qc: list[dict] = []
-    previous_by_key = {record_key(record): record for record in previous}
-    current_by_key = {record_key(record): record for record in current}
+    # 20261023华泰更新：原截图的诚昕4/5期与诚新4/5期设立日、规模、
+    # 首档利率逐一对齐。仅规范这两个登记名称，仍对其业务字段执行漂移门禁。
+    known_names = {
+        normalize_product_key('华泰资管诚昕3号4期资产支持专项计划'): normalize_product_key('华泰资管诚新3号4期资产支持专项计划'),
+        normalize_product_key('华泰资管诚昕3号5期资产支持专项计划'): normalize_product_key('华泰资管诚新3号5期资产支持专项计划'),
+    }
+    def comparison_key(record):
+        key = record_key(record)
+        return known_names.get(key, key)
+    previous_by_key = {comparison_key(record): record for record in previous}
+    current_by_key = {comparison_key(record): record for record in current}
     if len(previous_by_key) != len(previous):
         issue(qc, "FAIL", "BASELINE_DUPLICATE_KEY", "基线快照存在重复产品名称")
     if len(current_by_key) != len(current):
