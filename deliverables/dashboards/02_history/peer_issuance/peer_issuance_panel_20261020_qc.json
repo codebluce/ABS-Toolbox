@@ -39,17 +39,17 @@
   {
     "level": "OK",
     "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
+    "message": "外贸信托 分段加总与渠道总额差额 0.0 亿元"
+  },
+  {
+    "level": "OK",
+    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
     "message": "国投信托 分段加总与渠道总额差额 0.00 亿元"
   },
   {
     "level": "OK",
     "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
     "message": "华能信托 分段加总与渠道总额差额 0.00 亿元"
-  },
-  {
-    "level": "OK",
-    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
-    "message": "外贸信托 分段加总与渠道总额差额 0.0 亿元"
   },
   {
     "level": "OK",
@@ -69,12 +69,12 @@
   {
     "level": "OK",
     "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
-    "message": "中国对外经济贸易信托有限公司 分段加总与渠道总额差额 0.0 亿元"
+    "message": "国投泰康信托有限公司 分段加总与渠道总额差额 0 亿元"
   },
   {
     "level": "OK",
     "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
-    "message": "华能贵诚信托有限公司 分段加总与渠道总额差额 0.00 亿元"
+    "message": "上海国际信托有限公司 分段加总与渠道总额差额 0 亿元"
   },
   {
     "level": "OK",

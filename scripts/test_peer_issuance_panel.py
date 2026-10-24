@@ -42,6 +42,23 @@ def make_record(**overrides):
 
 
 class TestParse(unittest.TestCase):
+    def test_confirmed_trust_aliases_merge_without_mutating_source(self):
+        rows = [make_record(product='a',originator='外贸信托',base_asset='京东金条',amount=D('10')),
+                make_record(product='b',originator='中国对外经济贸易信托有限公司',base_asset='京东金条',amount=D('5')),
+                make_record(product='c',originator='华能信托',base_asset='网商贷',amount=D('8')),
+                make_record(product='d',originator='华能贵诚信托有限公司',base_asset='网商贷',amount=D('2'))]
+        data, qc = build_dashboard(rows,[make_record(date=date(2025,8,1))])
+        channels=data['kpis']['trust_channels']
+        self.assertEqual(data['kpis']['total_2026']['amount'],D('25'))
+        rendered=render_body(data)
+        self.assertNotIn('中国对外经济贸易信托有限公司',rendered)
+        self.assertNotIn('华能贵诚信托有限公司',rendered)
+        self.assertEqual(rows[1]['originator'],'中国对外经济贸易信托有限公司')
+        self.assertEqual(rows[3]['originator'],'华能贵诚信托有限公司')
+        card=next(c for c in data['cards'] if c['name']=='京东金条')
+        self.assertEqual(len(card['originators']),1)
+        self.assertEqual(card['originators'][0]['amount'],D('15'))
+
     def test_rate_decimal_form(self):
         self.assertEqual(parse_rate(0.0175), D("0.0175"))
 

@@ -331,6 +331,18 @@ def compare_weekly_snapshot(previous: list[dict[str, Any]], current: list[dict[s
 # 聚合
 # ---------------------------------------------------------------------------
 
+TRUST_ORIGINATOR_ALIASES = {
+    '中国对外经济贸易信托有限公司': '外贸信托',
+    '华能贵诚信托有限公司': '华能信托',
+}
+
+
+def normalize_trust_originator(name: str) -> str:
+    """仅按用户确认的精确全称归并，不用相似名称推断其他信托主体。"""
+    name = str(name or '').strip()
+    return TRUST_ORIGINATOR_ALIASES.get(name, name)
+
+
 def is_jd(record: dict[str, Any]) -> bool:
     """京东系 = 原始权益人或基础资产含“京东”（覆盖走信托通道发行的京东资产）。"""
     return "京东" in record["originator"] or "京东" in record["base_asset"]
@@ -394,6 +406,9 @@ def month_key(record: dict[str, Any]) -> int | None:
 
 def build_dashboard(records_2026: list[dict[str, Any]], records_2025: list[dict[str, Any]]) -> tuple[dict[str, Any], list[dict]]:
     qc: list[dict] = []
+    # 所有渠道、权益人、月份及同比计算共用同一统计名称；不改底稿原始值。
+    records_2026 = [{**r, 'originator': normalize_trust_originator(r['originator'])} for r in records_2026]
+    records_2025 = [{**r, 'originator': normalize_trust_originator(r['originator'])} for r in records_2025]
     dated_2026 = [r for r in records_2026 if r["date"]]
     if not dated_2026:
         raise PanelInputError("2026 数据缺少簿记时间，无法确定最新簿记日")

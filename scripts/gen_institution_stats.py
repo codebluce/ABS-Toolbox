@@ -29,6 +29,22 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from abs_common import preprocess_xlsx_for_pandas, PRIORITY_LAYERS, filter_excluded_institutions, fix_bookkeeping_year, normalize_investor_name
 from entity_alias import normalize_entity, normalize_bank, ENTITY_MERGE_MAP, BANK_NORM_MAP
+import json
+
+
+def normalize_stats_role(name, role):
+    """用户确认的管理人/销售口径，不扩展到认购机构或其他角色。"""
+    from pathlib import Path
+    mapping = json.loads((Path(__file__).resolve().parents[1] / 'data/institution_stats_role_aliases.json').read_text(encoding='utf-8'))[role]
+    name = normalize_entity(name)
+    return mapping.get(name, name)
+
+
+def role_ib_scale(ib_scale, role):
+    """投行实际认购规模按对应表的同一角色名称归并。"""
+    result = ib_scale.copy()
+    result.index = [normalize_stats_role(name, role) for name in result.index]
+    return result.groupby(level=0).sum()
 
 # ═══════════════════════════════════════════════════════════════
 # §1  视觉设计范式 (Visual Design Paradigm)
@@ -580,12 +596,14 @@ def compute_ib_subscription(df):
 
 def compute_manager_table(projects, ib_scale, total_scale):
     """表一：管理人统计表（券商only）"""
+    projects = projects.copy()
+    projects['计划管理人'] = projects['计划管理人'].apply(lambda name: normalize_stats_role(name, 'manager'))
     mgr = projects.groupby('计划管理人').agg(
         管理项目数=('项目名称', 'count'),
         管理规模=('规模', 'sum')
     ).reset_index()
     mgr = mgr[mgr['计划管理人'].apply(is_brokerage)].copy()
-    ib_df = ib_scale.reset_index()
+    ib_df = role_ib_scale(ib_scale, 'manager').reset_index()
     ib_df.columns = ['计划管理人', '投行认购规模']
     mgr = mgr.merge(ib_df, on='计划管理人', how='left')
     mgr['投行认购规模'] = mgr['投行认购规模'].fillna(0)
@@ -599,10 +617,10 @@ def compute_sales_table(projects, ib_scale, total_scale):
     rows = []
     for _, row in projects.iterrows():
         institutions = [
-            normalize_entity(x.strip())
+            normalize_stats_role(x.strip(), 'sales')
             for x in str(row['联席承销商']).split('/') if x.strip()
         ]
-        for inst in institutions:
+        for inst in dict.fromkeys(institutions):
             if inst == '-':
                 continue
             rows.append({
@@ -618,7 +636,7 @@ def compute_sales_table(projects, ib_scale, total_scale):
         销售项目数=('项目名称', 'count'),
         参与项目规模=('项目规模', 'sum')
     ).reset_index()
-    ib_df = ib_scale.reset_index()
+    ib_df = role_ib_scale(ib_scale, 'sales').reset_index()
     ib_df.columns = ['机构名称', '投行认购规模']
     sales = sales.merge(ib_df, on='机构名称', how='left')
     sales['投行认购规模'] = sales['投行认购规模'].fillna(0)
@@ -723,7 +741,7 @@ def _build_section_by_key(key, mgr, sales, custody):
         table = build_stat_table(cols, build_manager_rows(mgr), c['thead'])
         return build_section(
             '表一：管理人统计表',
-            f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 申万资管简称归一、证券/资管独立',
+            f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 按已确认管理人口径归并',
             table, 'manager'
         )
     if key == 'sales':
@@ -738,7 +756,7 @@ def _build_section_by_key(key, mgr, sales, custody):
         table = build_stat_table(cols, build_sales_rows(sales), c['thead'])
         return build_section(
             '表二：销售机构统计表',
-            f'{len(sales)}家券商 · 联席承销商=销售机构 · 申万资管简称归一、证券/资管独立',
+            f'{len(sales)}家券商 · 联席承销商=销售机构 · 按已确认销售口径归并',
             table, 'sales'
         )
     if key == 'custodian':
