@@ -1,0 +1,67 @@
+{
+  "updated_at": "2026-10-24",
+  "ledger": "2026年ABS发行台账-1023.xlsx",
+  "entries": [
+    {
+      "file": "deliverables/ledger/05_bookkeeping_details/【26东裕8第三期】项目簿记明细-预簿记2026-10-20.xlsx",
+      "sha256": "dd35884af2698003e409b6a3b1aead8d8c6d7f7e7331c913ef3929b84c00c580",
+      "project": "26东裕8号三期",
+      "exists_in_1023": true,
+      "status": "已录入1023定稿",
+      "prebooking": true,
+      "received_date": "2026-10-24",
+      "ledger": "2026年ABS发行台账-1023-定稿.xlsx"
+    },
+    {
+      "file": "deliverables/ledger/05_bookkeeping_details/【26东裕ABN001】项目簿记明细-20261016.xlsx",
+      "sha256": "f64427cc93a214ef7d84e82ab02cfee1203c0de8375a08cb3068174b9c04c564",
+      "project": "26东裕8号一期",
+      "exists_in_1023": true,
+      "status": "已录入1023定稿",
+      "prebooking": false,
+      "received_date": "2026-10-24",
+      "ledger": "2026年ABS发行台账-1023-定稿.xlsx"
+    },
+    {
+      "file": "deliverables/ledger/05_bookkeeping_details/【26东裕ABN002】项目簿记明细-20261016.xlsx",
+      "sha256": "2d37e5715325a88292aeb745edcddae082e3122bfdca16f68279f01d793016c4",
+      "project": "26东裕8号二期",
+      "exists_in_1023": true,
+      "status": "已录入1023定稿",
+      "prebooking": false,
+      "received_date": "2026-10-24",
+      "ledger": "2026年ABS发行台账-1023-定稿.xlsx"
+    },
+    {
+      "file": "deliverables/ledger/05_bookkeeping_details/【耘睿30-1ABS】簿记明细-簿记日期2026年10月15日.xlsx",
+      "sha256": "8f2f953f95541a001f654ae927e941143dec9758563c2010554383d0a50bc6ec",
+      "project": "耘睿30-1",
+      "exists_in_1023": true,
+      "status": "已录入1023定稿",
+      "prebooking": false,
+      "received_date": "2026-10-24",
+      "ledger": "2026年ABS发行台账-1023-定稿.xlsx"
+    },
+    {
+      "file": "deliverables/ledger/05_bookkeeping_details/耘睿25号1期项目簿记明细-20261013.xlsx",
+      "sha256": "ac8cce5cec8d174c6b6acf5db596eee809a6005f9108f4542e1e4962112eec4b",
+      "project": "耘睿25-1",
+      "exists_in_1023": true,
+      "status": "已录入1023定稿",
+      "prebooking": false,
+      "received_date": "2026-10-24",
+      "ledger": "2026年ABS发行台账-1023-定稿.xlsx"
+    },
+    {
+      "file": "deliverables/ledger/05_bookkeeping_details/耘睿25号2期项目簿记明细-20261020.xlsx",
+      "sha256": "a9c915d234ce0d14558033e729c2b1875e049b42b87cbc652b36a01421b6972a",
+      "project": "耘睿25号2期",
+      "exists_in_1023": true,
+      "status": "已录入1023定稿",
+      "prebooking": false,
+      "received_date": "2026-10-24",
+      "ledger": "2026年ABS发行台账-1023-定稿.xlsx"
+    }
+  ],
+  "policy": "未来更新台账时读取entries中预存待下周台账项，项目出现后录入，不按缺失项目强制造台账行"
+}

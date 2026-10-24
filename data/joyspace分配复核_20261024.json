@@ -1,0 +1,72 @@
+{
+  "read_date": "2026-10-24",
+  "conflicts": [
+    {
+      "name": "珠海华润银行",
+      "first": {
+        "person": "吴沛智",
+        "category": "ABN主承销商最低9000万(15家)"
+      },
+      "other": {
+        "person": "吴沛智",
+        "category": "城商行"
+      }
+    },
+    {
+      "name": "泰康资产",
+      "first": {
+        "person": "李亦非",
+        "category": "中保登管理人(11家)"
+      },
+      "other": {
+        "person": "李亦非",
+        "category": "保险/保险资管投资条线"
+      }
+    },
+    {
+      "name": "平安资产",
+      "first": {
+        "person": "吴沛智",
+        "category": "中保登管理人(11家)"
+      },
+      "other": {
+        "person": "吴沛智",
+        "category": "保险/保险资管投资条线"
+      }
+    },
+    {
+      "name": "大家资产",
+      "first": {
+        "person": "高雅",
+        "category": "中保登管理人(11家)"
+      },
+      "other": {
+        "person": "高雅",
+        "category": "保险/保险资管投资条线"
+      }
+    },
+    {
+      "name": "华泰资产",
+      "first": {
+        "person": "李亦非",
+        "category": "中保登管理人(11家)"
+      },
+      "other": {
+        "person": "李亦非",
+        "category": "保险/保险资管投资条线"
+      }
+    },
+    {
+      "name": "中投保",
+      "first": {
+        "person": "李亦非",
+        "category": "私募/财务公司"
+      },
+      "other": {
+        "person": "吴沛智",
+        "category": "企业资金"
+      }
+    }
+  ],
+  "policy": "重复分类保留原表首个分类，不以集团名字拆分合并主体"
+}

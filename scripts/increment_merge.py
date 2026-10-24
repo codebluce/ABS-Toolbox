@@ -300,6 +300,7 @@ def map_detail_to_project(filename, project_names=None):
         # 2026-10 文件名省略储架8号，以原始明细项目名称核实后精确登记。
         "【26东裕ABN001】": "26东裕8号一期",
         "【26东裕ABN002】": "26东裕8号二期",
+        "【26东裕8第三期】": "26东裕8号三期",
         "【耘睿30-1ABS】": "耘睿30-1",
     }
     name = explicit_aliases.get(name, name)

@@ -1,0 +1,66 @@
+{
+  "updated_at": "2026-10-24",
+  "ledger": "2026年ABS发行台账-1023-定稿.xlsx",
+  "projects": 159,
+  "new_projects": [
+    {
+      "project": "26东裕8号三期",
+      "booking_date": "2026-10-20",
+      "scale_yi": 10,
+      "bid_A_yi": 17.66,
+      "bid_B_yi": 1.74,
+      "detail_status": "原文件标注预簿记，原样保留"
+    },
+    {
+      "project": "耘睿25号2期",
+      "booking_date": "2026-10-20",
+      "scale_yi": 10,
+      "bid_A_yi": 25.79,
+      "bid_B_yi": 1.645
+    }
+  ],
+  "received_details": 6,
+  "pending_details": 0,
+  "unchanged_details_skipped": 4,
+  "joyspace": {
+    "snapshot_date": "2026-10-24",
+    "institution_count": 239,
+    "changed_profile_records": 16,
+    "latest_week_records": 9,
+    "allocation_records": 1105,
+    "allocation_changed_records": 12,
+    "allocation_total_wan": 1669145
+  },
+  "coverage": {
+    "peer": "完整已录底稿20261021，实际业务日期至2026-10-16；577期/4878.05亿元；无新同业周表",
+    "consumer": "既有202608白条金条余额；没有新余额文件"
+  },
+  "source_issues": [
+    {
+      "cell": "总表!R1446",
+      "raw": "=8.1",
+      "processing": "常量公式转为同值数值8.1，原始源保留",
+      "project": "金采8-11"
+    },
+    {
+      "project": "26东裕10号五期",
+      "raw": "国开证券/中信建投/兴业证券+H1974+H1890",
+      "processing": "加工副本保留此前核实的国开证券/中信建投/兴业证券/中信证券；原源保留待复核"
+    },
+    {
+      "project": "耘睿24-9",
+      "field": "认购倍数",
+      "old": 2.53,
+      "source_new": null,
+      "processing": "按最新原始表置空，不推算"
+    }
+  ],
+  "verification": {
+    "tests": 272,
+    "result": "OK",
+    "desktop": "artifact gate passed",
+    "mobile": "generated and runtime bookkeeping verified",
+    "all_received_detail_layers": "matched source totals",
+    "non_target_uv_wxy": "preserved by merge QC"
+  }
+}
