@@ -42,7 +42,7 @@
 (() => {
   'use strict';
   try {
-    const config = {"endpoint":"https://abs-anonymous-access-log.codebluce.workers.dev/api/events","version":"684b5458ee3aa34c"};
+    const config = {"endpoint":"https://abs-anonymous-access-log.codebluce.workers.dev/api/events","version":"77870036c47879b7"};
     const randomId = () => crypto.randomUUID ? crypto.randomUUID() : (() => {
       const bytes = crypto.getRandomValues(new Uint8Array(16));
       bytes[6] = (bytes[6] & 15) | 64;
@@ -106,7 +106,7 @@
   <iframe id="viewer" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups allow-forms"></iframe>
   <button id="flip" type="button"></button>
   <script>
-    const PARAMS = {"salt":"CvHQBcehVS5ctxsJh4tBww==","iterations":10000,"desktop":{"iv":"LmC+mmD3VSpb6lPH","url":"p/d.bin?v=9b316ca3a0c7","bytes":618381},"mobile":{"iv":"MBW5YUAIKkx7dlUE","url":"p/m.bin?v=74e7e2d0c57c","bytes":103676}};
+    const PARAMS = {"salt":"WGMsZ0J012aNxScUiL2hLw==","iterations":10000,"desktop":{"iv":"C0IprOcunOm1tmys","url":"p/d.bin?v=264d7552ddff","bytes":618285},"mobile":{"iv":"vLI7RwgsZcnuJ/rE","url":"p/m.bin?v=918e7650ae21","bytes":103573}};
     const VIEW_KEY = 'abs_dash_view';
     const $ = (id) => document.getElementById(id);
     const msg = (text, cls='', html=false) => {
