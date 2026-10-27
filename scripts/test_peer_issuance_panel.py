@@ -26,6 +26,7 @@ from peer_issuance_panel import (  # noqa: E402
     render_body,
     weighted_avg,
     yoy_cutoff,
+    normalize_trust_originator,
 )
 
 D = Decimal
@@ -42,6 +43,40 @@ def make_record(**overrides):
 
 
 class TestParse(unittest.TestCase):
+    def test_unregistered_trust_full_name_warns_and_renders_alert(self):
+        rows=[make_record(product='a',originator='测试国际信托有限公司',amount=D('7'))]
+        data,qc=build_dashboard(rows,[make_record(date=date(2025,8,1))])
+        warning=next(x for x in qc if x['code']=='UNREGISTERED_TRUST_FULL_NAME')
+        self.assertEqual(warning['level'],'WARN')
+        self.assertIn('测试国际信托有限公司',warning['message'])
+        self.assertEqual(data['meta']['unregistered_trust_full_names']['测试国际信托有限公司'],{'count':1,'amount':'7'})
+        rendered=render_body(data)
+        self.assertIn('信托全称待确认简称',rendered)
+        self.assertIn('测试国际信托有限公司',rendered)
+        # 已登记全称不应再告警。
+        _,registered=build_dashboard([make_record(originator='国投泰康信托有限公司')],[make_record(date=date(2025,8,1))])
+        self.assertFalse(any(x['code']=='UNREGISTERED_TRUST_FULL_NAME' for x in registered))
+
+    def test_all_registered_trust_full_names_and_independent_entities(self):
+        expected = {
+            '国投泰康信托有限公司': '国投信托',
+            '上海国际信托有限公司': '上海信托',
+            '华鑫国际信托有限公司': '华鑫信托',
+            '中信信托有限责任公司': '中信信托',
+        }
+        for original, target in expected.items():
+            self.assertEqual(normalize_trust_originator(original), target)
+            current=[make_record(product='a',originator=original,amount=D('4')),
+                     make_record(product='b',originator=target,amount=D('6'))]
+            prior=[make_record(date=date(2025,8,1),originator=original)]
+            data,_=build_dashboard(current,prior)
+            card=data['cards'][0]
+            self.assertEqual(card['originators'],[{'name':target,'amount':D('10')}])
+            self.assertEqual(current[0]['originator'],original)
+            self.assertEqual(prior[0]['originator'],original)
+        self.assertNotEqual(normalize_trust_originator('中信信托'),normalize_trust_originator('中诚信托'))
+        self.assertEqual(normalize_trust_originator('上信信托有限公司（香港）'),'上信信托有限公司（香港）')
+
     def test_confirmed_trust_aliases_merge_without_mutating_source(self):
         rows = [make_record(product='a',originator='外贸信托',base_asset='京东金条',amount=D('10')),
                 make_record(product='b',originator='中国对外经济贸易信托有限公司',base_asset='京东金条',amount=D('5')),

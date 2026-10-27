@@ -69,17 +69,12 @@
   {
     "level": "OK",
     "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
-    "message": "国投泰康信托有限公司 分段加总与渠道总额差额 0 亿元"
+    "message": "厦门信托 分段加总与渠道总额差额 0 亿元"
   },
   {
     "level": "OK",
     "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
-    "message": "上海国际信托有限公司 分段加总与渠道总额差额 0 亿元"
-  },
-  {
-    "level": "OK",
-    "code": "TRUST_CHANNEL_ROW_RECONCILIATION",
-    "message": "其他 分段加总与渠道总额差额 0.00 亿元"
+    "message": "中粮信托 分段加总与渠道总额差额 0.00 亿元"
   },
   {
     "level": "OK",

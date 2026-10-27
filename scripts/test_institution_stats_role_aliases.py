@@ -3,8 +3,21 @@ import unittest
 import pandas as pd
 from gen_institution_stats import compute_manager_table, compute_sales_table, normalize_stats_role
 from abs_common import normalize_investor_name
+from entity_alias import normalize_bank
+from gen_institution_stats import compute_custodian_table
 
 class StatsRoleAliasesTest(unittest.TestCase):
+    def test_icbc_tianjin_branch_merges_in_custodian_table(self):
+        self.assertEqual(normalize_bank('工行天分'), '工商银行')
+        projects = pd.DataFrame([
+            {'项目名称': 'a', '托管行': normalize_bank('工行天分'), '规模': 15},
+            {'项目名称': 'b', '托管行': normalize_bank('工商银行'), '规模': 10},
+        ])
+        result = compute_custodian_table(projects, 25)
+        self.assertEqual(result['托管行'].tolist(), ['工商银行'])
+        self.assertEqual(result.iloc[0]['托管项目数'], 2)
+        self.assertEqual(result.iloc[0]['托管规模'], 25)
+
     def test_manager_groups_and_ib_share_are_merged_once(self):
         projects=pd.DataFrame([
             {'项目名称':str(i),'计划管理人':n,'规模':10}

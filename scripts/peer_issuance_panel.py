@@ -331,16 +331,30 @@ def compare_weekly_snapshot(previous: list[dict[str, Any]], current: list[dict[s
 # 聚合
 # ---------------------------------------------------------------------------
 
-TRUST_ORIGINATOR_ALIASES = {
-    '中国对外经济贸易信托有限公司': '外贸信托',
-    '华能贵诚信托有限公司': '华能信托',
-}
+TRUST_ALIAS_PATH = ROOT / 'data' / 'peer_trust_aliases.json'
+TRUST_ORIGINATOR_ALIASES = json.loads(TRUST_ALIAS_PATH.read_text(encoding='utf-8'))['aliases']
+if (set(TRUST_ORIGINATOR_ALIASES) & set(TRUST_ORIGINATOR_ALIASES.values()) or
+        any(not src or not dst or src == dst for src, dst in TRUST_ORIGINATOR_ALIASES.items())):
+    raise ValueError('同业信托映射必须为无链式、非空的单跳精确映射')
 
 
 def normalize_trust_originator(name: str) -> str:
     """仅按用户确认的精确全称归并，不用相似名称推断其他信托主体。"""
     name = str(name or '').strip()
     return TRUST_ORIGINATOR_ALIASES.get(name, name)
+
+
+def unregistered_trust_full_names(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """识别未登记简称的信托公司全称；只预警，不自动猜测或合并。"""
+    result: dict[str, dict[str, Any]] = {}
+    for record in records:
+        name = str(record.get('originator') or '').strip()
+        if ('信托' in name and name.endswith(('有限公司', '有限责任公司'))
+                and name not in TRUST_ORIGINATOR_ALIASES):
+            item = result.setdefault(name, {'count': 0, 'amount': ZERO})
+            item['count'] += 1
+            item['amount'] += record['amount']
+    return result
 
 
 def is_jd(record: dict[str, Any]) -> bool:
@@ -406,6 +420,15 @@ def month_key(record: dict[str, Any]) -> int | None:
 
 def build_dashboard(records_2026: list[dict[str, Any]], records_2025: list[dict[str, Any]]) -> tuple[dict[str, Any], list[dict]]:
     qc: list[dict] = []
+    # 在规范名称前检查原始权益人，避免未登记全称被静默拆成独立渠道。
+    unregistered_trust = unregistered_trust_full_names(records_2026)
+    if unregistered_trust:
+        detail = '；'.join(f'{name}（{item["count"]}期/{item["amount"]}亿）'
+                           for name, item in sorted(unregistered_trust.items()))
+        issue(qc, 'WARN', 'UNREGISTERED_TRUST_FULL_NAME',
+              f'发现未登记简称的信托公司全称，请确认简称并加入映射后合并：{detail}',
+              names={name: {'count': item['count'], 'amount': str(item['amount'])}
+                     for name, item in unregistered_trust.items()})
     # 所有渠道、权益人、月份及同比计算共用同一统计名称；不改底稿原始值。
     records_2026 = [{**r, 'originator': normalize_trust_originator(r['originator'])} for r in records_2026]
     records_2025 = [{**r, 'originator': normalize_trust_originator(r['originator'])} for r in records_2025]
@@ -614,6 +637,10 @@ def build_dashboard(records_2026: list[dict[str, Any]], records_2025: list[dict[
             },
         },
         "cards": cards,
+    }
+    data['meta']['unregistered_trust_full_names'] = {
+        name: {'count': item['count'], 'amount': str(item['amount'])}
+        for name, item in unregistered_trust.items()
     }
     return data, qc
 
@@ -835,6 +862,12 @@ def render_body(data: dict[str, Any]) -> str:
     cards = "".join(card_html(card, meta["latest_date"]) for card in data["cards"])
     trust_channels = kpis["trust_channels"]
     trust_rows = trust_channel_rows(trust_channels)
+    if meta.get('unregistered_trust_full_names'):
+        items = meta['unregistered_trust_full_names']
+        detail = '；'.join(f'{name}（{item["count"]}期/{item["amount"]}亿）' for name, item in sorted(items.items()))
+        trust_rows += ('<p class="peer-issuance-coverage-note" role="alert">'
+                       '⚠ 信托全称待确认简称：' + html.escape(detail) +
+                       '。请确认简称并登记映射后再合并统计。</p>')
     if meta.get('coverage_note'):
         trust_rows += '<p class="peer-issuance-coverage-note">' + html.escape(meta['coverage_note']) + '</p>'
     return f'''<main class="peer-issuance-root"><div class="peer-issuance-shell"><header class="peer-issuance-hero"><h1>同业发行面板</h1><p>互联网金融 ABS/ABN 全市场发行动态</p><div class="peer-issuance-date-grid"><span class="peer-issuance-date">2026 数据更新至 {meta['latest_date'].isoformat()}</span><span class="peer-issuance-date">同比窗口 2025-01-01 ~ {meta['yoy_cutoff'].isoformat()}</span><span class="peer-issuance-date">其中京东系 {meta['jd_included']['y2026']['count']} 期 / {yi(meta['jd_included']['y2026']['amount'])} 亿</span></div></header><section class="peer-issuance-section"><h2>同业发行概览（2026 累计 {yi(total["amount"])} 亿 / {total["count"]} 期）</h2><p>按具体基础资产归并至资产集团，展示累计发行规模、去年同期规模与变化；未命中归并规则的资产列为“未知资产”。同比基期为 2025 年簿记时间 ≤ {meta['yoy_cutoff'].isoformat()} 的同期窗口</p>{type_rows(kpis["by_family"], total["amount"])}</section><section class="peer-issuance-section"><h2>信托渠道分布</h2><p>仅统计原始权益人名称含“信托”的渠道；按 2026 年累计发行规模取前 {trust_channels["top_n"]} 家，其余合并为“其他”。横条长度表示渠道规模；条下明确展示各资产集团的规模及其在该渠道内占比。</p>{trust_rows}</section><section class="peer-issuance-section"><h2>基础资产发行 Top {TOP_N}</h2><p>按 2026 年累计发行规模排序；每张卡片含月度规模、AAA 利率周度走势、原始权益人分布及月度变化</p></section><div class="peer-issuance-cards">{cards}</div><section class="peer-issuance-section peer-issuance-foot"><h2>数据口径</h2><p>京东系 = 原始权益人或基础资产含“京东”（并集口径，覆盖走信托通道发行的京东资产），已纳入全市场互联网金融 ABS/ABN 发行统计。</p><p>同比 = 2025 年簿记时间 ≤ 2026 最新簿记日前一年的同期窗口；信托渠道仅统计名称含“信托”的原始权益人，按基础资产归并至七类资产集团，未命中规则的资产归入未知资产。</p><p>权益人月度变化中当月为进行中月份，统计至最新簿记日；周度利率走势仅含有有效 AAA 利率的周。</p></section></div></main>'''
