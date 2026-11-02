@@ -16,6 +16,11 @@
     const input = get('inst-search');
     const dropdown = get('inst-options');
     const month = get('month-select');
+    const monthNames = [...new Set(records.map(r => r.month))]
+      .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+    month.innerHTML = monthNames.map((name, index) =>
+      `<option value="${name}"${index === monthNames.length - 1 ? ' selected' : ''}>2026年 ${name}</option>`
+    ).join('');
     const clear = get('clear-search');
     let selected = names.includes('中信证券') ? '中信证券' : null;
     let active = -1;

@@ -25,7 +25,37 @@ from secondary_allocation_panel import ALLOCATION_CSS, SNAPSHOT_PATH, render_bod
 TEMPLATE_PATH = LAB_DIR / 'secondary_allocation_quick_template.html'
 PREVIEW_PATH = LAB_DIR.parent.parent / 'deliverables' / 'dashboards' / '02_history' / 'lab_viz' / 'secondary_allocation_quick_preview.html'
 SOURCE_URL = 'https://joyspace.jd.com/sheets/89PMGlBmUHUueYQ6Cl7L'
-MONTHS = tuple(f'{m}月' for m in range(1, 11))
+MONTHS = tuple(f'{m}月' for m in range(1, 13))
+
+
+def discover_months(directory: Path) -> list[str]:
+    """从导入目录自动发现月份 TSV，避免新增月份被固定清单漏掉。"""
+    found = []
+    for path in directory.glob('*.tsv'):
+        match = re.fullmatch(r'(\d{1,2})月', path.stem)
+        if match and 1 <= int(match.group(1)) <= 12:
+            found.append((int(match.group(1)), path.stem))
+    return [name for _, name in sorted(found)]
+
+
+def freshness_report(source_dir: Path, snapshot_path: Path = SNAPSHOT_PATH) -> dict:
+    """比较源目录月份与快照月份，识别尚未导入的新月份。"""
+    source_months = discover_months(source_dir)
+    snapshot = json.loads(snapshot_path.read_text(encoding='utf-8'))
+    snapshot_months = sorted({r['month'] for r in snapshot.get('records', [])
+                              if re.fullmatch(r'\d{1,2}月', r.get('month', ''))},
+                             key=lambda x: int(x.rstrip('月')))
+    missing = [m for m in source_months if m not in snapshot_months]
+    source_latest = source_months[-1] if source_months else None
+    snapshot_latest = snapshot_months[-1] if snapshot_months else None
+    return {
+        'source_latest': source_latest,
+        'snapshot_latest': snapshot_latest,
+        'missing_months': missing,
+        'stale': bool(missing),
+        'source_months': source_months,
+        'snapshot_months': snapshot_months,
+    }
 
 
 def cell(row: list[str], index: int) -> str:
@@ -236,7 +266,13 @@ def parse_month(month: str, rows: list[list[str]]) -> list[dict]:
 
 def import_snapshot(directory: Path, snapshot_date: str) -> dict:
     records: list[dict] = []
-    for month in MONTHS:
+    months = discover_months(directory)
+    if not months:
+        raise ValueError(f'{directory}: 未发现月份 TSV')
+    expected = [f'{m}月' for m in range(1, int(months[-1].rstrip('月')) + 1)]
+    if months != expected:
+        raise ValueError(f'{directory}: 月份不连续，发现 {months}，期望 {expected}')
+    for month in months:
         with (directory / f'{month}.tsv').open(encoding='utf-8-sig', newline='') as stream:
             rows = list(csv.reader(stream, delimiter='\t'))
         if not rows or '项目名称' not in rows[0]:
@@ -245,7 +281,7 @@ def import_snapshot(directory: Path, snapshot_date: str) -> dict:
     return {
         'source_url': SOURCE_URL, 'source_title': '终版-26年次级分配',
         'snapshot_date': snapshot_date,
-        'scope': '2026年1–10月；主项目块按投资人分量，另含中保登及3:1结构化分层；3月主表次级报量暂不计入',
+        'scope': f'2026年1–{int(months[-1].rstrip("月"))}月；主项目块按投资人分量，另含中保登及3:1结构化分层；3月主表次级报量暂不计入',
         'records': records,
     }
 
@@ -262,7 +298,12 @@ def main() -> None:
     parser.add_argument('--snapshot-date', default=date.today().isoformat())
     parser.add_argument('--update-month', choices=MONTHS, help='仅更新指定月份，保留现有其他月份快照')
     parser.add_argument('--month-tsv', type=Path, help='指定月份的 JoySpace TSV，与 --update-month 同用')
+    parser.add_argument('--check-source-dir', type=Path, help='只检查源目录是否出现快照未导入的新月份')
     args = parser.parse_args()
+    if args.check_source_dir:
+        report = freshness_report(args.check_source_dir)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        raise SystemExit(2 if report['stale'] else 0)
     if bool(args.update_month) != bool(args.month_tsv):
         parser.error('--update-month 与 --month-tsv 必须同时指定')
     if args.import_dir and args.update_month:

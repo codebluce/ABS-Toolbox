@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -50,9 +51,9 @@ class AllocationPreviewTests(unittest.TestCase):
         self.assertEqual(allocations[0]['original_amount'], '1.85亿')
         self.assertEqual(allocations[0]['scale'], '15')
 
-    def test_nine_months_snapshot_and_exact_september_match(self):
+    def test_eleven_months_snapshot_and_exact_september_match(self):
         data = json.loads(preview.SNAPSHOT_PATH.read_text(encoding='utf-8'))
-        self.assertEqual({r['month'] for r in data['records']}, set(preview.MONTHS))
+        self.assertEqual({r['month'] for r in data['records']}, set(preview.MONTHS[:11]))
         rows = [r for r in data['records'] if r['month'] == '9月'
                 and r['investor'] == '中信证券']
         self.assertEqual(len(rows), 5)
@@ -63,6 +64,19 @@ class AllocationPreviewTests(unittest.TestCase):
             '9月!K6/L6', '9月!K11/L11', '9月!F20/G20',
             '9月!K20/L20', '9月!F33/G33',
         ])
+
+    def test_freshness_detects_new_month_not_in_snapshot(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / '1月.tsv').write_text('项目名称\n', encoding='utf-8')
+            (root / '11月.tsv').write_text('项目名称\n', encoding='utf-8')
+            snapshot = root / 'snapshot.json'
+            snapshot.write_text(json.dumps({'records': [{'month': '1月'}]}), encoding='utf-8')
+            report = preview.freshness_report(root, snapshot)
+            self.assertEqual(report['source_latest'], '11月')
+            self.assertEqual(report['snapshot_latest'], '1月')
+            self.assertEqual(report['missing_months'], ['11月'])
+            self.assertTrue(report['stale'])
 
     def test_source_text_cannot_close_embedded_json_script(self):
         html = preview.build_preview({'records': [{'investor': '</script><img src=x onerror=alert(1)>'}]})
