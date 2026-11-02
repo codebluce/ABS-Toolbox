@@ -16,9 +16,9 @@ from institution_identity import canonical as canonical_institution, aliases as 
 
 # ── 成本区间配置（工具一使用）──────────────────────────────────────
 # 整体 bin 下限 1.30%（保理类资产专用，保理成本低是正常现象）
-# 非保理类资产的成本下限由 COST_BIN_LOWER_NON_PREF 控制（1.50%），QC 时单独校验
+# 非保理类资产的成本下限由 COST_BIN_LOWER_NON_PREF 控制（1.40%），QC 时单独校验
 COST_BIN_LOWER = 1.30              # bin 起始下限
-COST_BIN_LOWER_NON_PREF = 1.50     # 非保理类资产的成本下限（QC 校验用）
+COST_BIN_LOWER_NON_PREF = 1.40     # 非保理类资产的成本下限（QC 校验用；ABCP续发可低于1.50%）
 COST_BIN_UPPER = 3.00
 COST_BIN_STEP = 0.05
 COST_BINS = [round(COST_BIN_LOWER + i * COST_BIN_STEP, 4)

@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from increment_merge import (  # noqa: E402
     PROJECT_LEVEL_COLS, _field_equal, sync_existing_project_fields, get_all_projects,
-    map_detail_to_project,
+    map_detail_to_project, read_detail,
 )
 
 # 1-indexed 列位（与 PROJECT_LEVEL_COLS 一致）
@@ -83,10 +83,32 @@ def snapshot(ws, rows_range):
 
 
 class TestBookkeepingFilenameAliases(unittest.TestCase):
+    def test_multi_sheet_detail_reads_all_layers(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp:
+            path = os.path.join(temp, 'multi.xlsx')
+            wb = openpyxl.Workbook()
+            wb.remove(wb.active)
+            for layer, size in [('优先A', 1.2), ('优先B', 0.3)]:
+                ws = wb.create_sheet(layer)
+                ws.append(['项目名称', '测试项目'])
+                ws.append(['簿记日期', '2026-10-27'])
+                ws.append([layer + '申购利率', '穿透机构', '申购规模'])
+                ws.append([0.017, '甲机构', size])
+            wb.save(path)
+            wb.close()
+            rows = read_detail(path)
+            self.assertEqual({r['layer'] for r in rows}, {'优先A', '优先B'})
+            self.assertEqual(sum(r['size'] for r in rows), 1.5)
+
     def test_dongyu8_third_prebooking_matches_only_third_period(self):
         projects = {'26东裕8号一期', '26东裕8号二期', '26东裕8号三期', '耘睿25号2期'}
         self.assertEqual(map_detail_to_project('【26东裕8第三期】项目簿记明细-预簿记2026-10-20.xlsx', projects), '26东裕8号三期')
         self.assertEqual(map_detail_to_project('耘睿25号2期项目簿记明细-20261020.xlsx', projects), '耘睿25号2期')
+
+    def test_qy34_unit_converted_detail_maps_to_ledger_project(self):
+        projects = {'启赢3-4', '启赢4-1'}
+        self.assertEqual(map_detail_to_project('【启赢3-4】项目簿记明细-20261023-2-万元换算亿元.xlsx', projects), '启赢3-4')
 
     def test_october_bookkeeping_names_are_precise(self):
         projects = {'26东裕8号一期', '26东裕8号二期', '耘睿30-1', '耘睿25-1', '26东裕10号一期'}

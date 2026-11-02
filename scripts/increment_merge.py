@@ -213,44 +213,45 @@ def read_detail(path, expected_layer="auto"):
     """
     import re
     wb = openpyxl.load_workbook(path, data_only=True)
-    ws = wb.active
     items = []
-    current_layer = None
-    for r in range(1, ws.max_row + 1):
-        c1 = ws.cell(row=r, column=1).value
-        c2 = ws.cell(row=r, column=2).value
-        c3 = ws.cell(row=r, column=3).value
-        # Detect section header: col1 contains rate keyword, col2/3 are header labels
-        c1_str = str(c1).strip() if c1 else ""
-        if c1_str and ('申购利率' in c1_str or '投标利率' in c1_str):
-            # Parse layer name from header, e.g. "优先A1级申购利率（%）" -> "优先A1"
-            layer = c1_str.split('申购利率')[0].split('投标利率')[0].strip()
-            # v2.5.3 修复 #ABS-005: 只删"级"字本身, 保留 A1/A2 档位标识
-            # 原 re.sub(r'级.*$', '', layer) 会把"优先级A1"削成"优先" (级.*$ 匹配"级A1")
-            # 导致 A1/A2 两档数据混进同一个"优先"层, A1 层金额虚高, A2 误判缺失
-            layer = layer.replace('级', '').strip()
-            if layer:
-                current_layer = layer
-            else:
-                current_layer = "优先A"
-            continue
-        # Skip non-data rows
-        if not c2 or str(c2).strip() in ['投资者', '投资者名称', '机构', '穿透机构', '']:
-            continue
-        # Skip project info rows (簿记日期, 管理人, 项目名称)
-        if c1_str in ['项目名称', '簿记日期', '管理人', '']:
-            if c1_str == '' and c2 is None:
+    # 同一文件可能按档位拆成多个工作表（优先A/优先B等），必须全部读取。
+    for ws in wb.worksheets:
+        current_layer = None
+        for r in range(1, ws.max_row + 1):
+            c1 = ws.cell(row=r, column=1).value
+            c2 = ws.cell(row=r, column=2).value
+            c3 = ws.cell(row=r, column=3).value
+            # Detect section header: col1 contains rate keyword, col2/3 are header labels
+            c1_str = str(c1).strip() if c1 else ""
+            if c1_str and ('申购利率' in c1_str or '投标利率' in c1_str):
+                # Parse layer name from header, e.g. "优先A1级申购利率（%）" -> "优先A1"
+                layer = c1_str.split('申购利率')[0].split('投标利率')[0].strip()
+                # v2.5.3 修复 #ABS-005: 只删"级"字本身, 保留 A1/A2 档位标识
+                # 原 re.sub(r'级.*$', '', layer) 会把"优先级A1"削成"优先" (级.*$ 匹配"级A1")
+                # 导致 A1/A2 两档数据混进同一个"优先"层, A1 层金额虚高, A2 误判缺失
+                layer = layer.replace('级', '').strip()
+                if layer:
+                    current_layer = layer
+                else:
+                    current_layer = "优先A"
                 continue
-            if c1_str in ['项目名称', '簿记日期', '管理人']:
+            # Skip non-data rows
+            if not c2 or str(c2).strip() in ['投资者', '投资者名称', '机构', '穿透机构', '']:
                 continue
-        try:
-            sf = float(c3) if c3 else 0
-        except (ValueError, TypeError):
-            continue
-        if sf > 0 and c2:
-            rate = normalize_rate(c1)
-            layer = current_layer if current_layer else (expected_layer if expected_layer != "auto" else "优先A")
-            items.append({'rate': rate, 'name': str(c2).strip(), 'size': sf, 'layer': layer})
+            # Skip project info rows (簿记日期, 管理人, 项目名称)
+            if c1_str in ['项目名称', '簿记日期', '管理人', '']:
+                if c1_str == '' and c2 is None:
+                    continue
+                if c1_str in ['项目名称', '簿记日期', '管理人']:
+                    continue
+            try:
+                sf = float(c3) if c3 else 0
+            except (ValueError, TypeError):
+                continue
+            if sf > 0 and c2:
+                rate = normalize_rate(c1)
+                layer = current_layer if current_layer else (expected_layer if expected_layer != "auto" else "优先A")
+                items.append({'rate': rate, 'name': str(c2).strip(), 'size': sf, 'layer': layer})
     close_workbook(wb)
     # Merge: same institution + same rate + same layer
     merged = OrderedDict()
@@ -301,6 +302,16 @@ def map_detail_to_project(filename, project_names=None):
         "【26东裕ABN001】": "26东裕8号一期",
         "【26东裕ABN002】": "26东裕8号二期",
         "【26东裕8第三期】": "26东裕8号三期",
+        "【尚乘1-4】": "尚乘1号第4期",
+        "【启赢4-1】": "启赢4-1",
+        "【启赢3-4】": "启赢3-4",
+        "【东裕8-6ABN】": "26东裕8号六期",
+        "【东裕8-5】": "26东裕8号五期",
+        "【26东樾4号ABN004】": "2026东樾4号4期（东樾4-6）",
+        "【26东裕8号ABN007】": "26东裕8号七期",
+        "【26东裕8号ABN004】": "26东裕8号四期",
+        "【26东裕5仲裕ABN001】": "（续发）25东裕5号仲裕ABCP",
+        "【26东裕5伯裕】": "（续发）25东裕5号伯裕ABCP",
         "【耘睿30-1ABS】": "耘睿30-1",
     }
     name = explicit_aliases.get(name, name)

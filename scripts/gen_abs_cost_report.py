@@ -506,8 +506,8 @@ def run_qc(df, dfa, out_path, month_labels, asset_order, precheck_only=False):
     else:
         warn(f'{neg_shares}条记录认购份额≤0，请检查')
 
-    # 成本 bin 范围校验（保理类下限 1.30%，非保理类下限 1.50%）
-    # bin 已扩展下限到 1.30%，所以保理类 1.30-1.50% 不会 NaN；这里检查 < 1.30% 的真实异常
+    # 成本 bin 范围校验（保理类下限 1.30%，非保理类下限 1.40%）
+    # bin 已扩展下限到 1.30%，所以保理类 1.30-1.40% 不会 NaN；这里检查 < 1.30% 的真实异常
     nan_count = dfa['成本区间'].isna().sum()
     pref_mask = dfa['资产类型'].apply(is_preferential_asset)
     if nan_count == 0:
@@ -523,7 +523,7 @@ def run_qc(df, dfa, out_path, month_labels, asset_order, precheck_only=False):
             nan_costs_pref = nan_df[nan_df['资产类型'].apply(is_preferential_asset)]['实际成本pct'].unique()
             fail(f'{nan_pref}条保理类记录落在成本区间外（超出1.30%-2.50%），涉及成本值：{[round(c,4) for c in nan_costs_pref]}')
 
-    # 非保理类资产成本下限校验：bin 已扩展到 1.30%，但非保理类 < 1.50% 视为异常
+    # 非保理类资产成本下限校验：bin 已扩展到 1.30%，但非保理类 < 1.40% 视为异常
     non_pref_low = dfa[~pref_mask & (dfa['实际成本pct'] < COST_BIN_LOWER_NON_PREF)]
     if len(non_pref_low) == 0:
         ok(f'非保理类资产成本均 ≥ {COST_BIN_LOWER_NON_PREF:.2f}%')
