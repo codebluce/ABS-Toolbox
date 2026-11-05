@@ -9,6 +9,7 @@ async function check(risk){
  await d.locator('.card').first().waitFor();
  assert.equal(await d.locator('.balance').count(),0);
  assert.deepEqual(await d.locator('.rate').allTextContents(),['1.04%','0.51%','1.29%','0.60%','1.97%','0.70%','1.37%','0.61%']);
+ assert.ok(!(await d.locator('body').innerText()).includes('-0.00'));
  assert.equal(await risk.locator('#period option').count(),9);
  await d.locator('#bad-chart [data-time-index="8"]').hover();
  assert.equal(await d.locator('.tooltip-table tbody tr').count(),4);
@@ -21,6 +22,11 @@ async function check(risk){
  await risk.locator('#asset').selectOption('all');
  assert.equal(await s.locator('.quality-change').first().textContent(),'+0.08 个百分点');
  assert.deepEqual((await s.locator('.quality-change').allTextContents()).slice(-3),['','','']);
+ assert.ok((await s.locator('body').innerText()).includes('2025-12 白条取现'));
+ await s.locator('details summary').click();
+ const rules = await s.locator('#rules').innerText();
+ assert.ok(!rules.includes('久期／年化周转次数'));
+ assert.ok(!rules.includes('原表补充表述'));
  const aligned=await s.locator('.metrics').evaluateAll(nodes=>nodes.every(n=>{const r=[...n.querySelectorAll('.metric-row')].map(e=>e.getBoundingClientRect());return r.length===3&&Math.abs(r[0].top-r[2].top)<1}));
  assert.ok(aligned);
  await risk.locator('#period').selectOption('0');

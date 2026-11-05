@@ -42,6 +42,17 @@ async function check(frame) {
   assert.equal(await frame.locator('.group-compare-row').count(), 8);
   assert.equal(await frame.locator('#compare-body tr').count(), 4);
   assert.equal(await frame.locator('.group-yoy').count(), 8);
+  const bars = await frame.locator('.year-bar').evaluateAll(nodes => nodes.map(node => ({
+    label: node.querySelector('b').textContent,
+    value: node.querySelectorAll('b')[1].textContent
+  })));
+  assert.deepEqual(bars.map(bar => bar.label), ['2025 同期', '2026 累计']);
+  assert.deepEqual(bars.map(bar => bar.value), ['2,538.69', '1,643.11']);
+  const groupBars = await frame.locator('.group-compare-row').evaluateAll(rows => rows.map(row => ({
+    name: row.querySelector('.group-compare-name').textContent,
+    values: [...row.querySelectorAll('.group-year-value')].map(node => node.textContent)
+  })));
+  assert.deepEqual(groupBars.find(item => item.name === '金采').values, ['90.00', '113.00']);
   const growth = await frame.locator('body').evaluate(() => {
     const d=JSON.parse(document.getElementById('issuance-data').textContent);
     const cutoff='2025'+d['2026'].asOf.slice(4);

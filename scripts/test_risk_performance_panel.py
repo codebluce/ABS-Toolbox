@@ -13,8 +13,14 @@ class RiskPerformanceTest(unittest.TestCase):
         self.assertEqual(data['periods']['static'][-1]['date'],'2025-12-31')
         dynamic=data['pages']['dynamic']
         self.assertNotIn('<div class="balance">',dynamic)
+        self.assertNotIn('-0.00 个百分点',dynamic)
         static=data['pages']['static']
         self.assertNotIn('白条取现\\n（不披露）',static)
+        self.assertNotIn('久期／年化周转次数',static)
+        self.assertNotIn('原表补充表述',static)
+        self.assertNotIn('"turnover"',static)
+        self.assertIn('补充说明：',static)
+        self.assertIn('2025-12 白条取现',static)
         marker='<script id="static-data" type="application/json">'
         values=json.loads(static.split(marker)[1].split('</script>')[0])
         self.assertEqual([r['name'] for r in values['periods'][-1]['records']],['赊销白条','信托白条','金条','现金贷整体'])

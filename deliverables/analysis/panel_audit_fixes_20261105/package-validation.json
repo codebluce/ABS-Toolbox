@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "checks": [
+    "protected package leak audit passed",
+    "decrypted desktop equals generated dashboard",
+    "decrypted mobile equals generated mobile dashboard",
+    "package built from the final regenerated dashboard"
+  ],
+  "files": {
+    "index.html": "bd39cf2f4cb62e83984767e74211bc1d2bda31660c0f3a529086c95db1ff35e1",
+    "manifest.json": "86303a8e762eaeb5598a3b037a1c19b89e70a004cf6d0468fb46b069abc76166",
+    "p/d.bin": "1c59e7531024158c8573646f029f581dfdd1033bbecb8c69b9286f5ab8c48f11",
+    "p/m.bin": "cc3368de96fc3f608a7848a86b42bf9a9ee7ccad6e40a85f4a1baa08b98893a6"
+  },
+  "plainSha256": {
+    "desktop": "62ab601fbf648fdb0581b2688e0c739e78a41dec92990a81f424e0f628a1d529",
+    "mobile": "31e661d19e9d658e8cf8eebc6cfb972ef96bd7afda4eea615205e14a8a2300c1"
+  }
+}

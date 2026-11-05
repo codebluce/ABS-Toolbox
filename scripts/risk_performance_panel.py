@@ -1,4 +1,4 @@
-"""JoySpace资产余额快照：离线风险表现组件，桌面与手机共用。"""
+"""JoySpace风险表现快照：离线组件，桌面与手机共用。"""
 from datetime import datetime, timedelta
 from html import escape
 from html.parser import HTMLParser

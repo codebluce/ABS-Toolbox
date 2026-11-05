@@ -24,6 +24,7 @@ class AssetDistributionTest(unittest.TestCase):
         self.assertNotIn('未披露差额', document)
         self.assertNotIn('历史资金结构', document)
         self.assertNotIn('DEMO', document)
+        self.assertIn('四舍五入后可能与合计有最多2亿元差', document)
         data['assets'][0]['totals'][-1] = 1
         with self.assertRaisesRegex(ValueError, '陈旧'):
             panel.verify_document(panel.render_document(data))

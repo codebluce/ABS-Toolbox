@@ -1,0 +1,90 @@
+{
+  "status": "PASS",
+  "date": "2026-11-05",
+  "checks": [
+    "issuance comparison bars use 2025 same-period vs 2026 cumulative",
+    "issuance table retains full-year 2025 reference",
+    "dynamic cash bad change has no negative zero",
+    "static details no longer show turnover marker or original-table wording",
+    "static panel explains the 2025-12 withdrawal disclosure change",
+    "distribution disclosure note added for source rounding residual",
+    "desktop and mobile tabs remain in order issuance / consumer assets / risk performance"
+  ],
+  "sources": {
+    "issuance": {
+      "status": "PASS",
+      "desktopResults": [
+        {
+          "year": "2025",
+          "total": "2,740.69",
+          "assets": 21
+        },
+        {
+          "year": "2026",
+          "total": "1,643.11",
+          "assets": 15
+        }
+      ],
+      "mobileResults": [
+        {
+          "year": "2025",
+          "total": "2,740.69",
+          "assets": 21
+        },
+        {
+          "year": "2026",
+          "total": "1,643.11",
+          "assets": 15
+        }
+      ],
+      "checks": [
+        "desktop subtab",
+        "mobile subtab",
+        "same embedded document",
+        "all assets",
+        "confirmed grouping",
+        "project details",
+        "search",
+        "sorting",
+        "two-year comparison",
+        "no overflow",
+        "ledger regression"
+      ],
+      "errors": []
+    },
+    "distribution": {
+      "status": "PASS",
+      "latestTotal": 5685,
+      "checks": [
+        "old panel removed",
+        "desktop and mobile tabs",
+        "same document",
+        "12 time selections",
+        "13 fund rows",
+        "no history or difference",
+        "integer amounts inline with percent",
+        "navy total with white number",
+        "black numeric values",
+        "no overflow"
+      ],
+      "errors": []
+    },
+    "risk": {
+      "status": "PASS",
+      "checks": [
+        "desktop mobile risk tab",
+        "same document",
+        "two pool modes",
+        "shared asset filtering",
+        "independent periods",
+        "dynamic rates only cards",
+        "static horizontal 3 metrics",
+        "change values and blanks",
+        "excluded disclosure records",
+        "column tooltips",
+        "no overflow"
+      ],
+      "errors": []
+    }
+  }
+}

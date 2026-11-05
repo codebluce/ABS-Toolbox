@@ -11,6 +11,7 @@ async function verify(frame){
  assert.equal(await frame.locator('#fund-panels .head .muted').count(),0);
  assert.deepEqual(await frame.locator('.asset-value').allTextContents(),['1,470','3,700','515']);
  assert.equal(await frame.locator('.history,#history-chart,.warning').count(),0);
+ assert.ok((await frame.locator('body').textContent()).includes('四舍五入后可能与合计有最多2亿元差'));
  assert.equal(await frame.locator('#fund-panels .row').count(),13);
  for(let i=0;i<12;i++){
   await frame.locator('#period').selectOption(String(i));
