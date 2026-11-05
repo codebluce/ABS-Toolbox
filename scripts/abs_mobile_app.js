@@ -6,7 +6,7 @@
   var S = {
     q: '', owner: '', cat: '', sel: null, limit: 24, openPr: {}, prAll: false,
     tab: 'bookkeeping', sub: 'quick', sheet: null,
-    assetSide: 'consume', caliber: false,
+    assetSide: 'consume', assetView: 'consumer', caliber: false,
     peerView: 'overview', peerOpen: {}, peerCaliber: false,
     statSec: 0, statCaliber: false
   };
@@ -631,7 +631,16 @@
 
   function body() {
     if (S.tab === 'bookkeeping') return '<iframe id="m-bookkeeping-frame" title="最新簿记明细" style="width:100%;height:100%;border:0;display:block;"></iframe>';
-    if (S.tab === 'asset') return viewAsset();
+    if (S.tab === 'asset') {
+      var assetTabs = INJ.issuanceStatisticsHtml ? '<div style="display:flex;gap:8px;padding:10px 14px;background:#fff;">' +
+        ['consumer', 'issuance'].map(function(k) {
+          return '<button data-act="assetview:' + k + '" style="border:0;border-radius:5px;padding:8px 14px;background:' +
+            (S.assetView === k ? '#0d1b2e;color:#fff;' : '#edf2f7;color:#52657a;') + '">' +
+            (k === 'issuance' ? '发行统计' : '消金资产') + '</button>';
+        }).join('') + '</div>' : '';
+      return assetTabs + (S.assetView === 'issuance' && INJ.issuanceStatisticsHtml ?
+        '<iframe id="m-issuance-statistics-frame" title="发行统计" style="display:block;width:100%;height:calc(100% - 54px);min-height:400px;border:0;"></iframe>' : viewAsset());
+    }
     if (S.tab === 'peer') return viewPeer();
     if (S.sel) return viewDetail();
     if (S.sub === 'inst_stats') return viewInstStats();
@@ -651,6 +660,8 @@
     scroller = document.getElementById('m-scroll');
     var bookkeepingFrame = document.getElementById('m-bookkeeping-frame');
     if (bookkeepingFrame) bookkeepingFrame.srcdoc = INJ.bookkeepingHtml;
+    var issuanceFrame = document.getElementById('m-issuance-statistics-frame');
+    if (issuanceFrame) issuanceFrame.srcdoc = INJ.issuanceStatisticsHtml;
     if (keepScroll && scroller) scroller.scrollTop = top;
     var inp = document.getElementById('m-q');
     if (inp) {
@@ -675,6 +686,7 @@
   function act(a) {
     var p = a.split(':');
     switch (p[0]) {
+      case 'assetview': S.assetView = p[1]; render(); break;
       case 'tab': S.tab = p[1]; S.sel = null; S.sub = 'quick'; render(); break;
       case 'sub': S.sub = p[1]; S.sel = null; render(); break;
       case 'open': S.sel = a.slice(5); S.openPr = {}; S.prAll = false; render(); break;

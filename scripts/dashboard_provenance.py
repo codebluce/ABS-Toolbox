@@ -18,6 +18,7 @@ PRODUCERS = (
     'ledger_formula_tools.py',
     'entity_alias.py', 'institution_identity.py', 'dashboard_provenance.py',
     'itl_panel.js', 'itl_panel.css', 'itl_chat.js', 'itl_chat.css',
+    'asset_issuance_panel.py', 'asset_issuance_panel.html',
 )
 
 
@@ -73,4 +74,7 @@ def verify_full_generation(document, ledger):
         raise ValueError('其他台账面板来源陈旧；簿记局部更新不代表全量同步，请完整重新生成')
     if marker.get('producerSha256') != producer_sha256():
         raise ValueError('全量生成实现已更新，请重新生成所有台账面板后发布')
+    from asset_issuance_panel import FRAME_ID, extract_document, verify_document
+    if FRAME_ID in document:
+        verify_document(extract_document(document), ledger)
     return marker

@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "desktopPlainSha256": "a6377119836afcb9ebd6831da9688f49c9ef7de27a8911506aba63da155bc2c8",
+  "mobilePlainSha256": "2cc0764e56d8540a4085701cbe5acd91a85ae7dbb3dd57d0763aa2b606121822",
+  "sameIssuanceComponent": true,
+  "siteFiles": {
+    "index.html": "3eae8a70bff7226832d9e9ea4584eaa64b05fdbb47b2e11b42778c9745c2d034",
+    "README.md": "c64101c65546af258e4fd756972c625fc04a3ae5072be768112af795cbcc474a",
+    ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "manifest.json": "82b94841286b914517ed1551929f63a9863fededcd2e544a6a6dd45c3c794874",
+    "p/m.bin": "47bcc62ffd2ca9a6b2800daba223ff7c25f69a143fd11da8d77aa57533a4490f",
+    "p/d.bin": "152978cd2b77090527c3ecbee1cbf9513e05de7ae12494b54e20ebd695617d18"
+  }
+}

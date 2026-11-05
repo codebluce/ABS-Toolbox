@@ -261,6 +261,8 @@ class MonthlyIntegrationTest(unittest.TestCase):
         # 只mock其它面板；月度compute、真实组件/CSS、两阶段QC及原子输出均运行。
         import abs_common
         mocks = [(generator.gen_compare_tool, 'compute_data', {}),
+                 (generator.asset_issuance_panel, 'compute_data', {}),
+                 (generator.asset_issuance_panel, 'render_body', '<p>发行统计</p>'),
                  (generator.gen_abs_cost_report, 'compute_data', {}),
                  (generator.gen_spread_report, 'compute_data', {}),
                  (generator.gen_investment_ledger, 'compute_data_multi_year', {'by_year': {}}),

@@ -747,6 +747,9 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
         raise RuntimeError("以下面板未能从看板中解析,手机版生成中止: " + "、".join(missing))
     inject["asset"] = asset
     inject["peer"] = peer
+    from asset_issuance_panel import FRAME_ID, extract_document
+    if FRAME_ID in html:
+        inject['issuanceStatisticsHtml'] = extract_document(html)
     # 机构统计:电脑端该子面板本身就可能生成失败(渲染成"数据暂不可用"),
     # 这种情况手机端如实显示无数据,不阻断整份手机版生成。
     inst_stats = build_inst_stats(html)
@@ -765,6 +768,10 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
     )
 
     verify_mobile_bookkeeping(html, page)
+    if inject.get('issuanceStatisticsHtml'):
+        mobile_data = json.loads(extract_literal(page, 'window.ABS_MOBILE_DATA=', '{'))
+        if mobile_data.get('issuanceStatisticsHtml') != extract_document(html):
+            raise ValueError('手机版发行统计与桌面来源不一致')
 
     out_path = Path(out_path) if out_path else dashboard_path.with_name(dashboard_path.stem + "_手机版.html")
     out_path.parent.mkdir(parents=True, exist_ok=True)

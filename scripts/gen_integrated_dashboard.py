@@ -27,6 +27,7 @@ import gen_abs_cost_report
 import gen_spread_report
 import gen_compare_tool
 import gen_investment_ledger
+import asset_issuance_panel
 import gen_pricing_insight
 import gen_institution_profile
 import secondary_allocation_panel
@@ -188,7 +189,7 @@ def build_integrated_html(panels, all_css):
                                  'inst_stats': '机构统计', 'credit_total': '授信速查'}
                 sub_label = sub_label_map.get(sub, sub)
             elif module == 'asset_overview':
-                sub_label_map = {'consumer_asset': '消金资产'}
+                sub_label_map = {'consumer_asset': '消金资产', 'issuance_statistics': '发行统计'}
                 sub_label = sub_label_map.get(sub, sub)
             elif module == 'ledger':
                 sub_label_map = {'query_2026': '2026年', 'query_2025': '2025年', 'query_2024': '2024年'}
@@ -492,6 +493,9 @@ def main():
     for year, body in gen_investment_ledger.render_body_multi_year(led_data):
         panels.append(('ledger', f'query_{year}', body))
 
+    issuance_data = asset_issuance_panel.compute_data(xlsx_path)
+    panels.append(('asset_overview', 'issuance_statistics', asset_issuance_panel.render_body(issuance_data)))
+
     # 4. CSS 拼接 + 套 Tab 框架 + 写文件
     print('\n[4/4] 拼接 HTML...')
     all_css = '\n'.join([
@@ -528,7 +532,7 @@ def main():
     # 结构 QC(硬阻断):失败即删除临时产物并以非零退出,绝不覆盖上一版、绝不让异常页面进入发布链路
     with open(tmp_out, 'r', encoding='utf-8') as f:
         content = f.read()
-    expected_panel_count = 8 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled) + 1  # 机构画像4 + 资产大盘可选1 + 发行定价4 + 同业发行可选1 + 各年份投资台账
+    expected_panel_count = 8 + len(led_data['by_year']) + int(consumer_asset_enabled) + int(peer_issuance_enabled) + 2  # 最新簿记与发行统计均必选
     problems = verify_integrated_html(content, expected_panel_count)
     try:
         if args.monthly_bookkeeping:
@@ -545,7 +549,7 @@ def main():
         size_kb = os.path.getsize(out_path) / 1024
         print(f'\n[完成] {out_path} ({size_kb:.1f} KB)')
         print(f'\n默认显示: 首个模块的第一个子面板')
-        asset_overview_count = int(consumer_asset_enabled)
+        asset_overview_count = int(consumer_asset_enabled) + 1
         peer_issuance_count = int(peer_issuance_enabled)
         panel_count_ok = content.count('<div class="panel"')
         pricing_panel_count = 5
