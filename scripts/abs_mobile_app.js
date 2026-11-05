@@ -6,7 +6,7 @@
   var S = {
     q: '', owner: '', cat: '', sel: null, limit: 24, openPr: {}, prAll: false,
     tab: 'bookkeeping', sub: 'quick', sheet: null,
-    assetSide: 'consume', assetView: 'consumer', caliber: false,
+    assetSide: 'consume', assetView: 'issuance', caliber: false,
     peerView: 'overview', peerOpen: {}, peerCaliber: false,
     statSec: 0, statCaliber: false
   };
@@ -633,7 +633,7 @@
     if (S.tab === 'bookkeeping') return '<iframe id="m-bookkeeping-frame" title="最新簿记明细" style="width:100%;height:100%;border:0;display:block;"></iframe>';
     if (S.tab === 'asset') {
       var assetTabs = INJ.issuanceStatisticsHtml ? '<div style="display:flex;gap:8px;padding:10px 14px;background:#fff;">' +
-        ['consumer', 'issuance'].map(function(k) {
+        ['issuance', 'consumer'].map(function(k) {
           return '<button data-act="assetview:' + k + '" style="border:0;border-radius:5px;padding:8px 14px;background:' +
             (S.assetView === k ? '#0d1b2e;color:#fff;' : '#edf2f7;color:#52657a;') + '">' +
             (k === 'issuance' ? '发行统计' : '消金资产') + '</button>';

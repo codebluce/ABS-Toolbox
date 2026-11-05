@@ -80,6 +80,8 @@ async function check(frame) {
   await page.goto(pathToFileURL(path.resolve(desktop)).href);
   await page.locator('.tab-button[data-module="asset_overview"]').click();
   assert.equal(await page.locator('.sub-tab-button[data-sub="consumer_asset"]').textContent(), '消金资产');
+  assert.deepEqual(await page.locator('.sub-tabs-pane[data-module="asset_overview"] button').allTextContents(), ['发行统计','消金资产']);
+  assert.equal(await page.locator('.panel.active').getAttribute('data-sub'),'issuance_statistics');
   await page.locator('.sub-tab-button[data-sub="issuance_statistics"]').click();
   const desktopFrame = page.frameLocator('#issuance-statistics-frame');
   const desktopResults = await check(desktopFrame);
@@ -94,6 +96,8 @@ async function check(frame) {
   await page.setViewportSize({width: 390, height: 844});
   await page.goto(pathToFileURL(path.resolve(mobile)).href);
   await page.locator('[data-act="tab:asset"]').click();
+  assert.deepEqual(await page.locator('[data-act^="assetview:"]').allTextContents(), ['发行统计','消金资产']);
+  assert.equal(await page.locator('#m-issuance-statistics-frame').count(),1);
   await page.locator('[data-act="assetview:issuance"]').click();
   const mobileFrame = page.frameLocator('#m-issuance-statistics-frame');
   assert.equal(await page.locator('#m-issuance-statistics-frame').getAttribute('srcdoc'), source);
