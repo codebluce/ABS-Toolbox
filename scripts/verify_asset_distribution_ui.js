@@ -15,6 +15,8 @@ async function verify(frame){
  for(let i=0;i<12;i++){
   await frame.locator('#period').selectOption(String(i));
   assert.ok(!(await frame.locator('body').innerText()).includes('差额'));
+  const order=await frame.locator('#fund-panels .panel').evaluateAll(panels=>panels.map(p=>[...p.querySelectorAll('.num')].map(e=>e.textContent==='—'?null:Number(e.textContent.replace(/,/g,'')))));
+  order.forEach(values=>{assert.deepEqual(values,[...values].sort((a,b)=>a===null?(b===null?0:1):b===null?-1:b-a));});
   const styles=await frame.locator('body').evaluate(()=>{
    const aligned=[...document.querySelectorAll('.asset-value-line')].every(e=>{const a=e.querySelector('.asset-value').getBoundingClientRect(),p=e.querySelector('.asset-share').getBoundingClientRect();return a.top<p.bottom&&p.top<a.bottom;});
    return {bg:getComputedStyle(document.querySelector('.total')).backgroundColor,total:getComputedStyle(document.querySelector('#total')).color,black:[...document.querySelectorAll('.asset-value,.asset-share,.num,.pct')].every(e=>getComputedStyle(e).color==='rgb(0, 0, 0)'),aligned,overflow:document.documentElement.scrollWidth>innerWidth};
@@ -24,7 +26,7 @@ async function verify(frame){
   assert.ok(Math.abs(rowFont-(await frame.locator('body').evaluate(()=>innerWidth<=650)?13:14.3))<.05);
  }
  await frame.locator('#period').selectOption('11');
- assert.deepEqual(await frame.locator('#fund-panels .num').allTextContents(),['746','268','64','52','340','1,910','100','1,540','150','121','47','307','40']);
+ assert.deepEqual(await frame.locator('#fund-panels .num').allTextContents(),['746','340','268','64','52','1,910','1,540','150','100','307','121','47','40']);
 }
 (async()=>{
  const b=await chromium.launch();const p=await b.newPage({viewport:{width:1440,height:1050}});const errors=[];p.on('pageerror',e=>errors.push(e.message));
