@@ -742,10 +742,17 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
         inject['bookkeepingHtml'] = render_html(data)
     asset = build_asset(html)
     peer = build_peer(html)
-    missing = [name for name, val in (("消金资产", asset), ("同业发行", peer)) if val is None]
+    import asset_distribution_panel
+    distribution = None
+    if asset_distribution_panel.FRAME_ID in html:
+        distribution = asset_distribution_panel.extract_document(html)
+        asset_distribution_panel.verify_document(distribution)
+        inject['assetDistributionHtml'] = distribution
+    missing = [name for name, val in (("资产分布", distribution or asset), ("同业发行", peer)) if val is None]
     if missing:
         raise RuntimeError("以下面板未能从看板中解析,手机版生成中止: " + "、".join(missing))
-    inject["asset"] = asset
+    if asset:
+        inject["asset"] = asset
     inject["peer"] = peer
     from asset_issuance_panel import FRAME_ID, extract_document
     if FRAME_ID in html:
@@ -772,6 +779,10 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
         mobile_data = json.loads(extract_literal(page, 'window.ABS_MOBILE_DATA=', '{'))
         if mobile_data.get('issuanceStatisticsHtml') != extract_document(html):
             raise ValueError('手机版发行统计与桌面来源不一致')
+    if distribution:
+        mobile_data = json.loads(extract_literal(page, 'window.ABS_MOBILE_DATA=', '{'))
+        if mobile_data.get('assetDistributionHtml') != distribution:
+            raise ValueError('手机版资产分布与桌面来源不一致')
 
     out_path = Path(out_path) if out_path else dashboard_path.with_name(dashboard_path.stem + "_手机版.html")
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -781,7 +792,7 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
         stats_note = " / ".join(f"{sec['title']} {len(sec['rows'])} 行" for sec in inst_stats["sections"])
     else:
         stats_note = "无(电脑端该子面板未生成)"
-    print(f"[mobile] 机构 {len(prog_quick)} 家 · 消金 KPI {len(asset['kpis'])} 项 · "
+    print(f"[mobile] 机构 {len(prog_quick)} 家 · 资产分布 {'已接入' if distribution else '旧版'} · "
           f"同业集团 {len(peer['groups'])} 个 / 渠道 {len(peer['trust'])} 家 / Top {len(peer['top'])} · "
           f"配色 {len(peer['colors'])} 组(取自电脑端图例)")
     print(f"[mobile] 机构统计: {stats_note}")

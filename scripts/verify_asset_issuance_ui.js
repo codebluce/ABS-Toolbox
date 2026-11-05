@@ -79,7 +79,7 @@ async function check(frame) {
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(pathToFileURL(path.resolve(desktop)).href);
   await page.locator('.tab-button[data-module="asset_overview"]').click();
-  assert.equal(await page.locator('.sub-tab-button[data-sub="consumer_asset"]').textContent(), '消金资产');
+  assert.equal(await page.locator('.sub-tab-button[data-sub="asset_distribution"]').textContent(), '消金资产');
   assert.deepEqual(await page.locator('.sub-tabs-pane[data-module="asset_overview"] button').allTextContents(), ['发行统计','消金资产']);
   assert.equal(await page.locator('.panel.active').getAttribute('data-sub'),'issuance_statistics');
   await page.locator('.sub-tab-button[data-sub="issuance_statistics"]').click();
@@ -105,7 +105,7 @@ async function check(frame) {
   await page.screenshot({path: path.join(output, 'mobile-comparison.png')});
   await mobileFrame.locator('[data-year="2026"]').click();
   await page.screenshot({path: path.join(output, 'mobile.png')});
-  await page.locator('[data-act="assetview:consumer"]').click();
+  await page.locator('[data-act="assetview:distribution"]').click();
   assert.equal(await page.locator('#m-issuance-statistics-frame').count(), 0);
   assert.deepEqual(errors, []);
   fs.writeFileSync(path.join(output, 'ui-validation.json'), JSON.stringify({status: 'PASS', desktopResults, mobileResults,

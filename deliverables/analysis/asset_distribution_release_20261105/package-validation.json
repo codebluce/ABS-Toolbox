@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "checks": [
+    "desktop ciphertext matches validated file",
+    "mobile ciphertext matches validated file",
+    "same distribution component",
+    "old asset data removed"
+  ],
+  "files": {
+    "index.html": "90867b6c1fb105d603b5b0055cd4c447222f0d9b38d083a887330a4d3044a997",
+    "README.md": "17c6039005870a943e5c78e5668e0ff228e8662f2ef26e8665e06e75b8a33667",
+    ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "manifest.json": "9a510dc76d526f1a3de3dc719eff99a2e7de76e039b633b184b79defe4f89dc2",
+    "p/m.bin": "df00ca55e2af45de8c45ad810a75a3476ffda2585893f99f6c496837baef0186",
+    "p/d.bin": "c214873ed5d4d2d38b1e50156907682dcd9bcbaa0a2f517ac1151fc26ff15494"
+  }
+}

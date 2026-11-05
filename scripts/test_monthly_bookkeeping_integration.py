@@ -263,6 +263,7 @@ class MonthlyIntegrationTest(unittest.TestCase):
         mocks = [(generator.gen_compare_tool, 'compute_data', {}),
                  (generator.asset_issuance_panel, 'compute_data', {}),
                  (generator.asset_issuance_panel, 'render_body', '<p>发行统计</p>'),
+                 (generator.asset_distribution_panel, 'render_body', '<p>资产分布</p>'),
                  (generator.gen_abs_cost_report, 'compute_data', {}),
                  (generator.gen_spread_report, 'compute_data', {}),
                  (generator.gen_investment_ledger, 'compute_data_multi_year', {'by_year': {}}),

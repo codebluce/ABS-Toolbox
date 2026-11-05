@@ -19,6 +19,7 @@ PRODUCERS = (
     'entity_alias.py', 'institution_identity.py', 'dashboard_provenance.py',
     'itl_panel.js', 'itl_panel.css', 'itl_chat.js', 'itl_chat.css',
     'asset_issuance_panel.py', 'asset_issuance_panel.html',
+    'asset_distribution_panel.py', 'asset_distribution_panel.html',
 )
 
 
@@ -31,6 +32,7 @@ def producer_sha256():
     for name in PRODUCERS:
         digest.update(name.encode())
         digest.update((SCRIPT_DIR / name).read_bytes())
+    digest.update((ROOT / 'data/asset_distribution_snapshot.json').read_bytes())
     return digest.hexdigest()
 
 
@@ -77,4 +79,7 @@ def verify_full_generation(document, ledger):
     from asset_issuance_panel import FRAME_ID, extract_document, verify_document
     if FRAME_ID in document:
         verify_document(extract_document(document), ledger)
+    import asset_distribution_panel
+    if asset_distribution_panel.FRAME_ID in document:
+        asset_distribution_panel.verify_document(asset_distribution_panel.extract_document(document))
     return marker
