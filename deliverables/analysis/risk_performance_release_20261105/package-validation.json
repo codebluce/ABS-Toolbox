@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "checks": [
+    "both encrypted payloads match validated outputs",
+    "risk component desktop/mobile identical"
+  ],
+  "files": {
+    "index.html": "a342948dd3cff545df422c2e10338345276bc7821d6eb56e9b85f3c5b7d265d9",
+    "README.md": "aa7cf042dd11796605c114924dc1f0ee8818413ec9d09f9d56beaa1ed3cae8f0",
+    ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "manifest.json": "421b2b72a6fba0a896d7b55fcdde4c878422f5569c1a3b3438b286bf1eb4f076",
+    "p/m.bin": "82bd83ebf4d761828a579b6f192a6eed10a3c688ca3154f2c4db528ec25f2420",
+    "p/d.bin": "2ab5fb9fc60041c79fa7881d3848b0d101b7232371e03d5a6cd579cd151829ad"
+  }
+}

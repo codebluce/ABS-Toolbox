@@ -633,11 +633,12 @@
     if (S.tab === 'bookkeeping') return '<iframe id="m-bookkeeping-frame" title="最新簿记明细" style="width:100%;height:100%;border:0;display:block;"></iframe>';
     if (S.tab === 'asset') {
       var assetTabs = INJ.issuanceStatisticsHtml ? '<div style="display:flex;gap:8px;padding:10px 14px;background:#fff;">' +
-        ['issuance', INJ.assetDistributionHtml ? 'distribution' : 'consumer'].map(function(k) {
+        ['issuance', INJ.assetDistributionHtml ? 'distribution' : 'consumer'].concat(INJ.riskPerformanceHtml ? ['risk'] : []).map(function(k) {
           return '<button data-act="assetview:' + k + '" style="border:0;border-radius:5px;padding:8px 14px;background:' +
             (S.assetView === k ? '#0d1b2e;color:#fff;' : '#edf2f7;color:#52657a;') + '">' +
-            (k === 'issuance' ? '发行统计' : '消金资产') + '</button>';
+            (k === 'issuance' ? '发行统计' : k === 'risk' ? '风险表现' : '消金资产') + '</button>';
         }).join('') + '</div>' : '';
+      if (S.assetView === 'risk' && INJ.riskPerformanceHtml) return assetTabs + '<iframe id="m-risk-performance-frame" title="风险表现" style="display:block;width:100%;height:calc(100% - 54px);min-height:400px;border:0;"></iframe>';
       return assetTabs + (S.assetView === 'issuance' && INJ.issuanceStatisticsHtml ?
         '<iframe id="m-issuance-statistics-frame" title="发行统计" style="display:block;width:100%;height:calc(100% - 54px);min-height:400px;border:0;"></iframe>' :
         (INJ.assetDistributionHtml ? '<iframe id="m-asset-distribution-frame" title="资产分布" style="display:block;width:100%;height:calc(100% - 54px);min-height:400px;border:0;"></iframe>' : viewAsset()));
@@ -665,6 +666,8 @@
     if (issuanceFrame) issuanceFrame.srcdoc = INJ.issuanceStatisticsHtml;
     var distributionFrame = document.getElementById('m-asset-distribution-frame');
     if (distributionFrame) distributionFrame.srcdoc = INJ.assetDistributionHtml;
+    var riskFrame = document.getElementById('m-risk-performance-frame');
+    if (riskFrame) riskFrame.srcdoc = INJ.riskPerformanceHtml;
     if (keepScroll && scroller) scroller.scrollTop = top;
     var inp = document.getElementById('m-q');
     if (inp) {

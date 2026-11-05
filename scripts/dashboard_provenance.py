@@ -20,6 +20,7 @@ PRODUCERS = (
     'itl_panel.js', 'itl_panel.css', 'itl_chat.js', 'itl_chat.css',
     'asset_issuance_panel.py', 'asset_issuance_panel.html',
     'asset_distribution_panel.py', 'asset_distribution_panel.html',
+    'risk_performance_panel.py', 'risk_performance_panel.html',
 )
 
 
@@ -33,6 +34,7 @@ def producer_sha256():
         digest.update(name.encode())
         digest.update((SCRIPT_DIR / name).read_bytes())
     digest.update((ROOT / 'data/asset_distribution_snapshot.json').read_bytes())
+    digest.update((ROOT / 'data/risk_performance_snapshot.json').read_bytes())
     return digest.hexdigest()
 
 
@@ -82,4 +84,7 @@ def verify_full_generation(document, ledger):
     import asset_distribution_panel
     if asset_distribution_panel.FRAME_ID in document:
         asset_distribution_panel.verify_document(asset_distribution_panel.extract_document(document))
+    import risk_performance_panel
+    if risk_performance_panel.FRAME_ID in document:
+        risk_performance_panel.verify_document(risk_performance_panel.extract_document(document))
     return marker

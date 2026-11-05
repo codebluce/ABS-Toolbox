@@ -757,6 +757,11 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
     from asset_issuance_panel import FRAME_ID, extract_document
     if FRAME_ID in html:
         inject['issuanceStatisticsHtml'] = extract_document(html)
+    import risk_performance_panel
+    if risk_performance_panel.FRAME_ID in html:
+        risk_document = risk_performance_panel.extract_document(html)
+        risk_performance_panel.verify_document(risk_document)
+        inject['riskPerformanceHtml'] = risk_document
     # 机构统计:电脑端该子面板本身就可能生成失败(渲染成"数据暂不可用"),
     # 这种情况手机端如实显示无数据,不阻断整份手机版生成。
     inst_stats = build_inst_stats(html)
@@ -783,6 +788,10 @@ def build_mobile_html(dashboard_path: Path, out_path: Path | None = None) -> Pat
         mobile_data = json.loads(extract_literal(page, 'window.ABS_MOBILE_DATA=', '{'))
         if mobile_data.get('assetDistributionHtml') != distribution:
             raise ValueError('手机版资产分布与桌面来源不一致')
+    if inject.get('riskPerformanceHtml'):
+        mobile_data = json.loads(extract_literal(page, 'window.ABS_MOBILE_DATA=', '{'))
+        if mobile_data.get('riskPerformanceHtml') != risk_performance_panel.extract_document(html):
+            raise ValueError('手机版风险表现与桌面来源不一致')
 
     out_path = Path(out_path) if out_path else dashboard_path.with_name(dashboard_path.stem + "_手机版.html")
     out_path.parent.mkdir(parents=True, exist_ok=True)
