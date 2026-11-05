@@ -40,7 +40,31 @@ async function check(frame) {
   }
   await frame.locator('[data-year="compare"]').click();
   assert.equal(await frame.locator('.group-compare-row').count(), 8);
-  assert.equal(await frame.locator('#compare-body tr').count(), 2);
+  assert.equal(await frame.locator('#compare-body tr').count(), 4);
+  assert.equal(await frame.locator('.group-yoy').count(), 8);
+  const growth = await frame.locator('body').evaluate(() => {
+    const d=JSON.parse(document.getElementById('issuance-data').textContent);
+    const cutoff='2025'+d['2026'].asOf.slice(4);
+    const previous=d['2025'].records.filter(r=>r.date<=cutoff).reduce((s,r)=>s+r.scale,0);
+    return {expected:((d['2026'].total-previous)/previous*100).toFixed(1)+'%',zero:yoy(10,0),bothZero:yoy(0,0),decline:yoy(0,10)};
+  });
+  assert.equal(await frame.locator('.yoy-row td:last-child').textContent(), growth.expected);
+  assert.equal(growth.zero,'新增（同期为0）');
+  assert.equal(growth.bothZero,'—');
+  assert.equal(growth.decline,'-100.0%');
+  const groups = await frame.locator('body').evaluate(() => {
+    const d=JSON.parse(document.getElementById('issuance-data').textContent);
+    const records=d['2025'].records.filter(r=>r.date<='2025'+d['2026'].asOf.slice(4));
+    return d['2026'].groups.filter(g=>g.name!=='其他待归类').map(g=>{
+      const name=g.name==='汽车融资租赁'?'融资租赁':g.name;
+      const prev=records.filter(r=>r.group===name).reduce((s,r)=>s+r.scale,0);
+      const rate=prev ? (g.total-prev)/prev*100 : null;
+      return {name, previous:prev.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}), change:rate===null?(g.total?'新增（同期为0）':'—'):(rate>0?'+':'')+rate.toFixed(1)+'%'};
+    });
+  });
+  const labels=await frame.locator('.group-yoy').allTextContents();
+  groups.forEach((g,i)=>{assert.ok(labels[i].includes(g.previous));assert.ok(labels[i].includes(g.change));});
+
   await frame.locator('.group-year-bar[data-detail-year="2025"][data-group="融资租赁"]').click();
   assert.ok((await frame.locator('#dialog-title').textContent()).includes('2025'));
   assert.ok((await frame.locator('#dialog-subtitle').textContent()).includes('7.10'));

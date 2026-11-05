@@ -19,6 +19,8 @@
 @media(max-width:700px){.group-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px}.group-value{font-size:25px}.group-name{font-size:12px}}
 .group-compare-row{display:grid;grid-template-columns:170px 1fr;gap:18px;align-items:center;border-bottom:1px solid #edf1f5;padding:10px 0}.group-compare-row:last-child{border:0}.group-compare-name{font-size:13px}.group-compare-name>span{display:block;font-size:11px;line-height:1.8}.group-compare-bars{display:grid;gap:5px}.group-year-bar{display:grid;grid-template-columns:36px 1fr 85px 55px 50px;gap:14px;align-items:center;border:0;background:none;text-align:left;padding:2px 0;font-size:11px}.group-year{color:var(--muted)}.group-year-track{height:13px;background:#f1f5f9;border-radius:3px;overflow:hidden}.group-year-track>span{display:block;height:100%;background:var(--color);border-radius:3px}.group-year-value{text-align:right;font-size:13px;font-variant-numeric:tabular-nums}.group-year-pct,.group-year-count{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
 @media(max-width:700px){.group-compare-row{grid-template-columns:1fr;gap:6px;padding:10px 0}.group-compare-name>span{display:inline-block;margin-right:12px}.group-year-bar{grid-template-columns:30px 1fr 57px 43px;gap:7px}.group-year-count{display:none}.group-year-value{font-size:11px}.group-year-pct{font-size:10px}}
+.same-period-row td{background:#f6f9fc;color:var(--muted)}.yoy-row td{background:#eef5fa;color:var(--ink);font-weight:600}.group-yoy{display:flex;justify-content:flex-end;gap:18px;color:var(--muted);font-size:11px;padding-top:3px}.group-yoy b{color:var(--ink);font-weight:600}
+@media(max-width:700px){.group-yoy{justify-content:space-between;gap:8px;font-size:10px}}
 </style>
 </head>
 <body>
@@ -77,16 +79,29 @@ function renderChart(){
  $('chart-count').textContent=(q?assets.length+' / '+d.assets.length+' 类资产': '全部 '+d.assets.length+' 类资产')+' · 亿元';
  $('asset-chart').innerHTML=assets.map(a=>`<div class="asset-chart-row"><button class="asset-bar" data-asset="${esc(a.name)}" title="查看${esc(a.name)}发行项目"><span class="asset-bar-name">${esc(a.name)}</span><span class="asset-track"><span class="asset-stack" style="width:${a.total/max*100}%">${segments(a.channels,a.total)}</span></span><span class="asset-num">${fmt(a.total)}</span></button><div class="asset-channel-values">${channels.map(c=>`<button data-asset="${esc(a.name)}" data-channel="${c}" class="asset-channel-value" style="--color:${colors[c]}"><span class="dot"></span><span>${c}</span><b>${fmt(a.channels[c]||0)}</b><span class="asset-channel-pct">${pct(a.channels[c]||0,a.total)}</span></button>`).join('')}</div></div>`).join('') || '<div class="empty">没有找到该资产，请换一个关键词。</div>';
 }
+function yoy(current,previous){
+ if(!previous)return current?'新增（同期为0）':'—';
+ const change=(current/previous-1)*100;
+ return (change>0?'+':'')+change.toFixed(1)+'%';
+}
+function samePeriod(){
+ const cutoff='2025'+DATA['2026'].asOf.slice(4);
+ const records=DATA['2025'].records.filter(r=>r.date>= '2025-01-01' && r.date<=cutoff);
+ const total=records.reduce((s,r)=>s+r.scale,0);
+ return {cutoff,total,channels:Object.fromEntries(channels.map(c=>[c,records.filter(r=>r.channel===c).reduce((s,r)=>s+r.scale,0)])),groups:Object.fromEntries(DATA['2025'].groups.map(g=>[g.name,records.filter(r=>r.group===g.name).reduce((s,r)=>s+r.scale,0)]))};
+}
 function renderCompare(){
- const years=['2025','2026'];$('period').innerHTML='<span>2025 年全年</span><span>2026 年累计截至 '+DATA['2026'].asOf+'</span><span>金额单位：亿元</span>';
+ const years=['2025','2026'],previous=samePeriod();$('period').innerHTML='<span>2025 年全年</span><span>2026 年累计截至 '+DATA['2026'].asOf+'</span><span>金额单位：亿元</span>';
  $('compare-legend').innerHTML=legend();const max=Math.max(...years.map(y=>DATA[y].total));
  $('compare-chart').innerHTML=years.map(y=>`<div class="year-bar"><b>${y}</b><div class="stack" style="width:${DATA[y].total/max*100}%">${segments(DATA[y].channels,DATA[y].total)}</div><b style="text-align:right">${fmt(DATA[y].total)}</b></div>`).join('');
  $('compare-body').innerHTML=years.map(y=>`<tr><td>${y}${y==='2026'?'（累计）':'（全年）'}</td>${channels.map(c=>`<td style="color:${colors[c]}">${DATA[y].channelComplete?fmt(DATA[y].channels[c]||0):'—'}</td>`).join('')}<td>${fmt(DATA[y].total)}</td></tr>`).join('');
+ $('compare-body').innerHTML+=`<tr class="same-period-row"><td>2025 同期</td>${channels.map(c=>`<td>${fmt(previous.channels[c])}</td>`).join('')}<td>${fmt(previous.total)}</td></tr><tr class="yoy-row"><td>同比变化</td>${channels.map(c=>`<td>${yoy(DATA['2026'].channels[c]||0,previous.channels[c])}</td>`).join('')}<td>${yoy(DATA['2026'].total,previous.total)}</td></tr>`;
+ $('period').innerHTML+=`<span>同比：2026-01-01 ~ ${DATA['2026'].asOf} / 2025-01-01 ~ ${previous.cutoff}</span>`;
  $('compare-total').textContent='两年累计发行 '+fmt(years.reduce((s,y)=>s+DATA[y].total,0))+' 亿元，共 '+years.reduce((s,y)=>s+DATA[y].count,0)+' 期项目。';
  const groupNames=DATA['2026'].groups.filter(g=>g.name!=='其他待归类').map(g=>g.name);
  const groupPairs=groupNames.map(name=>years.map(y=>DATA[y].groups.find(g=>g.name===(y==='2025'&&name==='汽车融资租赁'?'融资租赁':name))));
  const groupMax=Math.max(...groupPairs.flat().map(g=>g.total),1);
- $('group-compare-chart').innerHTML=groupPairs.map(pair=>`<div class="group-compare-row"><div class="group-compare-name">${pair[0].name===pair[1].name?esc(pair[0].name):'<span>2025 · 融资租赁</span><span>2026 · 汽车融资租赁</span>'}</div><div class="group-compare-bars">${pair.map((g,i)=>`<button class="group-year-bar" data-detail-year="${years[i]}" data-group="${esc(g.name)}" style="--color:${i?'#285f9e':'#9aadc1'}"><span class="group-year">${years[i]}</span><span class="group-year-track"><span style="width:${g.total/groupMax*100}%"></span></span><b class="group-year-value">${fmt(g.total)}</b><span class="group-year-pct">${pct(g.total,DATA[years[i]].total)}</span><span class="group-year-count">${g.count} 期</span></button>`).join('')}</div></div>`).join('');
+ $('group-compare-chart').innerHTML=groupPairs.map(pair=>`<div class="group-compare-row"><div class="group-compare-name">${pair[0].name===pair[1].name?esc(pair[0].name):'<span>2025 · 融资租赁</span><span>2026 · 汽车融资租赁</span>'}</div><div class="group-compare-bars">${pair.map((g,i)=>`<button class="group-year-bar" data-detail-year="${years[i]}" data-group="${esc(g.name)}" style="--color:${i?'#285f9e':'#9aadc1'}"><span class="group-year">${years[i]}</span><span class="group-year-track"><span style="width:${g.total/groupMax*100}%"></span></span><b class="group-year-value">${fmt(g.total)}</b><span class="group-year-pct">${pct(g.total,DATA[years[i]].total)}</span><span class="group-year-count">${g.count} 期</span></button>`).join('')}<div class="group-yoy"><span>2025 同期 ${fmt(previous.groups[pair[0].name]||0)} 亿</span><b>${pair[0].name==='融资租赁'?'租赁类别同比':'同比'} ${yoy(pair[1].total,previous.groups[pair[0].name]||0)}</b></div></div></div>`).join('');
  $('source').textContent='数据来源：2025 年台账及 2026 年 10 月 30 日定稿台账';
 }
 function showProjects(asset,channel,group,detailYear=year){
