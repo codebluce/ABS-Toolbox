@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "checks": [
+    "protected package leak audit passed",
+    "decrypted desktop equals generated dashboard",
+    "decrypted mobile equals generated mobile dashboard",
+    "distribution funding rows use 20% smaller font"
+  ],
+  "font": {
+    "desktop": "11.44px",
+    "mobile": "10.4px",
+    "reduction": "20%"
+  },
+  "files": {
+    "index.html": "0bbd0823a970b53cdf4306c8cb80fec3aea9ea1ec527819382d2a818e0134e88",
+    "manifest.json": "fdd60e72c943da224cd4c28bae19b490d632374e5acae4bb35d6f0c70a2d9a9b",
+    "p/d.bin": "58fe1652f4002a4c0cf5534906dae2fecb4f8017f6c7d778bb73b60e42446db9",
+    "p/m.bin": "b85354f249394c3078dd7ed6ae63bbe8de8c7eb5508aa10b11a3e4c37f1ccb72"
+  },
+  "plainSha256": {
+    "desktop": "7d4edd8dfbada1ee8cb3be277c374cffb545dd517093f004423366c8945cdd18",
+    "mobile": "d3bd882dc2035dafd740164a703cd5b7d0ef69ea7e1526c2949b025fad496677"
+  },
+  "matches": {
+    "desktop": true,
+    "mobile": true
+  }
+}

@@ -24,7 +24,7 @@ async function verify(frame){
   });
   assert.equal(styles.bg,'rgb(21, 43, 67)');assert.equal(styles.total,'rgb(255, 255, 255)');assert.ok(styles.black&&styles.aligned&&!styles.overflow);
   const rowFont=await frame.locator('.row').first().evaluate(e=>parseFloat(getComputedStyle(e).fontSize));
-  assert.ok(Math.abs(rowFont-(await frame.locator('body').evaluate(()=>innerWidth<=650)?13:14.3))<.05);
+  assert.ok(Math.abs(rowFont-(await frame.locator('body').evaluate(()=>innerWidth<=650)?10.4:11.44))<.05);
  }
  await frame.locator('#period').selectOption('11');
  assert.deepEqual(await frame.locator('#fund-panels .num').allTextContents(),['746','340','268','64','52','1,910','1,540','150','100','307','121','47','40']);

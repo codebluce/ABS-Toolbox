@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "latestTotal": 5685,
+  "checks": [
+    "old panel removed",
+    "desktop and mobile tabs",
+    "same document",
+    "12 time selections",
+    "13 fund rows",
+    "no history or difference",
+    "integer amounts inline with percent",
+    "navy total with white number",
+    "black numeric values",
+    "no overflow"
+  ],
+  "errors": []
+}
