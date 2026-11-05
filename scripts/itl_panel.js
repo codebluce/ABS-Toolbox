@@ -229,9 +229,24 @@
       + '<div class="itl-foot">行取份额前 14 项、列取前 9 项，其余归入「其他」 · 空单元格以 · 表示</div>';
   }
 
+  // 明细清单：按簿记时间倒序（最新发行在上），同日按认购份额降序，缺日期置底
+  function sortDetailRecords(recs) {
+    return recs.slice().sort(function (a, b) {
+      var ad = a.date || '', bd = b.date || '';
+      if (ad !== bd) {
+        if (!ad) return 1;
+        if (!bd) return -1;
+        return ad < bd ? 1 : -1;
+      }
+      var diff = (b.share || 0) - (a.share || 0);
+      if (diff) return diff;
+      return String(a.proj || '').localeCompare(String(b.proj || ''), 'zh');
+    });
+  }
+
   function renderDetail() {
-    var recs = filtered().slice().sort(function (a, b) { return (b.share || 0) - (a.share || 0); });
-    var note = '筛选后 ' + fmtInt(recs.length) + ' 条投资记录（按认购份额降序）' + (recs.length > 500 ? ' · 表内显示前 500 条，导出为全部' : '');
+    var recs = sortDetailRecords(filtered());
+    var note = '筛选后 ' + fmtInt(recs.length) + ' 条投资记录（按簿记时间倒序，最新发行在上）' + (recs.length > 500 ? ' · 表内显示前 500 条，导出为全部' : '');
     var rows = recs.slice(0, 500).map(function (r) {
       return '<tr><td style="font-weight:600;color:#0d1b2e">' + esc(r.proj || '—') + '</td><td style="color:#556">' + esc(r.asset || '—') + '</td><td style="color:#556">' + esc(r.layer || '—') + '</td><td style="color:#556">' + esc(r.rating || '—') + '</td><td style="color:#0d1b2e">' + esc(r.inst || '—') + '</td><td class="r itl-accent" style="font-weight:700">' + fmtShare(r.share) + '</td><td class="r" style="color:#556">' + fmtPct(r.cost) + '</td><td class="r" style="color:#556">' + fmtPct(r.spread) + '</td><td style="color:#889">' + esc(r.date || '—') + '</td><td style="color:#556">' + esc(r.mgr || '—') + '</td></tr>';
     }).join('');
@@ -255,7 +270,7 @@
     } else {
       name = '投资台账_明细';
       rows.push(['项目名称', '资产类型', '分层', '评级', '认购机构', '认购份额(亿)', '成本', '利差', '簿记时间', '计划管理人', '联席承销商', '托管行', '发行场所', '规模(亿)']);
-      filtered().forEach(function (r) { rows.push([r.proj, r.asset, r.layer, r.rating, r.inst, r.share, fmtPct(r.cost), fmtPct(r.spread), r.date, r.mgr, r.underwriter, r.custodian, r.venue, r.scale]); });
+      sortDetailRecords(filtered()).forEach(function (r) { rows.push([r.proj, r.asset, r.layer, r.rating, r.inst, r.share, fmtPct(r.cost), fmtPct(r.spread), r.date, r.mgr, r.underwriter, r.custodian, r.venue, r.scale]); });
     }
     var csv = rows.map(function (row) { return row.map(function (c) { var t = c == null ? '' : String(c); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }).join(','); }).join('\r\n');
     var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
@@ -366,6 +381,7 @@
     build: build,
     applySpec: applySpec,
     getData: function () { return DATA; },
+    sortDetailRecords: sortDetailRecords,
     fields: { sel: SEL, dims: DIMS },
     distinctCounts: distinctCounts
   };
