@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T18:05:27",
+  "generatedAt": "2026-11-05T18:12:48",
   "latest": "ABS综合看板_20261105.html",
   "latestDate": "20261105",
   "dashboardCount": 1,
@@ -14,9 +14,9 @@
     "algorithm": "PBKDF2-SHA256 + AES-256-GCM + gzip",
     "iterations": 10000,
     "plainBytes": 10307599,
-    "gzipBytes": 676595,
-    "cipherBytes": 676611,
-    "mobileCipherBytes": 140661,
+    "gzipBytes": 676527,
+    "cipherBytes": 676543,
+    "mobileCipherBytes": 140663,
     "layout": "external-bin",
     "shellBytes": 12159
   }
