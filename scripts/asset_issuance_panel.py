@@ -35,6 +35,7 @@ YEAR_ASSET_OVERRIDES = {
     '2025': {'小贷京小贷': '京企贷', '采购融资': '京企贷', '融资租赁': '融资租赁'},
 }
 TEMPLATE = Path(__file__).with_name('asset_issuance_panel.html')
+CONSUMER_TEMPLATE = Path(__file__).with_name('consumer_abs_panel.html')
 FRAME_ID = 'issuance-statistics-frame'
 
 
@@ -117,15 +118,23 @@ def compute_data(ledger):
     return data
 
 
-def render_document(data):
+def render_issuance_document(data):
     encoded = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
     encoded = encoded.replace('&', '\\u0026').replace('<', '\\u003c').replace('>', '\\u003e')
     return TEMPLATE.read_text(encoding='utf-8').replace('__DEMO_DATA__', encoded)
 
 
+def render_document(data):
+    import abs_balance_panel
+    pages = {'issuance': render_issuance_document(data), 'balance': abs_balance_panel.render_document()}
+    encoded = json.dumps(pages, ensure_ascii=False, separators=(',', ':'))
+    encoded = encoded.replace('&', '\\u0026').replace('<', '\\u003c').replace('>', '\\u003e')
+    return CONSUMER_TEMPLATE.read_text(encoding='utf-8').replace('__DATA__', encoded)
+
+
 def render_body(data):
     document = escape(render_document(data), quote=True)
-    return (f'<iframe id="{FRAME_ID}" title="发行统计" srcdoc="{document}" '
+    return (f'<iframe id="{FRAME_ID}" title="消金ABS" srcdoc="{document}" '
             'style="display:block;width:100%;height:calc(100vh - 140px);min-height:600px;border:0;"></iframe>')
 
 
@@ -149,10 +158,17 @@ def extract_document(html):
 
 
 def verify_document(document, ledger):
+    wrapper_marker = '<script id="consumer-abs-data" type="application/json">'
+    if document.count(wrapper_marker) != 1:
+        raise ValueError('消金ABS组件数据缺失或重复')
+    pages = json.loads(document.split(wrapper_marker, 1)[1].split('</script>', 1)[0])
+    if set(pages) != {'issuance', 'balance'}:
+        raise ValueError('消金ABS缺少发行规模或存量余额')
+    issuance = pages['issuance']
     marker = '<script id="issuance-data" type="application/json">'
-    if document.count(marker) != 1:
+    if issuance.count(marker) != 1:
         raise ValueError('发行统计数据标记缺失或重复')
-    encoded = document.split(marker, 1)[1].split('</script>', 1)[0]
+    encoded = issuance.split(marker, 1)[1].split('</script>', 1)[0]
     data = json.loads(encoded)
     if set(data) != {'2025', '2026'}:
         raise ValueError('发行统计年份必须为2025与2026')

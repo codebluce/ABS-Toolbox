@@ -69,7 +69,7 @@ class IssuancePanelTest(unittest.TestCase):
 
     def test_integrated_subtab_is_named_issuance_statistics(self):
         html = build_integrated_html([('asset_overview', 'issuance_statistics', panel.render_body(self.data))], '')
-        self.assertIn('>发行统计</button>', html)
+        self.assertIn('>消金ABS</button>', html)
         self.assertEqual(panel.extract_document(html), panel.render_document(self.data))
 
 

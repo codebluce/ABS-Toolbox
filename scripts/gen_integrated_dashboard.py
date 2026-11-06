@@ -193,7 +193,7 @@ def build_integrated_html(panels, all_css):
                                  'inst_stats': '机构统计', 'credit_total': '授信速查'}
                 sub_label = sub_label_map.get(sub, sub)
             elif module == 'asset_overview':
-                sub_label_map = {'asset_distribution': '消金资产', 'issuance_statistics': '发行统计', 'risk_performance': '风险表现'}
+                sub_label_map = {'asset_distribution': '消金资产', 'issuance_statistics': '消金ABS', 'risk_performance': '风险表现'}
                 sub_label = sub_label_map.get(sub, sub)
             elif module == 'ledger':
                 sub_label_map = {'query_2026': '2026年', 'query_2025': '2025年', 'query_2024': '2024年'}

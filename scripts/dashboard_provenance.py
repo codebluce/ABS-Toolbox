@@ -19,6 +19,7 @@ PRODUCERS = (
     'entity_alias.py', 'institution_identity.py', 'dashboard_provenance.py',
     'itl_panel.js', 'itl_panel.css', 'itl_chat.js', 'itl_chat.css',
     'asset_issuance_panel.py', 'asset_issuance_panel.html',
+    'consumer_abs_panel.html', 'abs_balance_panel.py', 'abs_balance_panel.html',
     'asset_distribution_panel.py', 'asset_distribution_panel.html',
     'risk_performance_panel.py', 'risk_performance_panel.html',
 )
@@ -35,6 +36,7 @@ def producer_sha256():
         digest.update((SCRIPT_DIR / name).read_bytes())
     digest.update((ROOT / 'data/asset_distribution_snapshot.json').read_bytes())
     digest.update((ROOT / 'data/risk_performance_snapshot.json').read_bytes())
+    digest.update((ROOT / 'data/abs_balance_snapshot.json').read_bytes())
     return digest.hexdigest()
 
 

@@ -33,14 +33,14 @@ async function verify(frame){
  const b=await chromium.launch();const p=await b.newPage({viewport:{width:1440,height:1050}});const errors=[];p.on('pageerror',e=>errors.push(e.message));
  await p.goto(pathToFileURL(path.resolve(desktop)).href);
  await p.locator('.tab-button[data-module="asset_overview"]').click();
- assert.deepEqual(await p.locator('.sub-tabs-pane[data-module="asset_overview"] button').allTextContents(),['发行统计','消金资产','风险表现']);
+ assert.deepEqual(await p.locator('.sub-tabs-pane[data-module="asset_overview"] button').allTextContents(),['消金ABS','消金资产','风险表现']);
  assert.equal(await p.locator('.sub-tab-button[data-sub="consumer_asset"]').count(),0);
  await p.locator('.sub-tab-button[data-sub="asset_distribution"]').click();
  await verify(p.frameLocator('#asset-distribution-frame'));
  const document=await p.locator('#asset-distribution-frame').getAttribute('srcdoc');
  await p.screenshot({path:path.join(output,'desktop.png')});
  await p.setViewportSize({width:390,height:844});await p.goto(pathToFileURL(path.resolve(mobile)).href);
- await p.locator('[data-act="tab:asset"]').click();assert.deepEqual(await p.locator('[data-act^="assetview:"]').allTextContents(),['发行统计','消金资产','风险表现']);
+ await p.locator('[data-act="tab:asset"]').click();assert.deepEqual(await p.locator('[data-act^="assetview:"]').allTextContents(),['消金ABS','消金资产','风险表现']);
  assert.equal(await p.locator('[data-act="assetview:consumer"]').count(),0);
  await p.locator('[data-act="assetview:distribution"]').click();assert.equal(await p.locator('#m-asset-distribution-frame').getAttribute('srcdoc'),document);
  await verify(p.frameLocator('#m-asset-distribution-frame'));await p.screenshot({path:path.join(output,'mobile.png')});

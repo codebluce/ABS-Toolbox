@@ -636,11 +636,11 @@
         ['issuance', INJ.assetDistributionHtml ? 'distribution' : 'consumer'].concat(INJ.riskPerformanceHtml ? ['risk'] : []).map(function(k) {
           return '<button data-act="assetview:' + k + '" style="border:0;border-radius:5px;padding:8px 14px;background:' +
             (S.assetView === k ? '#0d1b2e;color:#fff;' : '#edf2f7;color:#52657a;') + '">' +
-            (k === 'issuance' ? '发行统计' : k === 'risk' ? '风险表现' : '消金资产') + '</button>';
+            (k === 'issuance' ? '消金ABS' : k === 'risk' ? '风险表现' : '消金资产') + '</button>';
         }).join('') + '</div>' : '';
       if (S.assetView === 'risk' && INJ.riskPerformanceHtml) return assetTabs + '<iframe id="m-risk-performance-frame" title="风险表现" style="display:block;width:100%;height:calc(100% - 54px);min-height:400px;border:0;"></iframe>';
       return assetTabs + (S.assetView === 'issuance' && INJ.issuanceStatisticsHtml ?
-        '<iframe id="m-issuance-statistics-frame" title="发行统计" style="display:block;width:100%;height:calc(100% - 54px);min-height:400px;border:0;"></iframe>' :
+        '<iframe id="m-issuance-statistics-frame" title="消金ABS" style="display:block;width:100%;height:calc(100% - 54px);min-height:400px;border:0;"></iframe>' :
         (INJ.assetDistributionHtml ? '<iframe id="m-asset-distribution-frame" title="资产分布" style="display:block;width:100%;height:calc(100% - 54px);min-height:400px;border:0;"></iframe>' : viewAsset()));
     }
     if (S.tab === 'peer') return viewPeer();

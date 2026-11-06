@@ -51,7 +51,7 @@ async function check(risk){
  p.on('pageerror',e=>errors.push(e.message));
  await p.goto(pathToFileURL(path.resolve(desktop)).href);
  await p.locator('.tab-button[data-module="asset_overview"]').click();
- assert.deepEqual(await p.locator('.sub-tabs-pane[data-module="asset_overview"] button').allTextContents(),['发行统计','消金资产','风险表现']);
+ assert.deepEqual(await p.locator('.sub-tabs-pane[data-module="asset_overview"] button').allTextContents(),['消金ABS','消金资产','风险表现']);
  await p.locator('.sub-tab-button[data-sub="risk_performance"]').click();
  const source=await p.locator('#risk-performance-frame').getAttribute('srcdoc');
  await check(p.frameLocator('#risk-performance-frame'));
@@ -63,7 +63,7 @@ async function check(risk){
  await p.setViewportSize({width:390,height:844});
  await p.goto(pathToFileURL(path.resolve(mobile)).href);
  await p.locator('[data-act="tab:asset"]').click();
- assert.deepEqual(await p.locator('[data-act^="assetview:"]').allTextContents(),['发行统计','消金资产','风险表现']);
+ assert.deepEqual(await p.locator('[data-act^="assetview:"]').allTextContents(),['消金ABS','消金资产','风险表现']);
  await p.locator('[data-act="assetview:risk"]').click();
  assert.equal(await p.locator('#m-risk-performance-frame').getAttribute('srcdoc'),source);
  await check(p.frameLocator('#m-risk-performance-frame'));

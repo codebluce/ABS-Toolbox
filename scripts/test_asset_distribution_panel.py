@@ -35,7 +35,7 @@ class AssetDistributionTest(unittest.TestCase):
         html = build_integrated_html([
             ('asset_overview', 'asset_distribution', panel.render_body()),
             ('asset_overview', 'issuance_statistics', '<p>发行统计</p>')], '')
-        self.assertLess(html.index('>发行统计</button>'), html.index('>消金资产</button>'))
+        self.assertLess(html.index('>消金ABS</button>'), html.index('>消金资产</button>'))
         self.assertNotIn('data-sub="consumer_asset"', html)
 
 

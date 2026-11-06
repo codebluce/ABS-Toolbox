@@ -8,6 +8,37 @@ const [desktop, mobile, output] = process.argv.slice(2);
 if (!desktop || !mobile || !output) throw Error('desktop, mobile, output paths required');
 fs.mkdirSync(output, {recursive: true});
 
+async function checkBalance(wrapper) {
+  assert.deepEqual(await wrapper.locator('[data-view]').allTextContents(), ['ABS发行规模','ABS存量余额']);
+  await wrapper.locator('#balance-tab').click();
+  const frame=wrapper.frameLocator('#abs-balance-frame');
+  await frame.locator('#total').waitFor();
+  await frame.locator('#chart').evaluate(svg=>new Promise((resolve,reject)=>{
+    let tries=0;function check(){if(Math.abs(svg.viewBox.baseVal.width-svg.getBoundingClientRect().width)<1)return resolve();if(++tries>30)return reject(Error('余额图表尺寸没有更新'));setTimeout(check,50);}check();
+  }));
+  assert.equal(await frame.locator('#total').textContent(), '2,241');
+  assert.deepEqual(await frame.locator('#assets .number').allTextContents(), ['811','1,108','190','132']);
+  const dates=await frame.locator('#period option').allTextContents();
+  assert.equal(dates.length,10);
+  assert.ok(dates.every(date=>['03','06','09','12'].includes(date.slice(5,7))));
+  assert.ok(!dates.includes('2024-08'));
+  for(let i=0;i<10;i++) {
+    await frame.locator('#period').selectOption(String(i));
+    assert.equal(await frame.locator('body').evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  }
+  await frame.locator('#assets [data-group="白条"]').click();
+  assert.equal(await frame.locator('#rows .asset-row').count(),3);
+  await frame.locator('#chart [data-index="9"]').focus();
+  assert.equal(await frame.locator('#tip tbody tr').count(),5);
+  await frame.locator('#reset').click();
+  await frame.locator('#period').selectOption('1');
+  await wrapper.locator('#issuance-tab').click();
+  assert.equal(await wrapper.frameLocator('#abs-issuance-frame').locator('[data-year="compare"]').getAttribute('aria-selected'),'true');
+  await wrapper.locator('#balance-tab').click();
+  assert.equal(await frame.locator('#period').inputValue(),'1');
+  await frame.locator('#period').selectOption('9');
+}
+
 async function check(frame) {
   await frame.locator('#group-chart .group-item').first().waitFor();
   assert.deepEqual(await frame.locator('[data-year]').allTextContents(), ['2026 年', '2025 年', '两年对比']);
@@ -91,11 +122,14 @@ async function check(frame) {
   await page.goto(pathToFileURL(path.resolve(desktop)).href);
   await page.locator('.tab-button[data-module="asset_overview"]').click();
   assert.equal(await page.locator('.sub-tab-button[data-sub="asset_distribution"]').textContent(), '消金资产');
-  assert.deepEqual(await page.locator('.sub-tabs-pane[data-module="asset_overview"] button').allTextContents(), ['发行统计','消金资产','风险表现']);
+  assert.deepEqual(await page.locator('.sub-tabs-pane[data-module="asset_overview"] button').allTextContents(), ['消金ABS','消金资产','风险表现']);
   assert.equal(await page.locator('.panel.active').getAttribute('data-sub'),'issuance_statistics');
   await page.locator('.sub-tab-button[data-sub="issuance_statistics"]').click();
-  const desktopFrame = page.frameLocator('#issuance-statistics-frame');
+  const desktopWrapper = page.frameLocator('#issuance-statistics-frame');
+  const desktopFrame = desktopWrapper.frameLocator('#abs-issuance-frame');
   const desktopResults = await check(desktopFrame);
+  await checkBalance(desktopWrapper);
+  await desktopWrapper.locator('#issuance-tab').click();
   await page.screenshot({path: path.join(output, 'desktop-comparison.png')});
   await desktopFrame.locator('[data-year="2026"]').click();
   await page.screenshot({path: path.join(output, 'desktop.png')});
@@ -107,12 +141,15 @@ async function check(frame) {
   await page.setViewportSize({width: 390, height: 844});
   await page.goto(pathToFileURL(path.resolve(mobile)).href);
   await page.locator('[data-act="tab:asset"]').click();
-  assert.deepEqual(await page.locator('[data-act^="assetview:"]').allTextContents(), ['发行统计','消金资产','风险表现']);
+  assert.deepEqual(await page.locator('[data-act^="assetview:"]').allTextContents(), ['消金ABS','消金资产','风险表现']);
   assert.equal(await page.locator('#m-issuance-statistics-frame').count(),1);
   await page.locator('[data-act="assetview:issuance"]').click();
-  const mobileFrame = page.frameLocator('#m-issuance-statistics-frame');
+  const mobileWrapper = page.frameLocator('#m-issuance-statistics-frame');
+  const mobileFrame = mobileWrapper.frameLocator('#abs-issuance-frame');
   assert.equal(await page.locator('#m-issuance-statistics-frame').getAttribute('srcdoc'), source);
   const mobileResults = await check(mobileFrame);
+  await checkBalance(mobileWrapper);
+  await mobileWrapper.locator('#issuance-tab').click();
   await page.screenshot({path: path.join(output, 'mobile-comparison.png')});
   await mobileFrame.locator('[data-year="2026"]').click();
   await page.screenshot({path: path.join(output, 'mobile.png')});
