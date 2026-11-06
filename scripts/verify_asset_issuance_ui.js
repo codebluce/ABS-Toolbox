@@ -17,6 +17,7 @@ async function checkBalance(wrapper) {
     let tries=0;function check(){if(Math.abs(svg.viewBox.baseVal.width-svg.getBoundingClientRect().width)<1)return resolve();if(++tries>30)return reject(Error('余额图表尺寸没有更新'));setTimeout(check,50);}check();
   }));
   assert.equal(await frame.locator('#total').textContent(), '2,241');
+  assert.equal(await frame.locator('#total-change').textContent(), '较2026-03 -9.5%');
   assert.deepEqual(await frame.locator('#assets .number').allTextContents(), ['811','1,108','190','132']);
   const dates=await frame.locator('#period option').allTextContents();
   assert.equal(dates.length,10);
@@ -24,6 +25,10 @@ async function checkBalance(wrapper) {
   assert.ok(!dates.includes('2024-08'));
   for(let i=0;i<10;i++) {
     await frame.locator('#period').selectOption(String(i));
+    const labels=await frame.locator('#period option').allTextContents();
+    const change=await frame.locator('#total-change').textContent();
+    if(i===0)assert.equal(change,'');
+    else assert.ok(change.startsWith('较'+labels[10-i]+' '));
     assert.equal(await frame.locator('body').evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   }
   await frame.locator('#assets [data-group="白条"]').click();

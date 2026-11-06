@@ -22,7 +22,7 @@ const fmt=v=>v===null?'—':Number(v).toLocaleString('en-US',{maximumFractionDig
 let index=D.periods.length-1,selected='all';
 function group(name){if(name.startsWith('混发-'))return '混发';if(['赊销白条','小贷白条','信托白条'].includes(name))return '白条';if(['金条','信托金条','小贷金条'].includes(name))return '金条';if(['信托白取','白条取现'].includes(name))return '白条取现';throw Error('未登记资产 '+name);}
 function sums(p){return Object.fromEntries(groups.map(g=>{const rows=p.records.filter(r=>group(r.name)===g);return [g,rows.length?rows.reduce((s,r)=>s+r.total,0):null];}));}
-function delta(now,before){if(now===null||before===null)return '';if(!before)return now?'新增余额':'持平';const change=(now/before-1)*100;return '较上一披露时点 '+(Math.abs(change)<.05?'0.0':(change>0?'+':'')+change.toFixed(1))+'%';}
+function delta(now,before){if(now===null||before===null||!index)return '';const prefix='较'+D.periods[index-1].date.slice(0,7)+' ';if(!before)return prefix+(now?'新增余额':'持平');const change=(now/before-1)*100;return prefix+(Math.abs(change)<.05?'0.0':(change>0?'+':'')+change.toFixed(1))+'%';}
 function segments(values,total){return D.channels.filter(c=>(values[c]||0)>0).map(c=>`<span style="--color:${CC[c]};width:${values[c]/total*100}%" title="${c} ${fmt(values[c])} · ${pct(values[c],total)}"></span>`).join('');}
 function render(){hideTip();const p=D.periods[index],values=sums(p),before=index?D.periods[index-1]:null,prior=before?sums(before):null;
 $('total').textContent=fmt(p.total);$('total-change').textContent=delta(p.total,before?before.total:null);
