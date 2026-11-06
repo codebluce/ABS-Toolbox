@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "desktopResults": [
+    {
+      "year": "2025",
+      "total": "2,741",
+      "assets": 21
+    },
+    {
+      "year": "2026",
+      "total": "1,643",
+      "assets": 15
+    }
+  ],
+  "mobileResults": [
+    {
+      "year": "2025",
+      "total": "2,741",
+      "assets": 21
+    },
+    {
+      "year": "2026",
+      "total": "1,643",
+      "assets": 15
+    }
+  ],
+  "checks": [
+    "desktop subtab",
+    "mobile subtab",
+    "same embedded document",
+    "all assets",
+    "confirmed grouping",
+    "project details",
+    "search",
+    "sorting",
+    "two-year comparison",
+    "no overflow",
+    "ledger regression"
+  ],
+  "errors": []
+}

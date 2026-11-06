@@ -33,7 +33,7 @@ async function checkBalance(wrapper) {
   await frame.locator('#reset').click();
   await frame.locator('#period').selectOption('1');
   await wrapper.locator('#issuance-tab').click();
-  assert.equal(await wrapper.frameLocator('#abs-issuance-frame').locator('[data-year="compare"]').getAttribute('aria-selected'),'true');
+  assert.equal(await wrapper.frameLocator('#abs-issuance-frame').locator('#issuance-year').inputValue(),'compare');
   await wrapper.locator('#balance-tab').click();
   assert.equal(await frame.locator('#period').inputValue(),'1');
   await frame.locator('#period').selectOption('9');
@@ -44,7 +44,7 @@ async function check(frame) {
   assert.deepEqual(await frame.locator('[data-year]').allTextContents(), ['2026 年', '2025 年', '两年对比']);
   const result = [];
   for (const year of ['2025', '2026']) {
-    await frame.locator('[data-year="' + year + '"]').click();
+    await frame.locator('#issuance-year').selectOption(year);
     const snapshot = await frame.locator('body').evaluate(() => {
       const data = JSON.parse(document.getElementById('issuance-data').textContent);
       return {data, total: document.getElementById('total').textContent,
@@ -55,11 +55,13 @@ async function check(frame) {
     assert.equal(snapshot.overflow, false);
     assert.equal(snapshot.groups.length, 8);
     assert.equal(snapshot.assets.length, year === '2025' ? 21 : 15);
-    assert.equal(snapshot.total, year === '2025' ? '2,740.69' : '1,643.11');
+    assert.equal(snapshot.total, year === '2025' ? '2,741' : '1,643');
+    const amounts=await frame.locator('#total,.channel-number,.group-value,.asset-num').allTextContents();
+    assert.ok(amounts.every(value=>!/[\d,]+\.\d{2}(?!\d)/.test(value)));
     assert.ok(snapshot.groups.includes(year === '2025' ? '融资租赁' : '汽车融资租赁'));
     assert.deepEqual([...snapshot.assets].sort(), snapshot.data[year].assets.map(a => a.name).sort());
     await frame.locator('#group-chart [data-group="京企贷"]').click();
-    assert.ok((await frame.locator('#dialog-subtitle').textContent()).includes(year === '2025' ? '30.00' : '18.00'));
+    assert.ok((await frame.locator('#dialog-subtitle').textContent()).includes(year === '2025' ? '30' : '18'));
     await frame.locator('#close-dialog').click();
     await frame.locator('#search').fill('信托金条');
     assert.equal(await frame.locator('.asset-chart-row').count(), 1);
@@ -69,7 +71,7 @@ async function check(frame) {
     await frame.locator('#chart-sort').selectOption('total');
     result.push({year, total: snapshot.total, assets: snapshot.assets.length});
   }
-  await frame.locator('[data-year="compare"]').click();
+  await frame.locator('#issuance-year').selectOption('compare');
   assert.equal(await frame.locator('.group-compare-row').count(), 8);
   assert.equal(await frame.locator('#compare-body tr').count(), 4);
   assert.equal(await frame.locator('.group-yoy').count(), 8);
@@ -78,12 +80,12 @@ async function check(frame) {
     value: node.querySelectorAll('b')[1].textContent
   })));
   assert.deepEqual(bars.map(bar => bar.label), ['2025 同期', '2026 累计']);
-  assert.deepEqual(bars.map(bar => bar.value), ['2,538.69', '1,643.11']);
+  assert.deepEqual(bars.map(bar => bar.value), ['2,539', '1,643']);
   const groupBars = await frame.locator('.group-compare-row').evaluateAll(rows => rows.map(row => ({
     name: row.querySelector('.group-compare-name').textContent,
     values: [...row.querySelectorAll('.group-year-value')].map(node => node.textContent)
   })));
-  assert.deepEqual(groupBars.find(item => item.name === '金采').values, ['90.00', '113.00']);
+  assert.deepEqual(groupBars.find(item => item.name === '金采').values, ['90', '113']);
   const growth = await frame.locator('body').evaluate(() => {
     const d=JSON.parse(document.getElementById('issuance-data').textContent);
     const cutoff='2025'+d['2026'].asOf.slice(4);
@@ -101,7 +103,7 @@ async function check(frame) {
       const name=g.name==='汽车融资租赁'?'融资租赁':g.name;
       const prev=records.filter(r=>r.group===name).reduce((s,r)=>s+r.scale,0);
       const rate=prev ? (g.total-prev)/prev*100 : null;
-      return {name, previous:prev.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}), change:rate===null?(g.total?'新增（同期为0）':'—'):(rate>0?'+':'')+rate.toFixed(1)+'%'};
+      return {name, previous:prev.toLocaleString('en-US',{maximumFractionDigits:0}), change:rate===null?(g.total?'新增（同期为0）':'—'):(rate>0?'+':'')+rate.toFixed(1)+'%'};
     });
   });
   const labels=await frame.locator('.group-yoy').allTextContents();
@@ -109,7 +111,7 @@ async function check(frame) {
 
   await frame.locator('.group-year-bar[data-detail-year="2025"][data-group="融资租赁"]').click();
   assert.ok((await frame.locator('#dialog-title').textContent()).includes('2025'));
-  assert.ok((await frame.locator('#dialog-subtitle').textContent()).includes('7.10'));
+  assert.ok((await frame.locator('#dialog-subtitle').textContent()).includes('7'));
   await frame.locator('#close-dialog').click();
   return result;
 }
@@ -131,7 +133,7 @@ async function check(frame) {
   await checkBalance(desktopWrapper);
   await desktopWrapper.locator('#issuance-tab').click();
   await page.screenshot({path: path.join(output, 'desktop-comparison.png')});
-  await desktopFrame.locator('[data-year="2026"]').click();
+  await desktopFrame.locator('#issuance-year').selectOption('2026');
   await page.screenshot({path: path.join(output, 'desktop.png')});
   const source = await page.locator('#issuance-statistics-frame').getAttribute('srcdoc');
   await page.locator('.tab-button[data-module="ledger"]').click();
@@ -151,7 +153,7 @@ async function check(frame) {
   await checkBalance(mobileWrapper);
   await mobileWrapper.locator('#issuance-tab').click();
   await page.screenshot({path: path.join(output, 'mobile-comparison.png')});
-  await mobileFrame.locator('[data-year="2026"]').click();
+  await mobileFrame.locator('#issuance-year').selectOption('2026');
   await page.screenshot({path: path.join(output, 'mobile.png')});
   await page.locator('[data-act="assetview:distribution"]').click();
   assert.equal(await page.locator('#m-issuance-statistics-frame').count(), 0);

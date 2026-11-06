@@ -21,12 +21,14 @@
 @media(max-width:700px){.group-compare-row{grid-template-columns:1fr;gap:6px;padding:10px 0}.group-compare-name>span{display:inline-block;margin-right:12px}.group-year-bar{grid-template-columns:30px 1fr 57px 43px;gap:7px}.group-year-count{display:none}.group-year-value{font-size:11px}.group-year-pct{font-size:10px}}
 .same-period-row td{background:#f6f9fc;color:var(--muted)}.yoy-row td{background:#eef5fa;color:var(--ink);font-weight:600}.group-yoy{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-size:11px;padding-top:3px}.group-yoy b{color:var(--ink);font-weight:600}
 @media(max-width:700px){.group-yoy{justify-content:flex-start;gap:5px 12px;font-size:10px}}
+
+/* 与存量余额统一：左侧选择、右侧口径说明。 */
+main{padding:14px 28px 32px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;font-size:13px}.toolbar select{font:inherit;color:inherit;border:1px solid var(--line);border-radius:6px;padding:7px 10px;background:#fff}.toolbar select:focus-visible{outline:3px solid #539bc4;outline-offset:3px}.toolbar .period{margin:0;justify-content:flex-end;gap:6px 14px;font-size:11px;flex:1;min-width:200px}.overview{margin-top:0}@media(max-width:650px){main{padding:16px 12px}.toolbar{align-items:flex-start}.toolbar .period{flex-basis:100%;justify-content:flex-start;min-width:0}}
 </style>
 </head>
 <body>
 <main>
-<div class="intro"><div class="years" role="tablist" aria-label="统计年份"><button role="tab" data-year="2026" aria-selected="true">2026 年</button><button role="tab" data-year="2025" aria-selected="false">2025 年</button><button role="tab" data-year="compare" aria-selected="false">两年对比</button></div></div>
-<div class="period" id="period"></div>
+<div class="toolbar"><label>统计年份 <select id="issuance-year" aria-label="统计年份"><option data-year="2026" value="2026">2026 年</option><option data-year="2025" value="2025">2025 年</option><option data-year="compare" value="compare">两年对比</option></select></label><div class="period" id="period"></div></div>
 <section id="year-view">
 <div class="overview"><div class="total-block"><p id="total-label">2026 年累计发行</p><div class="total-value"><span id="total"></span><small>亿元</small></div><div class="count" id="project-count"></div></div><div class="channels"><div class="channel-cards" id="channel-cards"></div><div id="channel-stack" class="stack" aria-label="发行渠道规模占比"></div><div class="stack-note"><span id="stack-caption">四个渠道合计 = 当年发行总规模</span><span>金额单位：亿元</span></div></div></div>
 <div class="content-grid">
@@ -49,13 +51,13 @@ const colors={'交易所':'#285f9e','银行间':'#1a8b8a','非标':'#bd8241','�
 const rgb={'交易所':'40,95,158','银行间':'26,139,138','非标':'189,130,65','保登':'122,107,169'};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=n=>Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:0});
 const pct=(n,total)=>total?(100*n/total).toFixed(1)+'%':'0.0%';
 let year='2026',sort='total';
 const legend=()=>channels.map(c=>`<span><i class="dot" style="--color:${colors[c]}"></i>${c}</span>`).join('');
 function segments(d,total){return [...channels,'待补充'].filter(c=>d[c]>0).map(c=>`<span class="stack-seg ${c==='待补充'?'pending-fill':''}" style="--color:${colors[c]};width:${d[c]/total*100}%" title="${c} · ${fmt(d[c])} 亿 · ${pct(d[c],total)}"></span>`).join('');}
 function render(){
- document.querySelectorAll('[data-year]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.year===year)));
+ $('issuance-year').value=year;
  $('year-view').hidden=year==='compare';$('compare-view').hidden=year!=='compare';$('search').value='';sort='total';$('chart-sort').value='total';
  if(year==='compare'){renderCompare();return;}
  const d=DATA[year];
@@ -116,13 +118,12 @@ function showProjects(asset,channel,group,detailYear=year,cutoff=null){
  $('projects').showModal();
 }
 document.addEventListener('click',e=>{
- const y=e.target.closest('[data-year]');if(y){year=y.dataset.year;render();return;}
  const g=e.target.closest('[data-group]');if(g){showProjects(null,null,g.dataset.group,g.dataset.detailYear||year,g.dataset.detailCutoff||null);return;}
  const p=e.target.closest('[data-asset],[data-channel]');if(p&&year!=='compare'){showProjects(p.dataset.asset,p.dataset.channel);}
 });
 $('search').addEventListener('input',renderChart);$('chart-sort').addEventListener('change',e=>{sort=e.target.value;renderChart();});$('close-dialog').addEventListener('click',()=>$('projects').close());
 $('projects').addEventListener('click',e=>{if(e.target===$('projects')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
-document.querySelector('.years').addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;const tabs=[...document.querySelectorAll('[data-year]')],current=tabs.indexOf(document.activeElement);if(current<0)return;e.preventDefault();let next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(current+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[next].focus();tabs[next].click();});
+$('issuance-year').addEventListener('change',e=>{year=e.target.value;render();});
 render();
 </script>
 </body>

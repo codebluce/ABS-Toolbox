@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "matches": {
+    "desktop": true,
+    "mobile": true
+  },
+  "files": {
+    "index.html": "1e447208d2057de6eb6b4b4e77d0a88f9efc80e0504338e6647b33538db655f7",
+    "README.md": "ec7d01eea242f9735b4855dd3a3f946f15fe887e485313c96cca256c6dfcaa2e",
+    ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "manifest.json": "224434ba46f199e84de4d5680a5dfe3dc0164c07f37d9c1234643351f7436690",
+    "p/m.bin": "c5f789bdd09b0e6689249b1da8365fdb0d87d9e42a2e4d9f32706cb5b8d621f3",
+    "p/d.bin": "d9015d7d0f3c2947f1d4e740160dc324351326717c1349ad8be06961c5100d39"
+  }
+}

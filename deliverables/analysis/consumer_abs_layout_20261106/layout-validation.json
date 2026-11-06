@@ -1,0 +1,63 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "width": 1440,
+      "metrics": [
+        {
+          "kind": "issuance",
+          "left": 28,
+          "top": 14,
+          "selectorLeft": 84.34375,
+          "selectorHeight": 36,
+          "noteLeft": 190.34375,
+          "noteTop": 23.75,
+          "selectTop": 14,
+          "labelLeft": 28,
+          "overflow": false
+        },
+        {
+          "kind": "balance",
+          "left": 28,
+          "top": 14,
+          "selectorLeft": 84.34375,
+          "selectorHeight": 36,
+          "noteLeft": 1172.9375,
+          "noteTop": 23.75,
+          "selectTop": 14,
+          "labelLeft": 28,
+          "overflow": false
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "metrics": [
+        {
+          "kind": "issuance",
+          "left": 12,
+          "top": 16,
+          "selectorLeft": 68.34375,
+          "selectorHeight": 36,
+          "noteLeft": 12,
+          "noteTop": 64,
+          "selectTop": 16,
+          "labelLeft": 12,
+          "overflow": false
+        },
+        {
+          "kind": "balance",
+          "left": 12,
+          "top": 16,
+          "selectorLeft": 68.34375,
+          "selectorHeight": 36,
+          "noteLeft": 12,
+          "noteTop": 64,
+          "selectTop": 16,
+          "labelLeft": 12,
+          "overflow": false
+        }
+      ]
+    }
+  ]
+}
