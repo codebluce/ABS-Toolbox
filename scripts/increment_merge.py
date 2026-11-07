@@ -85,6 +85,8 @@ def core_name(name):
 MATCH_HARD_MAP = {
     "利曦基金": "利曦私募基金",
     "利曦私募基金": "利曦基金",
+    # 金采9-2 明细写“首创自营”，台账 U 列为“首创证券自营”。
+    "首创自营": "首创证券自营",
 }
 
 def unmerge_and_fill_raw(ws):
@@ -230,6 +232,9 @@ def read_detail(path, expected_layer="auto"):
                 # 原 re.sub(r'级.*$', '', layer) 会把"优先级A1"削成"优先" (级.*$ 匹配"级A1")
                 # 导致 A1/A2 两档数据混进同一个"优先"层, A1 层金额虚高, A2 误判缺失
                 layer = layer.replace('级', '').strip()
+                # “优先级”本身是完整层名，不能削成“优先”；只有“优先级A1/A2”才去掉“级”。
+                if layer == '优先' and '优先级' in c1_str:
+                    layer = '优先级'
                 if layer:
                     current_layer = layer
                 else:
@@ -313,6 +318,8 @@ def map_detail_to_project(filename, project_names=None):
         "【26东裕5仲裕ABN001】": "（续发）25东裕5号仲裕ABCP",
         "【26东裕5伯裕】": "（续发）25东裕5号伯裕ABCP",
         "【耘睿30-1ABS】": "耘睿30-1",
+        # 2026-11 金采9号2期明细文件名使用中文“玖2A”，台账期次为“金采9-2”。
+        "金采玖2A": "金采9-2",
     }
     name = explicit_aliases.get(name, name)
 
@@ -1286,7 +1293,7 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
                     inst_raw = items[0]['name']
                     inst_norm = normalize(inst_raw)
                     for un_key, un_target in MATCH_HARD_MAP.items():
-                        if inst_norm == normalize(un_key):
+                        if inst_raw == un_key or inst_norm == normalize(un_key):
                             for ur_idx, ur in enumerate(urows):
                                 if ur[3]:
                                     continue

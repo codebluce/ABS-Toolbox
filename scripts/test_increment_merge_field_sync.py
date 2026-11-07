@@ -101,6 +101,27 @@ class TestBookkeepingFilenameAliases(unittest.TestCase):
             self.assertEqual({r['layer'] for r in rows}, {'优先A', '优先B'})
             self.assertEqual(sum(r['size'] for r in rows), 1.5)
 
+    def test_priority_level_header_keeps_priority_level_name(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp:
+            path = os.path.join(temp, 'priority.xlsx')
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = '优先级'
+            ws.append(['项目名称', '测试项目'])
+            ws.append(['簿记日期', '2026-11-03'])
+            ws.append(['优先级申购利率', '穿透机构', '申购规模'])
+            ws.append([0.015, '甲机构', 1])
+            ws2 = wb.create_sheet('优先A1')
+            ws2.append(['项目名称', '测试项目'])
+            ws2.append(['簿记日期', '2026-11-03'])
+            ws2.append(['优先级A1申购利率', '穿透机构', '申购规模'])
+            ws2.append([0.016, '乙机构', 2])
+            wb.save(path)
+            wb.close()
+            rows = read_detail(path)
+            self.assertEqual({r['layer'] for r in rows}, {'优先级', '优先A1'})
+
     def test_dongyu8_third_prebooking_matches_only_third_period(self):
         projects = {'26东裕8号一期', '26东裕8号二期', '26东裕8号三期', '耘睿25号2期'}
         self.assertEqual(map_detail_to_project('【26东裕8第三期】项目簿记明细-预簿记2026-10-20.xlsx', projects), '26东裕8号三期')
@@ -134,6 +155,17 @@ class TestBookkeepingFilenameAliases(unittest.TestCase):
                 self.assertEqual(map_detail_to_project(filename, projects), expected)
                 # 第五期当前不在台账里，绝不可误归到三期或四期。
                 self.assertEqual(expected in projects, expected != '26东裕10号五期')
+
+    def test_november_details_map_to_ledger_projects(self):
+        projects = {'金采9-2', '京诚16-5', '耘睿25号3期'}
+        files = {
+            '金采玖2A项目簿记明细-20261103.xlsx': '金采9-2',
+            '京诚16-5簿记明细-11月2.xlsx': '京诚16-5',
+            '耘睿25号3期项目簿记明细-20261106.xlsx': '耘睿25号3期',
+        }
+        for filename, expected in files.items():
+            with self.subTest(filename=filename):
+                self.assertEqual(map_detail_to_project(filename, projects), expected)
 
 
 class TestFieldEqual(unittest.TestCase):
