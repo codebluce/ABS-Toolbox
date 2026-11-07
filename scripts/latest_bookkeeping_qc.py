@@ -35,6 +35,28 @@ class BookkeepingGateError(ValueError):
         super().__init__('最新簿记门禁失败: ' + '; '.join(failures[:8]))
 
 
+LEVEL_ORDER = ('FAIL', 'WARN', 'INFO')
+
+
+def level_counts(report):
+    """按严重程度统计告警。
+
+    FAIL 阻断发布；WARN 需要人看一眼；INFO 是长期已知的源表特性
+    (未披露申购明细、档位公式无缓存等)，不阻断，也不该和 WARN 混在一起
+    制造噪音——此前 83 条全部是 WARN，真正的异常被淹没。
+    """
+    counts = {level: 0 for level in LEVEL_ORDER}
+    for item in report.get('issues', []):
+        level = item.get('level', 'WARN')
+        counts[level] = counts.get(level, 0) + 1
+    return counts
+
+
+def format_level_counts(report):
+    counts = report.get('levelCounts') or level_counts(report)
+    return ' · '.join(f"{level} {counts.get(level, 0)}" for level in LEVEL_ORDER)
+
+
 def component_self_check():
     """每次更新前运行真实JS组件的最小契约自检，坏表头/导出/色标不放行。"""
     node = shutil.which('node')
@@ -389,7 +411,8 @@ def check_data(data, source_path, *, raise_on_fail=True):
                 if not layer_sizes and not uncalculated:
                     issue('WARN', 'LAYER_SIZE_MISSING', f"{project.get('name')}/{tier.get('name')}档位金额未披露，无法核验档位上限")
                 if uncalculated:
-                    issue('WARN', 'LAYER_SIZE_UNCACHED', f"{project.get('name')}/{tier.get('name')}辅助档位金额公式无缓存（{uncalculated[0]}等），无法校验档位上限，仍执行项目配售上限校验")
+                    # 校验已降级到项目级仍在执行，不是数据错误，长期存在 → 提示级
+                    issue('INFO', 'LAYER_SIZE_UNCACHED', f"{project.get('name')}/{tier.get('name')}辅助档位金额公式无缓存（{uncalculated[0]}等），无法校验档位上限，仍执行项目配售上限校验")
                 if len(layer_sizes) == 1 and layer_share - next(iter(layer_sizes)) > 0.0001:
                     issue('FAIL', 'ALLOCATION_LAYER_OVER', f"{project.get('name')}/{tier.get('name')}配售{layer_share:.6g}亿超过档位金额{next(iter(layer_sizes))}亿")
                 if len(layer_sizes) > 1:
@@ -400,7 +423,8 @@ def check_data(data, source_path, *, raise_on_fail=True):
                 if len(expected_costs) > 1:
                     issue('WARN', 'MULTIPLE_COSTS', f"{project.get('name')}/{tier.get('name')}存在多条成本口径，逐笔成本必须保留")
                 if not actual_bids:
-                    issue('WARN', 'NO_BIDS', f"{project.get('name')}/{tier.get('name')}未披露申购明细，不回退历史")
+                    # 非市场化发行/源表不披露申购明细属业务常态，长期存在 → 提示级
+                    issue('INFO', 'NO_BIDS', f"{project.get('name')}/{tier.get('name')}未披露申购明细，不回退历史")
             if project.get('size') is not None and total_share - project['size'] > 0.0001:
                 issue('FAIL', 'ALLOCATION_PROJECT_OVER', f"{project.get('name')}配售合计{total_share:.6g}亿超过发行规模{project['size']}亿")
             elif project.get('size') is not None and abs(total_share - project['size']) > 0.0001:
@@ -412,6 +436,7 @@ def check_data(data, source_path, *, raise_on_fail=True):
     if meta.get('schema') != SCHEMA_VERSION or meta.get('sourceSha256') != file_sha256(source_path) or meta.get('rulesSha256') != rules_sha256():
         issue('FAIL', 'PROVENANCE', '来源哈希或面板规则指纹不匹配')
     report['checks'] = {'assets':len(data.get('assets',[])), 'projects':sum(len(a['projects']) for a in data.get('assets',[])), 'details':total_records}
+    report['levelCounts'] = level_counts(report)
     report['status'] = 'FAIL' if any(i['level']=='FAIL' for i in report['issues']) else 'PASS'
     if raise_on_fail and report['status'] == 'FAIL':
         raise BookkeepingGateError(report)

@@ -36,6 +36,7 @@ import secondary_allocation_panel
 import latest_bookkeeping_panel
 import gen_institution_stats
 import peer_issuance_panel
+import dashboard_freshness
 # 总授信额度监控模块必须在 lab 路径加入前导入，避免误加载旧实验版。
 import fig8_credit_total_panel
 
@@ -149,11 +150,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 # ── 主流程 ────────────────────────────────────────────────────
-def build_integrated_html(panels, all_css):
+def build_integrated_html(panels, all_css, freshness=None, require_freshness=False):
     """构建综合看板完整 HTML
 
     panels: List[(module, sub, body_html)]
     all_css: 各面板原始 CSS + TAB_CSS 拼接的字符串
+    freshness: {(module, sub): (截止日, 口径说明, 备注)}；每个面板一条
+    require_freshness: 为 True 时任何面板缺截止日即报错（正式看板走这条）
 
     top tab 按实际 panels 动态推导（固定顺序），无 panel 的模块不渲染一级 Tab:
       机构画像 / 投资台账 / 资产大盘(可选) / 发行定价 / 同业发行(可选)
@@ -217,9 +220,16 @@ def build_integrated_html(panels, all_css):
 
         # 该模块下的 panel div
         for m, sub, body in module_panels:
+            item = (freshness or {}).get((m, sub))
+            if item:
+                badge = dashboard_freshness.badge(*item)
+            elif require_freshness:
+                raise ValueError(f'面板 {m}/{sub} 缺少数据截止日，不能发布')
+            else:
+                badge = ''
             panel_divs.append(
                 f'<div class="panel" data-module="{m}" data-sub="{sub}">\n'
-                f'{body}\n      </div>'
+                f'{badge}{body}\n      </div>'
             )
 
     sub_tabs_html = "\n      ".join(sub_tabs_panes)
@@ -290,6 +300,12 @@ def verify_integrated_html(content: str, expected_panel_count: int) -> list:
     panel_count = content.count('<div class="panel"')
     if panel_count != expected_panel_count:
         problems.append(f'panel 数 {panel_count} != 预期 {expected_panel_count}')
+    # 一旦启用截止日标注，就必须每个面板都有，不能只标一部分
+    badge_count = content.count('<div class="data-freshness"')
+    if badge_count and badge_count != panel_count:
+        problems.append(f'数据截止日标注 {badge_count} 个 != 面板数 {panel_count}')
+    if '<div class="data-freshness" data-asof=""' in content:
+        problems.append('存在未填日期的数据截止日标注')
     if 'function selectModule' not in content:
         problems.append('缺少 selectModule 切换函数')
     if 'function selectSub' not in content:
@@ -391,7 +407,8 @@ def main():
     booking_data = latest_bookkeeping_panel.compute_data(xlsx_path)
     from latest_bookkeeping_runtime import verify_runtime
     verify_runtime(booking_data)
-    print(f"[簿记QC] {booking_data['qc']['status']} · {booking_data['qc']['checks']} · WARN {len(booking_data['qc']['issues'])}")
+    print(f"[簿记QC] {booking_data['qc']['status']} · {booking_data['qc']['checks']}"
+          f" · {latest_bookkeeping_panel.qc.format_level_counts(booking_data['qc'])}")
 
     # 1. 单次预处理:产出共享 tmp,注入各子模块(原 8 次 preprocess → 1 次,预期省 ~80s)
     #    shared_tmp 全生命周期由 finally 管理,任何异常路径均兜底删除。
@@ -498,6 +515,50 @@ def main():
     panels.append(('asset_overview', 'issuance_statistics', asset_issuance_panel.render_body(issuance_data)))
     panels.append(('asset_overview', 'risk_performance', risk_performance_panel.render_body()))
 
+    # 各面板的数据截止日：一律回到来源取，取不到就阻断，不用生成时间充数。
+    print('\n[3.9/4] 标注各面板数据截止日...')
+    ledger_cutoff = dashboard_freshness.ledger_bookkeeping_cutoff(xlsx_path)
+    if not ledger_cutoff:
+        raise ValueError('台账里读不到簿记时间，无法标注数据截止日')
+    secondary_date = dashboard_freshness.snapshot_date(
+        'secondary_allocation_snapshot.json', 'snapshot_date')
+    profile_date = dashboard_freshness.snapshot_date(
+        '机构画像数据.meta.json', 'synced_at')
+    distribution_date = dashboard_freshness.snapshot_date(
+        'asset_distribution_snapshot.json', 'retrievedAt')
+    risk_date = dashboard_freshness.snapshot_date(
+        'risk_performance_snapshot.json', 'sources', 'dynamic', 'retrievedAt')
+
+    freshness = {}
+    for module, sub, _body in panels:
+        if module == 'ledger':
+            year = sub.rsplit('_', 1)[-1]
+            if year == '2026':
+                freshness[(module, sub)] = (ledger_cutoff, '台账最新簿记')
+            else:
+                path = ledger_year_paths.get(year)
+                cutoff = (dashboard_freshness.ledger_bookkeeping_cutoff(path)
+                          if path and Path(path).is_file() else None)
+                freshness[(module, sub)] = (cutoff or f'{year}-12-31', f'{year}年台账全年')
+        elif module == 'progress' and sub == 'allocation_quick':
+            freshness[(module, sub)] = (secondary_date, 'JoySpace 次级分配快照')
+        elif module == 'progress' and sub == 'quick':
+            freshness[(module, sub)] = (profile_date, 'JoySpace 机构画像快照')
+        elif module == 'asset_overview' and sub == 'asset_distribution':
+            freshness[(module, sub)] = (distribution_date, 'JoySpace 消金资产快照')
+        elif module == 'asset_overview' and sub == 'risk_performance':
+            freshness[(module, sub)] = (risk_date, 'JoySpace 风险表现快照')
+        elif module == 'peer_issuance':
+            cutoff, week = dashboard_freshness.peer_issuance_cutoff(args.peer_issuance_xlsx)
+            freshness[(module, sub)] = (cutoff, '同业发行动态最新簿记', week)
+        else:
+            freshness[(module, sub)] = (ledger_cutoff, '台账最新簿记')
+    missing = [f'{m}/{s}' for m, s, _ in panels
+               if not (freshness.get((m, s)) or (None,))[0]]
+    if missing:
+        raise ValueError('以下面板取不到数据截止日，不能发布：' + '、'.join(missing))
+    print('[截止日] ' + '｜'.join(f'{m}/{s} {freshness[(m, s)][0]}' for m, s, _ in panels))
+
     # 4. CSS 拼接 + 套 Tab 框架 + 写文件
     print('\n[4/4] 拼接 HTML...')
     all_css = '\n'.join([
@@ -514,8 +575,9 @@ def main():
         peer_issuance_panel.PEER_ISSUANCE_COMPONENT_CSS,
         fig8_credit_total_panel.CREDIT_TOTAL_CSS,
         gen_investment_ledger.LEDGER_CSS,
+        dashboard_freshness.FRESHNESS_CSS,
     ])
-    html = build_integrated_html(panels, all_css)
+    html = build_integrated_html(panels, all_css, freshness=freshness, require_freshness=True)
     from dashboard_provenance import add_full_generation_provenance
     html = add_full_generation_provenance(html, xlsx_path, source_hash=booking_data["provenance"]["sourceSha256"])
 

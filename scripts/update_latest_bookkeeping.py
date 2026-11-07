@@ -72,6 +72,15 @@ def refresh(ledger=None, dashboard=None, output=None):
     ledger = Path(ledger) if ledger else panel.find_latest_final()
     dashboard = Path(dashboard) if dashboard else latest_dashboard()
     source = dashboard.read_text(encoding='utf-8')
+    # 月度簿记看板由 gen_integrated_dashboard.py 完整生成，局部替换会破坏
+    # 月度组件结构。这里显式跳过并说明理由，而不是抛 ValueError：
+    # 调用方(增量合并)在这之前已原子写入台账，抛错会让"台账已保存"被误报成
+    # 整体失败——2026-10-30 与 11-06 两份定稿的 _field_sync.json 就是这样
+    # 没写出来的。直接调用 replace_panel 仍然抛错，保护不变。
+    if qc.has_monthly_markers(source):
+        print('[簿记同步] 跳过局部刷新：当前看板是月度簿记版本，台账已更新，'
+              '需重新完整生成综合看板后再发布')
+        return None
     qc.component_self_check()
     data = panel.compute_data(ledger)
     from latest_bookkeeping_runtime import verify_runtime
@@ -84,7 +93,7 @@ def refresh(ledger=None, dashboard=None, output=None):
         output = LATEST / f"ABS综合看板_{''.join(match.groups())}.html"
     report = atomic_write(output, document, ledger)
     print("[发布约束] 本次仅局部刷新簿记；源台账变更后须完整生成综合看板再发布")
-    print(f"[簿记同步] {output} · {report['checks']} · WARN {len(report['issues'])}")
+    print(f"[簿记同步] {output} · {report['checks']} · {qc.format_level_counts(report)}")
     return Path(output), report
 
 

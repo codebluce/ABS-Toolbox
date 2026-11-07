@@ -35,6 +35,12 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from gen_mobile_dashboard import build_mobile_html  # noqa: E402  (需在 sys.path 配置之后导入)
+from peer_issuance_source import (  # noqa: E402
+    PeerIssuanceSourceError,
+    resolve_latest_working_paper,
+    verify_not_regressing,
+    verify_source,
+)
 LATEST_DIR = REPO_ROOT / "deliverables" / "dashboards" / "01_latest"
 SITE_STAGING_DIR = REPO_ROOT / "deliverables" / "dashboard_site"
 FINAL_LEDGER_DIR = REPO_ROOT / "deliverables" / "ledger" / "03_final"
@@ -170,6 +176,40 @@ def ledger_date_tag(ledger_path: Path) -> str:
         return m2.group(1)
     print(f"[select] 台账文件名无法解析业务日期,回退当天: {ledger_path.name}")
     return datetime.now().strftime("%Y%m%d")
+
+
+def resolve_peer_issuance_source(args) -> Path:
+    """确定本次发布使用的同业底稿，并校验来源与口径。
+
+    两个约束：
+
+    1. 底稿必须是来源目录里的 `同业发行完整已录底稿_YYYYMMDD.xlsx`。
+       原始周报与完整底稿同期数接近、同目录并存，只靠肉眼分不出，
+       2026-11-07 就是这么把线上口径拉低的。
+    2. 期数与累计规模不得少于上一份底稿。
+
+    未显式传入时取最新一份完整已录底稿，而不是静默省略同业板块——
+    板块缺失同样是发布事故，不该由"参数有没有传"来决定。
+    """
+    if args.peer_issuance_xlsx:
+        path = Path(args.peer_issuance_xlsx)
+    else:
+        path = resolve_latest_working_paper()
+        print(f"[peer] 未显式指定同业底稿，自动采用最新完整已录底稿：{path.name}")
+
+    info = verify_source(path)
+    result = verify_not_regressing(
+        path, allow_fewer=getattr(args, "allow_fewer_peer_records", False)
+    )
+    previous = result["previous"]
+    if previous is None:
+        print(f"[peer] 同业底稿校验通过：{path.name}，{info['records']} 期，"
+              f"累计 {info['amount']:.2f} 亿（无上一份可比）")
+    else:
+        print(f"[peer] 同业底稿校验通过：{info['records']} 期 / {info['amount']:.2f} 亿"
+              f"（上一份 {previous['date']}：{previous['records']} 期 / "
+              f"{previous['amount']:.2f} 亿）")
+    return path
 
 
 def generate_dashboard(
@@ -834,6 +874,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--peer-issuance-xlsx", type=Path, default=None, help="当期同业发行动态 Excel")
     parser.add_argument("--peer-issuance-baseline-xlsx", type=Path, default=None, help="同业发行同比基准 Excel（默认使用受控 2025 基准）")
     parser.add_argument("--peer-issuance-previous-xlsx", type=Path, default=None, help="上周同业发行快照；发现历史删除或业务修订时阻断发布")
+    parser.add_argument("--allow-fewer-peer-records", action="store_true",
+                        help="放行同业底稿期数或累计规模回落（仅用于口径修正，默认阻断）")
     parser.add_argument("--skip-generate", action="store_true", help="跳过综合看板生成,直接用 01_latest 最新 HTML 组装站点")
     parser.add_argument(
         "--dashboard",
@@ -893,11 +935,12 @@ def main() -> None:
             print("[1/4] 跳过生成综合看板,使用现有 01_latest 最新 HTML")
     else:
         ledger = args.ledger or find_latest_ledger()
+        peer_source = resolve_peer_issuance_source(args)
         latest_dashboard = generate_dashboard(
             ledger,
             args.baitiao_xlsx,
             args.jintiao_xlsx,
-            args.peer_issuance_xlsx,
+            peer_source,
             args.peer_issuance_baseline_xlsx,
             args.peer_issuance_previous_xlsx,
         )

@@ -297,8 +297,8 @@ class MonthlyIntegrationTest(unittest.TestCase):
             preprocessed = self.root / 'shared-temp.xlsx'
             preprocessed.write_bytes(b'mocked preprocess')
             original_builder = generator.build_integrated_html
-            def build(panels, css):
-                html = original_builder(panels, css)
+            def build(panels, css, **kwargs):
+                html = original_builder(panels, css, **kwargs)
                 return html.replace('id="lb-monthly-head"', 'id="missing-month-head"') if tamper is True else html
             with ExitStack() as stack:
                 for module, name, result in mocks:

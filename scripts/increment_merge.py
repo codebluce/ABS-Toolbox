@@ -23,6 +23,8 @@ from collections import OrderedDict, defaultdict, Counter
 from copy import copy
 from ledger_formula_tools import (expand_ledger_metadata, first_data_row, formula_translate, relocate_project_formula,
     insert_rows_rebase, delete_rows_rebase, validate_r_formula, validate_project_j_update, LedgerFormulaError)
+import project_aliases
+import detail_precheck
 
 
 def close_workbook(wb):
@@ -161,6 +163,26 @@ def get_project_range(ws, target):
     return None
 
 
+def project_size(ws, target):
+    """台账里该项目的发行规模（亿元），用于明细金额量级的合理性校验。
+
+    只认精确项目名：规模用错会直接放宽单位校验，宁可返回 None 跳过校验。
+    """
+    t = normalize(target)
+    span = None
+    for r in range(2, ws.max_row + 1):
+        e = ws.cell(row=r, column=5).value
+        if e and normalize(str(e)) == t:
+            span = get_project_range(ws, target)
+            break
+    if not span:
+        return None
+    value = ws.cell(row=span[0], column=10).value
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value) if value > 0 else None
+
+
 def get_layers_in_project(ws, start, end):
     row_layers = []
     for r in range(start, end + 1):
@@ -284,44 +306,9 @@ def map_detail_to_project(filename, project_names=None):
     name = re.sub(r'项目$', '', name)
     name = name.strip()
 
-    # 明确别名：东裕9-1簿记文件及其内部项目名均唯一对应本期台账主项目。
-    # 禁止用“东裕9号”宽泛匹配，避免命中伯/仲/叔/季/春裕等历史项目。
-    explicit_aliases = {
-        "【26东裕9-1】": "26东裕9号一期",
-        "26东裕9-1": "26东裕9号一期",
-        "26东裕9号ABN001": "26东裕9号一期",
-        "【26东裕11夏裕】": "东裕11号夏裕（可续发）",
-        "26东裕11夏裕": "东裕11号夏裕（可续发）",
-        "26东裕11季裕": "东裕11号季裕（可续发）",
-        "26东裕11季裕ABN001": "东裕11号季裕（可续发）",
-        "26东裕4伯裕": "东裕4号伯裕（续发）",
-        "26东裕4伯裕ABN001": "东裕4号伯裕（续发）",
-        "【东裕9-2ABN】": "26东裕9号二期",
-        "东裕9-2ABN": "26东裕9号二期",
-        # 2026-09 东裕10号簿记文件简称与台账期次不一致，必须逐一显式映射。
-        "【东裕10-2ABN】": "26东裕10号二期",
-        "【26东裕10第三期】": "26东裕10号三期",
-        "【26东裕10-4】": "26东裕10号四期",
-        "【东裕10-5ABN】": "26东裕10号五期",
-        # 2026-10 文件名省略储架8号，以原始明细项目名称核实后精确登记。
-        "【26东裕ABN001】": "26东裕8号一期",
-        "【26东裕ABN002】": "26东裕8号二期",
-        "【26东裕8第三期】": "26东裕8号三期",
-        "【尚乘1-4】": "尚乘1号第4期",
-        "【启赢4-1】": "启赢4-1",
-        "【启赢3-4】": "启赢3-4",
-        "【东裕8-6ABN】": "26东裕8号六期",
-        "【东裕8-5】": "26东裕8号五期",
-        "【26东樾4号ABN004】": "2026东樾4号4期（东樾4-6）",
-        "【26东裕8号ABN007】": "26东裕8号七期",
-        "【26东裕8号ABN004】": "26东裕8号四期",
-        "【26东裕5仲裕ABN001】": "（续发）25东裕5号仲裕ABCP",
-        "【26东裕5伯裕】": "（续发）25东裕5号伯裕ABCP",
-        "【耘睿30-1ABS】": "耘睿30-1",
-        # 2026-11 金采9号2期明细文件名使用中文“玖2A”，台账期次为“金采9-2”。
-        "金采玖2A": "金采9-2",
-    }
-    name = explicit_aliases.get(name, name)
+    # 别名统一登记在 data/project_name_aliases.json（可复核、可审计、改表即生效）。
+    # 未登记的名字原样返回，由录入前的格式预检报“需确认”，绝不按相似度猜。
+    name = project_aliases.resolve(name)
 
     # If project names are provided, try exact match first
     if project_names:
@@ -916,7 +903,8 @@ def run_enhanced_qc(ws_out, ws_orig_protected, set_a, supplemented_keys,
 # ============================================================
 
 def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
-                        supplement=False, rebook=False, field_sync=True):
+                        supplement=False, rebook=False, field_sync=True,
+                        allow_detail_issues=False):
     mode_label = "Rebook WXY" if rebook else ("Supplement WXY entry" if supplement else "Increment merge")
     print("=" * 60)
     print(f"v2.1 {mode_label}")
@@ -1079,25 +1067,48 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
     all_projects_current = get_all_projects(ws_a)
     project_name_set = set(all_projects_current.keys())
 
-    # Map detail files to project names
+    # Map detail files to project names（先只解析名称，预检与录入共用同一批映射）
     dmap = {}
     detail_map_results = {}  # dp -> ('matched', proj_name) or ('unmatched', name)
     detail_layers_available = {}  # proj_name -> set of layer names from detail
+    resolved_pairs = []
     for dp in detail_paths:
         k = map_detail_to_project(dp, project_name_set)
         # In increment mode: prefer matching against increment project names
         if not supplement and not rebook:
-            matched = False
             for inc_name in increment:
                 if normalize(k) in normalize(inc_name) or normalize(inc_name) in normalize(k):
-                    dmap[inc_name] = read_detail(dp)
-                    detail_map_results[dp] = ('matched', inc_name)
-                    # Track available layers from detail
-                    detail_layers_available[inc_name] = set(it.get('layer', '优先A') for it in dmap[inc_name])
-                    matched = True
-                    print(f"  Mapped detail '{os.path.basename(dp)}' -> '{inc_name}'")
+                    k = inc_name
                     break
-            if not matched:
+        resolved_pairs.append((dp, k))
+
+    # === Step 5.0: 录入前格式预检 ===
+    # 单位、利率、分层、项目名这四类问题都能在写入前看出来；先体检再录，
+    # 避免"录进去才发现是万元/多条价格/记到了别的期次"。
+    print("\n  [预检] 明细格式体检（金额单位 / 利率 / 分层名称 / 项目名匹配）...")
+    precheck_reports = []
+    for dp, k in resolved_pairs:
+        report = detail_precheck.inspect(dp, project_names=project_name_set,
+                                         expected_size=project_size(ws_a, k))
+        precheck_reports.append(report)
+        for line in detail_precheck.format_report(report):
+            print("  " + line)
+    print("  [预检] 合计：" + detail_precheck.summarize(precheck_reports))
+    blocked = [r for r in precheck_reports if r['verdict'] == '不可录']
+    if blocked and not allow_detail_issues:
+        raise RuntimeError(
+            "明细预检不通过，已停止录入：" +
+            "；".join(f"{r['file']}（{r['findings'][0]['message']}）" for r in blocked[:3]) +
+            "。修正后重跑；确属误判可加 --allow-detail-issues 放行。")
+
+    for dp, k in resolved_pairs:
+        if not supplement and not rebook:
+            if k in increment:
+                dmap[k] = read_detail(dp)
+                detail_map_results[dp] = ('matched', k)
+                detail_layers_available[k] = set(it.get('layer', '优先A') for it in dmap[k])
+                print(f"  Mapped detail '{os.path.basename(dp)}' -> '{k}'")
+            else:
                 dmap[k] = read_detail(dp)
                 detail_map_results[dp] = ('unmatched', k)
                 detail_layers_available[k] = set(it.get('layer', '优先A') for it in dmap[k])
@@ -1567,11 +1578,9 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
         raise
     os.replace(tmp_path, output_path)
     print(f"\nSaved: {output_path}")
-    # 最新受控定稿写入后同步簿记；失败非零退出，旧看板保留，不静默跳过。
-    from update_latest_bookkeeping import refresh_if_controlled_final
-    refresh_if_controlled_final(output_path)
 
-    # 字段同步审计报告（有变更或保护项时才落盘，便于逐条复核与回溯）
+    # 字段同步审计报告先落盘：即使后面簿记刷新失败，审计记录也不能丢
+    # （有变更或保护项时才落盘，便于逐条复核与回溯）
     if field_changes or field_protected:
         audit_path = os.path.splitext(output_path)[0] + '_field_sync.json'
         try:
@@ -1589,6 +1598,16 @@ def run_increment_merge(processed_path, new_raw_path, detail_paths, output_path,
         except OSError as e:
             print(f"[WARN] 字段同步审计报告写入失败: {e}")
 
+    # 最新受控定稿写入后同步簿记。台账已是事实来源，看板随时可从台账重建，
+    # 因此这里失败只告警、不回退退出码——若在这里抛错，调用方会误以为台账
+    # 没保存而重跑，导致重复合并（2026-10-30、11-06 两次定稿的假失败）。
+    from update_latest_bookkeeping import refresh_if_controlled_final
+    try:
+        refresh_if_controlled_final(output_path)
+    except Exception as error:
+        print(f"[WARN] 台账已保存，但簿记面板刷新失败：{error}")
+        print("[WARN] 看板仍是上一版，请重新完整生成综合看板后再发布")
+
     print("\n" + "=" * 60)
     print(f"{mode_label} complete.")
     print("=" * 60)
@@ -1604,6 +1623,8 @@ if __name__ == "__main__":
     parser.add_argument("--rebook", action="store_true", help="重录模式(默认):清空目标项目WXY+删除分层末尾未匹配新行,然后重新录入(幂等,推荐)")
     parser.add_argument("--no-field-sync", action="store_true",
                         help="关闭既有项目项目级字段同步（默认开启：以最新原始台账回填月份/场所/管理人/规模/成本等，不动WXY与分层层字段）")
+    parser.add_argument("--allow-detail-issues", action="store_true",
+                        help="明细预检判定“不可录”时仍继续录入（仅用于确认属误判的情况）")
     args = parser.parse_args()
 
     # v2.5.0: 默认 rebook 模式(不传 --supplement/--rebook/--new-raw 时)
@@ -1618,4 +1639,5 @@ if __name__ == "__main__":
 
     run_increment_merge(args.processed, args.new_raw, args.details, args.output,
                         supplement=args.supplement, rebook=args.rebook,
-                        field_sync=not args.no_field_sync)
+                        field_sync=not args.no_field_sync,
+                        allow_detail_issues=args.allow_detail_issues)
