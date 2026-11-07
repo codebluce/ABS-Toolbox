@@ -44,6 +44,7 @@ description: >
 | ABS 归档 / 台账归档 / 看板归档 | `scripts/abs_archive.py` | ✅ v2.0.0 |
 | ABS 产出索引 / 文件索引 | `scripts/abs_archive.py index` | ✅ v2.0.0 |
 | ABS 簿记录入 / 补充簿记数据 / 增量台账合并 | `scripts/increment_merge.py` | ✅ v2.1.0 |
+| 缺失簿记明细 / 还缺哪些簿记 / 待补明细清单 | `scripts/list_missing_bookkeeping.py` | ✅ 2026-11-07 |
 | ABS 发行定价 / 成本分析 / 利差分析 | `scripts/gen_abs_cost_report.py` + `gen_compare_tool.py` + `gen_spread_report.py` | ✅ v2.2.0 |
 | ABS 全流程 | 录入→统计→定价 串行 | ✅ v2.2.0 |
 | 同业发行 / 同业发行看板 / 市场发行动态 | `scripts/peer_issuance_panel.py` + 综合看板同业模块 | ✅ |
