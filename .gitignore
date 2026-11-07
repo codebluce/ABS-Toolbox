@@ -30,3 +30,25 @@ deliverables/dashboard_site_test/
 
 # 本地预览/开发服务器配置(每台机器路径不同，不进版本库；见 SKILL.md 多 Agent 版本管理规范)
 .claude/
+
+# ── 本地环境与部署临时产物 ──────────────────────────────────────
+# 虚拟环境约 200MB+，每台机器各自安装，不进版本库
+.venv/
+# Cloudflare/Wrangler 本地缓存
+.wrangler/
+
+# ── 审计工作区的大体积扫描产物 ──────────────────────────────────
+# 按事件命名的临时目录(如 r_column_20261017，单次排查产出可达 1.6GB 的
+# 全台账扫描 JSON/CSV)。评审报告 reviews/、提交记录 submissions/、
+# 自检摘要 self_check/ 仍然正常入库。
+audit/*_2026[0-9][0-9][0-9][0-9]/
+
+# ── 看板试做版 ──────────────────────────────────────────────────
+# 上线候选、Demo、映射确认页等中间产物，属于构建过程，不进版本库。
+# 正式发布物在 01_latest/ 与 02_history/YYYY-MM/。
+deliverables/dashboards/03_test/
+
+# ── 看板历史版本的本地备份 ──────────────────────────────────────
+# 同月多余版本由 scripts/tidy_dashboard_archive.py 移到仓库之外，
+# 若有人临时放在此处，不纳入版本库。
+deliverables/dashboards/02_history/_superseded/

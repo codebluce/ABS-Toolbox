@@ -33,8 +33,9 @@ PYTHONUTF8=1 python skills/ABS工具箱/scripts/gen_institution_stats.py \
 ### 2. 产出归档
 
 ```bash
-# 看板归档(旧最新版本 → 历史版本)
-PYTHONUTF8=1 python skills/ABS工具箱/scripts/abs_archive.py dashboards
+# 看板归档(最新月份留一份,其余月份各留一份到 02_history/YYYY-MM/)
+# 先预演;确认后加 --apply 并指定仓库之外的备份目录
+PYTHONUTF8=1 python scripts/abs_archive.py dashboards --plan
 
 # 台账归档(加工中 → 定稿,旧定稿 → 归档)
 PYTHONUTF8=1 python skills/ABS工具箱/scripts/abs_archive.py ledger
@@ -92,9 +93,9 @@ skills/ABS工具箱/
     │   ├── 04_archive/            (归档)
     │   └── 05_bookkeeping_details/ (簿记明细)
     └── dashboards/                (看板)
-        ├── 01_latest/             (最新版本)
-        ├── 02_history/            (历史版本,按 YYYYMMDD 子文件夹)
-        ├── 03_test/               (测试文件)
+        ├── 01_latest/             (最新版本,只留 1 份综合看板)
+        ├── 02_history/            (历史版本,按月 YYYY-MM 各 1 份)
+        ├── 03_test/               (试做版,不进版本库)
         └── 04_reference/          (参考资料)
 ```
 

@@ -63,8 +63,12 @@ PYTHONUTF8=1 python scripts/gen_institution_stats.py \
 ### 2. 产出归档
 
 ```bash
-# 看板归档:旧最新版本 → 历史版本
-PYTHONUTF8=1 python scripts/abs_archive.py dashboards
+# 看板归档:先预演,确认后执行
+#   最新月份留一份在 01_latest/,其余月份各留一份到 02_history/YYYY-MM/,
+#   同月多余版本移到仓库之外的备份目录(--superseded-dir 必须位于仓库外)
+PYTHONUTF8=1 python scripts/abs_archive.py dashboards --plan
+PYTHONUTF8=1 python scripts/abs_archive.py dashboards --apply \
+    --superseded-dir ~/Documents/LikeCodeNex/_abs-toolbox-superseded-<日期>
 
 # 台账归档:加工中 → 定稿,旧定稿 → 归档
 PYTHONUTF8=1 python scripts/abs_archive.py ledger
@@ -195,9 +199,9 @@ PYTHONUTF8=1 python scripts/gen_spread_report.py \
     │   ├── 04_archive/            (归档)
     │   └── 05_bookkeeping_details/ (簿记明细)
     └── dashboards/                (看板)
-        ├── 01_latest/             (最新版本)
-        ├── 02_history/            (历史版本)
-        ├── 03_test/               (测试文件)
+        ├── 01_latest/             (最新版本,只留 1 份综合看板)
+        ├── 02_history/            (历史版本,按月 YYYY-MM 各 1 份)
+        ├── 03_test/               (试做版,不进版本库)
         └── 04_reference/          (参考资料)
 ```
 

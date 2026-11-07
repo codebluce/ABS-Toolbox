@@ -119,61 +119,28 @@ def archive_final():
 # ═══════════════════════════════════════════════════════════════
 
 def archive_dashboards():
-    """看板归档: 01_latest/*.html (非最新日期) → 02_history/YYYYMMDD/
-    日期取文件名前缀 (YYYYMMDD_看板名.html)
-    最新日期组保留在 01_latest/, 旧日期组移到 02_history/
+    """看板归档: 委托给 tidy_dashboard_archive(唯一实现)。
+
+    旧版按文件名前缀取日期(`YYYYMMDD_看板名.html`)，而现行看板命名是
+    `ABS综合看板_YYYYMMDD.html`，日期在中间。旧版因此把所有文件都归入
+    undated 分组，dated 为空后直接返回，归档动作从未真正生效——这也是
+    01_latest 长期堆积 9 份历史看板的直接原因。
+
+    统一走 scripts/tidy_dashboard_archive.py:
+      最新月份的最新一份  → 01_latest/
+      其余月份各一份      → 02_history/YYYY-MM/
+      同月多余版本        → 仓库之外的备份目录
+
+    参数透传，例如:
+      python scripts/abs_archive.py dashboards --plan
+      python scripts/abs_archive.py dashboards --apply --superseded-dir <仓库外目录>
     """
-    print("=== 看板归档 ===")
-    latest = DASHBOARDS / "01_latest"
-    history = DASHBOARDS / "02_history"
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from tidy_dashboard_archive import main as tidy_main
 
-    if not latest.exists():
-        print(f"⚠ 跳过: {latest.name}/ 不存在")
-        return
+    sys.argv = [sys.argv[0]] + sys.argv[2:]
+    tidy_main()
 
-    htmls = list(latest.glob("*.html"))
-    if not htmls:
-        print("  01_latest/ 无 html 文件")
-        return
-
-    # 按文件名前缀日期分组
-    date_groups = {}
-    for h in htmls:
-        m = re.match(r"^(\d{8})_", h.name)
-        if m:
-            d = m.group(1)
-            date_groups.setdefault(d, []).append(h)
-        else:
-            date_groups.setdefault("undated", []).append(h)
-
-    # 找出最新日期(保留),其他日期归档
-    dated = sorted([d for d in date_groups if d != "undated"])
-    if not dated:
-        print("  01_latest/ 无带日期前缀的文件,跳过归档")
-        return
-
-    latest_date = dated[-1]  # 最新日期保留
-    to_archive = [d for d in dated if d != latest_date] + (["undated"] if "undated" in date_groups else [])
-
-    if not to_archive:
-        print(f"  01_latest/ 仅含最新日期 {latest_date},无需归档")
-        return
-
-    total = sum(len(date_groups[d]) for d in to_archive)
-    print(f"  最新日期 {latest_date} 保留 ({len(date_groups[latest_date])} 份)")
-    print(f"  旧日期 → 历史版本 ({total} 份, {len(to_archive)} 个日期组):")
-    for d in to_archive:
-        dst_dir = history / d
-        dst_dir.mkdir(parents=True, exist_ok=True)
-        for f in date_groups[d]:
-            dst = dst_dir / f.name
-            if dst.exists():
-                print(f"    ⚠ 已存在跳过: {d}/{f.name}")
-            else:
-                shutil.move(str(f), str(dst))
-                print(f"    {f.name} → {d}/{f.name}")
-
-    print("✅ 看板归档完成")
 
 
 # ═══════════════════════════════════════════════════════════════

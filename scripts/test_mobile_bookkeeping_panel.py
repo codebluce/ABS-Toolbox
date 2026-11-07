@@ -20,6 +20,20 @@ def snapshot():
                        'bids':[{'institution':'申购机构','share':None,'rate':0.0176,'bidSize':2}]}]}]}]}
 
 
+def latest_dashboard_text():
+    """取 01_latest 中业务日期最新的综合看板正文。
+
+    历史上这里写死了某一份看板(ABS综合看板_20260924.html)。看板按
+    scripts/tidy_dashboard_archive.py 的规则滚动归档后旧版本会移出
+    01_latest，写死路径会让本测试永久失败。
+    """
+    folder = Path(__file__).resolve().parents[1] / 'deliverables' / 'dashboards' / '01_latest'
+    files = sorted(folder.glob('ABS综合看板_*.html'), key=lambda p: p.stem.rsplit('_', 1)[-1])
+    if not files:
+        raise unittest.SkipTest('01_latest 下没有综合看板，无法验证双端一致性')
+    return files[-1].read_text()
+
+
 class MobileBookkeepingPanelTest(unittest.TestCase):
     def test_data_kept_and_desktop_not_changed(self):
         data=snapshot();before=copy.deepcopy(data)
@@ -58,7 +72,7 @@ class MobileBookkeepingPanelTest(unittest.TestCase):
         self.assertEqual(result['exports'],0)
 
     def test_real_mobile_and_desktop_runtime_have_same_details(self):
-        data=qc.extract_data((Path(__file__).resolve().parents[1]/'deliverables/dashboards/01_latest/ABS综合看板_20260924.html').read_text())
+        data=qc.extract_data(latest_dashboard_text())
         result=verify_mobile_runtime(data)
         desktop_result=verify_runtime(data)
         self.assertEqual(result['projects'],desktop_result['projects'])
