@@ -218,10 +218,10 @@ INST_STATS_EMBED_CSS = """
 """
 
 INST_STATS_EMBED_CSS += """
-.inst-stats-grid:has(.inst-stats-market-pair){grid-template-columns:1fr}
-.inst-stats-market-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;min-width:0}
+.inst-stats-grid:has(.inst-stats-market-pair){grid-template-columns:repeat(2,minmax(0,1fr))}
+.inst-stats-market-pair{display:contents}
 .inst-stats-market-note{font-size:11px;color:#6c7c8d;line-height:1.8;margin-top:14px}
-@media(max-width:960px){.inst-stats-market-pair{grid-template-columns:1fr}}
+@media(max-width:960px){.inst-stats-grid:has(.inst-stats-market-pair){grid-template-columns:1fr}}
 """
 
 # ═══════════════════════════════════════════════════════════════
