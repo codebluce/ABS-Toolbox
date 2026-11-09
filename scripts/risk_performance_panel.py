@@ -25,8 +25,8 @@ def render_document(data):
 
 def render_body(data=None):
     document = escape(render_document(data if data is not None else compute_data()), quote=True)
-    return (f'<iframe id="{FRAME_ID}" title="风险表现" srcdoc="{document}" '
-            'style="display:block;width:100%;height:calc(100vh - 140px);min-height:600px;border:0;"></iframe>')
+    return (f'<iframe id="{FRAME_ID}" title="风险表现" scrolling="no" srcdoc="{document}" '
+            'style="display:block;width:100%;height:600px;border:0;"></iframe>')
 
 
 class _Parser(HTMLParser):

@@ -638,7 +638,7 @@
             (S.assetView === k ? '#0d1b2e;color:#fff;' : '#edf2f7;color:#52657a;') + '">' +
             (k === 'issuance' ? '消金ABS' : k === 'risk' ? '风险表现' : '消金资产') + '</button>';
         }).join('') + '</div>' : '';
-      if (S.assetView === 'risk' && INJ.riskPerformanceHtml) return assetTabs + '<iframe id="m-risk-performance-frame" title="风险表现" style="display:block;width:100%;height:calc(100% - 54px);min-height:400px;border:0;"></iframe>';
+      if (S.assetView === 'risk' && INJ.riskPerformanceHtml) return assetTabs + '<iframe id="m-risk-performance-frame" title="风险表现" scrolling="no" style="display:block;width:100%;height:600px;border:0;"></iframe>';
       return assetTabs + (S.assetView === 'issuance' && INJ.issuanceStatisticsHtml ?
         '<iframe id="m-issuance-statistics-frame" title="消金ABS" style="display:block;width:100%;height:calc(100% - 54px);min-height:400px;border:0;"></iframe>' :
         (INJ.assetDistributionHtml ? '<iframe id="m-asset-distribution-frame" title="资产分布" style="display:block;width:100%;height:calc(100% - 54px);min-height:400px;border:0;"></iframe>' : viewAsset()));

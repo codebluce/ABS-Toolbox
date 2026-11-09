@@ -1,0 +1,45 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "width": 1440,
+      "values": [
+        {
+          "kind": "动态池数据",
+          "innerHeight": 1013,
+          "contentHeight": 1012.796875,
+          "innerOverflow": "hidden",
+          "parentOverflow": "hidden"
+        },
+        {
+          "kind": "静态池 · 对外披露口径",
+          "innerHeight": 688,
+          "contentHeight": 687.1875,
+          "innerOverflow": "hidden",
+          "parentOverflow": "hidden"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "values": [
+        {
+          "kind": "动态池数据",
+          "innerHeight": 1463,
+          "contentHeight": 1462.59375,
+          "innerOverflow": "hidden",
+          "parentOverflow": "hidden"
+        },
+        {
+          "kind": "静态池 · 对外披露口径",
+          "innerHeight": 1546,
+          "contentHeight": 1545.15625,
+          "innerOverflow": "hidden",
+          "parentOverflow": "hidden"
+        }
+      ],
+      "errors": []
+    }
+  ]
+}
