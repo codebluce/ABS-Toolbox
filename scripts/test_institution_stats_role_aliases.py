@@ -28,6 +28,20 @@ class StatsRoleAliasesTest(unittest.TestCase):
         self.assertEqual(bank['规模占比'],100)
         self.assertEqual(markets[0]['sales'].iloc[0]['投行认购规模'],3)
 
+    def test_interbank_boc_alias_merges_without_changing_totals(self):
+        from gen_institution_stats import compute_sales_markets
+        projects=pd.DataFrame([
+            {'项目名称':'a','联席承销商':'中行','规模':10},
+            {'项目名称':'b','联席承销商':'中国银行','规模':5},
+            {'项目名称':'c','联席承销商':'中行/中国银行','规模':20},
+        ])
+        df=pd.DataFrame([{'项目名称':name,'发行场所':'银行间','认购机构':'-','认购份额':0} for name in 'abc'])
+        bank=compute_sales_markets(df,projects)[1]['sales'].set_index('机构名称')
+        self.assertEqual(list(bank.index),['中国银行'])
+        self.assertEqual(bank.loc['中国银行','销售项目数'],3)
+        self.assertEqual(bank.loc['中国银行','参与项目规模'],35)
+        self.assertEqual(bank.loc['中国银行','规模占比'],100)
+
     def test_icbc_tianjin_branch_merges_in_custodian_table(self):
         self.assertEqual(normalize_bank('工行天分'), '工商银行')
         projects = pd.DataFrame([

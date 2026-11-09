@@ -619,6 +619,13 @@ def compute_manager_table(projects, ib_scale, total_scale):
     return mgr
 
 
+SALES_DISPLAY_ALIASES = {'建行': '建设银行', '中行': '中国银行'}
+
+
+def sales_display_name(name):
+    return SALES_DISPLAY_ALIASES.get(name, name)
+
+
 def compute_sales_table(projects, ib_scale, total_scale, *, include_banks=False):
     """表二：销售机构统计表（联席承销商=销售，券商only）"""
     rows = []
@@ -628,7 +635,7 @@ def compute_sales_table(projects, ib_scale, total_scale, *, include_banks=False)
             for x in str(row['联席承销商']).split('/') if x.strip()
         ]
         if include_banks:
-            institutions = ['建设银行' if x == '建行' else x for x in institutions]
+            institutions = [sales_display_name(x) for x in institutions]
         for inst in dict.fromkeys(institutions):
             if inst in ('-', 'nan', 'None', ''):
                 continue
@@ -648,7 +655,7 @@ def compute_sales_table(projects, ib_scale, total_scale, *, include_banks=False)
     ).reset_index()
     ib = role_ib_scale(ib_scale, 'sales')
     if include_banks:
-        ib.index = ['建设银行' if x == '建行' else x for x in ib.index]
+        ib.index = [sales_display_name(x) for x in ib.index]
         ib = ib.groupby(level=0).sum()
     ib_df = ib.reset_index()
     ib_df.columns = ['机构名称', '投行认购规模']
