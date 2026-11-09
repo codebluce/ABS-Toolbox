@@ -547,7 +547,7 @@ def main():
         elif module == 'asset_overview' and sub == 'asset_distribution':
             freshness[(module, sub)] = (distribution_date, 'JoySpace 消金资产快照')
         elif module == 'asset_overview' and sub == 'risk_performance':
-            freshness[(module, sub)] = (risk_date, 'JoySpace 风险表现快照')
+            freshness[(module, sub)] = (risk_date, '')
         elif module == 'peer_issuance':
             cutoff, week = dashboard_freshness.peer_issuance_cutoff(args.peer_issuance_xlsx)
             freshness[(module, sub)] = (cutoff, '同业发行动态最新簿记', week)
