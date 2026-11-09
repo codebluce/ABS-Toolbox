@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "texts": [
+    "M1+逾期率=累计逾期31-60天的余额/交易额",
+    "不良率=累计逾期91-120天的余额/交易额"
+  ],
+  "checks": [
+    {
+      "width": 1440,
+      "color": "rgb(198, 40, 40)",
+      "inside": true,
+      "overflow": false,
+      "periods": 5,
+      "errors": []
+    },
+    {
+      "width": 390,
+      "color": "rgb(198, 40, 40)",
+      "inside": true,
+      "overflow": false,
+      "periods": 5,
+      "errors": []
+    }
+  ]
+}
