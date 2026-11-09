@@ -619,7 +619,14 @@ def compute_manager_table(projects, ib_scale, total_scale):
     return mgr
 
 
-SALES_DISPLAY_ALIASES = {'建行': '建设银行', '中行': '中国银行', '信达（自营）': '信达证券'}
+# 仅用于本面板销售表展示：恢复台账原文，不改全局别名与其他面板。
+SALES_DISPLAY_ALIASES = {
+    '建行': '建设银行',
+    '中行': '中国银行',
+    '信达（自营）': '信达证券',
+    '中泰（自营）': '中泰证券',
+    '国金证券资管': '国金资管',
+}
 
 
 def sales_display_name(name):

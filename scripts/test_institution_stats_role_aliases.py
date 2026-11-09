@@ -56,6 +56,24 @@ class StatsRoleAliasesTest(unittest.TestCase):
         self.assertEqual(sales.loc['信达证券','参与项目规模'],35)
         self.assertEqual(sales.loc['信达证券','规模占比'],100)
 
+    def test_sales_display_restores_ledger_names_without_merging_distinct_entities(self):
+        from gen_institution_stats import compute_sales_markets
+        projects=pd.DataFrame([
+            {'项目名称':'a','联席承销商':'中泰证券','规模':10},
+            {'项目名称':'b','联席承销商':'中泰自营','规模':5},
+            {'项目名称':'c','联席承销商':'国金资管','规模':20},
+            {'项目名称':'d','联席承销商':'国金证券','规模':8},
+        ])
+        df=pd.DataFrame([{'项目名称':name,'发行场所':'上交所','认购机构':'-','认购份额':0} for name in 'abcd'])
+        sales=compute_sales_markets(df,projects)[0]['sales'].set_index('机构名称')
+        self.assertEqual(sales.loc['中泰证券','销售项目数'],2)
+        self.assertEqual(sales.loc['中泰证券','参与项目规模'],15)
+        self.assertEqual(sales.loc['国金资管','销售项目数'],1)
+        self.assertEqual(sales.loc['国金资管','参与项目规模'],20)
+        self.assertEqual(sales.loc['国金证券','参与项目规模'],8)
+        self.assertNotIn('中泰（自营）',sales.index)
+        self.assertNotIn('国金证券资管',sales.index)
+
     def test_icbc_tianjin_branch_merges_in_custodian_table(self):
         self.assertEqual(normalize_bank('工行天分'), '工商银行')
         projects = pd.DataFrame([
