@@ -545,7 +545,7 @@ def main():
         elif module == 'progress' and sub == 'quick':
             freshness[(module, sub)] = (profile_date, 'JoySpace 机构画像快照')
         elif module == 'asset_overview' and sub == 'asset_distribution':
-            freshness[(module, sub)] = (distribution_date, 'JoySpace 消金资产快照')
+            freshness[(module, sub)] = (distribution_date, '')
         elif module == 'asset_overview' and sub == 'risk_performance':
             freshness[(module, sub)] = (risk_date, '')
         elif module == 'peer_issuance':
