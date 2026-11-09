@@ -44,8 +44,8 @@
     <h1>ABS 综合看板</h1>
     <p>请输入访问密码。看板数据已在发布前加密,密码只在本机浏览器中用于解密,不会发送到服务器。</p>
     <div class="meta">
-      <div><strong>版本</strong>：20261106</div>
-      <div><strong>来源</strong>：ABS综合看板_20261106.html</div>
+      <div><strong>版本</strong>：20261109</div>
+      <div><strong>来源</strong>：ABS综合看板_20261109.html</div>
       <div><strong>加密</strong>：PBKDF2-SHA256 / AES-GCM / gzip</div>
       <div><strong>终端</strong>：<span id="term"><span class="load">识别中</span></span></div>
       <script>document.getElementById('term').textContent=window.__absDetectedView==='mobile'?'手机版':'电脑版';</script>
@@ -58,7 +58,7 @@
   <iframe id="viewer" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups allow-forms"></iframe>
   <button id="flip" type="button"></button>
   <script>
-    const PARAMS = {"salt":"gHmDj9dSmln1azXyL6QfYg==","iterations":10000,"desktop":{"iv":"2XfswagNfc4s3TFA","url":"p/d.bin?v=e695f984e898","bytes":708019},"mobile":{"iv":"kDSv8JqsJhBMBD90","url":"p/m.bin?v=f9d01a888ad7","bytes":166604}};
+    const PARAMS = {"salt":"bLGIYgVWWvtDK/kuH0LohA==","iterations":10000,"desktop":{"iv":"miJ64fgrnJBydH48","url":"p/d.bin?v=1d3a96703a6b","bytes":708111},"mobile":{"iv":"kGGJGB+UQqW1cv3v","url":"p/m.bin?v=520b4c979a1e","bytes":166684}};
     const VIEW_KEY = 'abs_dash_view';
     const $ = (id) => document.getElementById(id);
     const msg = (text, cls='', html=false) => {
@@ -167,6 +167,7 @@
         msg('<span class="load">载入中 · 解密解压 ' + Math.round(PARAMS[VIEW].bytes / 1024) + ' KB,请稍候</span>', '', true);
         PASSWORD = password;
         await render(VIEW);
+        try { window.__absAccessLog?.record('unlock_success'); } catch (_) {}
         msg('✅ 解锁成功,正在打开看板... ' + Math.round(performance.now() - t0) + 'ms', 'ok');
       } catch (err) {
         console.error(err);
