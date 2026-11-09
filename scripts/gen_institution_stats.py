@@ -619,7 +619,7 @@ def compute_manager_table(projects, ib_scale, total_scale):
     return mgr
 
 
-SALES_DISPLAY_ALIASES = {'建行': '建设银行', '中行': '中国银行'}
+SALES_DISPLAY_ALIASES = {'建行': '建设银行', '中行': '中国银行', '信达（自营）': '信达证券'}
 
 
 def sales_display_name(name):
@@ -634,8 +634,7 @@ def compute_sales_table(projects, ib_scale, total_scale, *, include_banks=False)
             normalize_stats_role(x.strip(), 'sales')
             for x in str(row['联席承销商']).split('/') if x.strip()
         ]
-        if include_banks:
-            institutions = [sales_display_name(x) for x in institutions]
+        institutions = [sales_display_name(x) for x in institutions]
         for inst in dict.fromkeys(institutions):
             if inst in ('-', 'nan', 'None', ''):
                 continue
@@ -654,9 +653,8 @@ def compute_sales_table(projects, ib_scale, total_scale, *, include_banks=False)
         参与项目规模=('项目规模', 'sum')
     ).reset_index()
     ib = role_ib_scale(ib_scale, 'sales')
-    if include_banks:
-        ib.index = [sales_display_name(x) for x in ib.index]
-        ib = ib.groupby(level=0).sum()
+    ib.index = [sales_display_name(x) for x in ib.index]
+    ib = ib.groupby(level=0).sum()
     ib_df = ib.reset_index()
     ib_df.columns = ['机构名称', '投行认购规模']
     sales = sales.merge(ib_df, on='机构名称', how='left')

@@ -42,6 +42,20 @@ class StatsRoleAliasesTest(unittest.TestCase):
         self.assertEqual(bank.loc['中国银行','参与项目规模'],35)
         self.assertEqual(bank.loc['中国银行','规模占比'],100)
 
+    def test_exchange_cinda_alias_uses_ledger_name(self):
+        from gen_institution_stats import compute_sales_markets
+        projects=pd.DataFrame([
+            {'项目名称':'a','联席承销商':'信达证券','规模':10},
+            {'项目名称':'b','联席承销商':'信达自营','规模':5},
+            {'项目名称':'c','联席承销商':'信达证券/信达自营','规模':20},
+        ])
+        df=pd.DataFrame([{'项目名称':name,'发行场所':'上交所','认购机构':'-','认购份额':0} for name in 'abc'])
+        sales=compute_sales_markets(df,projects)[0]['sales'].set_index('机构名称')
+        self.assertEqual(list(sales.index),['信达证券'])
+        self.assertEqual(sales.loc['信达证券','销售项目数'],3)
+        self.assertEqual(sales.loc['信达证券','参与项目规模'],35)
+        self.assertEqual(sales.loc['信达证券','规模占比'],100)
+
     def test_icbc_tianjin_branch_merges_in_custodian_table(self):
         self.assertEqual(normalize_bank('工行天分'), '工商银行')
         projects = pd.DataFrame([
