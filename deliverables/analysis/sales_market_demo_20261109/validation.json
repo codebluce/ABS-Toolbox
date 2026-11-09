@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "width": 1440,
+      "positions": [
+        {
+          "top": 532,
+          "left": 40,
+          "width": 672
+        },
+        {
+          "top": 532,
+          "left": 728,
+          "width": 672
+        }
+      ],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "positions": [
+        {
+          "top": 537,
+          "left": 10,
+          "width": 370
+        },
+        {
+          "top": 1036,
+          "left": 10,
+          "width": 370
+        }
+      ],
+      "errors": []
+    }
+  ]
+}
