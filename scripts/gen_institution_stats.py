@@ -217,6 +217,13 @@ INST_STATS_EMBED_CSS = """
 }
 """
 
+INST_STATS_EMBED_CSS += """
+.inst-stats-grid:has(.inst-stats-market-pair){grid-template-columns:1fr}
+.inst-stats-market-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;min-width:0}
+.inst-stats-market-note{font-size:11px;color:#6c7c8d;line-height:1.8;margin-top:14px}
+@media(max-width:960px){.inst-stats-market-pair{grid-template-columns:1fr}}
+"""
+
 # ═══════════════════════════════════════════════════════════════
 # §2  业务规则配置
 # ═══════════════════════════════════════════════════════════════
@@ -612,7 +619,7 @@ def compute_manager_table(projects, ib_scale, total_scale):
     return mgr
 
 
-def compute_sales_table(projects, ib_scale, total_scale):
+def compute_sales_table(projects, ib_scale, total_scale, *, include_banks=False):
     """表二：销售机构统计表（联席承销商=销售，券商only）"""
     rows = []
     for _, row in projects.iterrows():
@@ -620,8 +627,10 @@ def compute_sales_table(projects, ib_scale, total_scale):
             normalize_stats_role(x.strip(), 'sales')
             for x in str(row['联席承销商']).split('/') if x.strip()
         ]
+        if include_banks:
+            institutions = ['建设银行' if x == '建行' else x for x in institutions]
         for inst in dict.fromkeys(institutions):
-            if inst == '-':
+            if inst in ('-', 'nan', 'None', ''):
                 continue
             rows.append({
                 '机构名称': inst,
@@ -631,18 +640,39 @@ def compute_sales_table(projects, ib_scale, total_scale):
     sales_df = pd.DataFrame(rows)
     if sales_df.empty:
         return pd.DataFrame(columns=['机构名称', '销售项目数', '参与项目规模', '投行认购规模', '规模占比'])
-    sales_df = sales_df[sales_df['机构名称'].apply(is_brokerage)].copy()
+    if not include_banks:
+        sales_df = sales_df[sales_df['机构名称'].apply(is_brokerage)].copy()
     sales = sales_df.groupby('机构名称').agg(
         销售项目数=('项目名称', 'count'),
         参与项目规模=('项目规模', 'sum')
     ).reset_index()
-    ib_df = role_ib_scale(ib_scale, 'sales').reset_index()
+    ib = role_ib_scale(ib_scale, 'sales')
+    if include_banks:
+        ib.index = ['建设银行' if x == '建行' else x for x in ib.index]
+        ib = ib.groupby(level=0).sum()
+    ib_df = ib.reset_index()
     ib_df.columns = ['机构名称', '投行认购规模']
     sales = sales.merge(ib_df, on='机构名称', how='left')
     sales['投行认购规模'] = sales['投行认购规模'].fillna(0)
     sales['规模占比'] = (sales['参与项目规模'] / total_scale * 100).round(2)
     sales = sales.sort_values('参与项目规模', ascending=False).reset_index(drop=True)
     return sales
+
+
+def compute_sales_markets(df, projects):
+    venues = df[df['项目名称'].notna()][['项目名称', '发行场所']].drop_duplicates()
+    if venues['项目名称'].duplicated().any():
+        raise ValueError('销售机构统计：同一项目的发行市场不一致')
+    merged = projects.merge(venues, on='项目名称', validate='one_to_one')
+    result = []
+    for market, markets in [('交易所', ['上交所', '深交所']), ('银行间', ['银行间'])]:
+        subset = merged[merged['发行场所'].isin(markets)]
+        total = float(subset['规模'].sum())
+        rows = df[df['项目名称'].isin(subset['项目名称'])]
+        sales = compute_sales_table(subset, compute_ib_subscription(rows), total,
+                                    include_banks=market == '银行间')
+        result.append({'market': market, 'sales': sales, 'total': total, 'count': len(subset)})
+    return result
 
 
 def compute_custodian_table(projects, total_scale):
@@ -797,7 +827,7 @@ def render_body(data, section_key=None):
     date_max = meta['date_max']
 
     if section_key == 'embedded':
-        return _render_embedded_body(mgr, sales, custody, meta, xlsx_basename)
+        return _render_embedded_body(mgr, sales, custody, meta, xlsx_basename, data.get('sales_markets'))
 
     if section_key is None:
         sections_html = '\n'.join(
@@ -845,7 +875,7 @@ def render_body(data, section_key=None):
 </div>'''
 
 
-def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename):
+def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename, sales_markets=None):
     """嵌入综合看板「机构画像」子面板模式：单 section + 三表垂直堆叠。
 
     与独立看板差异：无 page-banner/note-bar/footer，每张表 480px 滚动 + sticky thead，
@@ -884,10 +914,20 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename):
     sales_table = _extract_table(sales_section)
     cust_table = _extract_table(cust_section)
 
+    sales_blocks = _block('销售机构统计', f'{len(sales)}家券商', sales_table, 'stats-sales', 'inst-stats-block--sales')
+    if sales_markets is not None:
+        market_blocks = []
+        for item in sales_markets:
+            market_table = _extract_table(_build_section_by_key('sales', mgr, item['sales'], custody))
+            market_blocks.append(_block(item['market'] + '销售机构统计',
+                f"{len(item['sales'])}家机构 · {item['count']}个项目 · {item['total']:.2f}亿",
+                market_table, 'stats-sales-' + ('exchange' if item['market'] == '交易所' else 'interbank'),
+                'inst-stats-block--sales'))
+        sales_blocks = '<div class="inst-stats-market-pair">' + ''.join(market_blocks) + '</div>'
     blocks = '\n'.join([
         _block('管理人统计', f'{len(mgr)}家券商', mgr_table, 'stats-manager', 'inst-stats-block--manager',
                f'{date_min} ~ {date_max} · {project_count}个项目 · {total_scale:.2f}亿'),
-        _block('销售机构统计', f'{len(sales)}家券商', sales_table, 'stats-sales', 'inst-stats-block--sales'),
+        sales_blocks,
         _block('托管行统计', f'{len(custody)}家银行', cust_table, 'stats-custodian', 'inst-stats-block--custodian'),
     ])
 
@@ -896,6 +936,7 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename):
     <div class="inst-stats-grid">
 {blocks}
     </div>
+    <div class="inst-stats-market-note">销售机构规模占比按各自市场总项目规模计算；联席项目分别计入各机构。交易所仅含上交所、深交所；银行间包含银行及券商，中保登、非标不列入两张销售表。投行认购规模按对应市场的中标份额统计。</div>
   </div>
 </div>'''
 
@@ -977,6 +1018,7 @@ def compute_data(xlsx_path, detail_paths=None, preprocessed_path=None):
         'projects': projects,
         'mgr': mgr,
         'sales': sales,
+        'sales_markets': compute_sales_markets(df, projects),
         'custody': custody,
         'meta': meta,
         'total_scale': total_scale,

@@ -7,6 +7,27 @@ from entity_alias import normalize_bank
 from gen_institution_stats import compute_custodian_table
 
 class StatsRoleAliasesTest(unittest.TestCase):
+    def test_interbank_ccb_alias_and_market_subscription(self):
+        from gen_institution_stats import compute_sales_markets
+        projects=pd.DataFrame([
+            {'项目名称':'a','联席承销商':'建行/建设银行','规模':10},
+            {'项目名称':'b','联席承销商':'建设银行','规模':5},
+            {'项目名称':'c','联席承销商':'中信证券','规模':20},
+        ])
+        df=pd.DataFrame([
+            {'项目名称':'a','发行场所':'银行间','认购机构':'建行投行','认购份额':1},
+            {'项目名称':'b','发行场所':'银行间','认购机构':'建设银行投行','认购份额':2},
+            {'项目名称':'c','发行场所':'上交所','认购机构':'中信证券投行','认购份额':3},
+        ])
+        markets=compute_sales_markets(df,projects)
+        bank=markets[1]['sales'].iloc[0]
+        self.assertEqual(bank['机构名称'],'建设银行')
+        self.assertEqual(bank['销售项目数'],2)
+        self.assertEqual(bank['参与项目规模'],15)
+        self.assertEqual(bank['投行认购规模'],3)
+        self.assertEqual(bank['规模占比'],100)
+        self.assertEqual(markets[0]['sales'].iloc[0]['投行认购规模'],3)
+
     def test_icbc_tianjin_branch_merges_in_custodian_table(self):
         self.assertEqual(normalize_bank('工行天分'), '工商银行')
         projects = pd.DataFrame([
