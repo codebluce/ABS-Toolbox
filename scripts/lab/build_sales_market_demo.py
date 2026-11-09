@@ -17,6 +17,12 @@ LEDGER = ROOT / 'deliverables/ledger/03_final/2026年ABS发行台账-1106-定稿
 MARKETS = {'交易所': ['上交所', '深交所'], '银行间': ['银行间']}
 
 
+def sales_name(name):
+    """本Demo的用户批准别名；保留源表原始名称。"""
+    normalized = stats.normalize_stats_role(name, 'sales')
+    return '建设银行' if normalized == '建行' else normalized
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     with contextlib.redirect_stdout(io.StringIO()):
@@ -37,11 +43,13 @@ def main():
         rows = df[df['项目名称'].isin(names)]
         total = float(subset['规模'].sum())
         market_ib = stats.role_ib_scale(stats.compute_ib_subscription(rows), 'sales')
+        market_ib.index = [sales_name(name) for name in market_ib.index]
+        market_ib = market_ib.groupby(level=0).sum()
         sales = stats.compute_sales_table(subset, stats.compute_ib_subscription(rows), total)
         if market == '银行间':
             allocations = []
             for _, project in subset.iterrows():
-                institutions = dict.fromkeys(stats.normalize_stats_role(x.strip(), 'sales')
+                institutions = dict.fromkeys(sales_name(x.strip())
                                              for x in str(project['联席承销商']).split('/') if x.strip())
                 for institution in institutions:
                     if institution in ('-', 'nan', 'None', ''):
@@ -69,6 +77,7 @@ def main():
     joined = pd.DataFrame([row for table in tables for row in table['rows']]).groupby('机构名称')[['销售项目数', '参与项目规模']].sum()
     joined = joined[joined.index.map(stats.is_brokerage)]
     expected = combined.set_index('机构名称')[joined.columns].sort_index()
+    expected = expected[expected.index.map(lambda name: stats.is_brokerage(sales_name(name)))]
     pd.testing.assert_frame_equal(joined.sort_index(), expected, check_dtype=False, atol=1e-8, rtol=1e-8)
     original = stats.render_body(data, section_key='embedded')
     pattern = r'<div class="inst-stats-block inst-stats-block--sales" id="stats-sales">.*?(?=<div class="inst-stats-block inst-stats-block--custodian")'
