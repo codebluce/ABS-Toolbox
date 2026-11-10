@@ -63,6 +63,8 @@ def main() -> None:
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--supplement-json', type=Path, nargs='+', required=True)
+    parser.add_argument('--label-date', default=date.today().isoformat(),
+                        help='写入底稿的更新日期标签（默认当天）')
     args = parser.parse_args()
 
     source = source_records(args.source)
@@ -139,13 +141,16 @@ def main() -> None:
             cell = ws.cell(end, col, value)
             cell._style = copy(ws.cell(2, col)._style)
         ws.cell(end, 19, args.source.name)
-        ws.cell(end, 20, '2026-11-04 标准源新增')
+        ws.cell(end, 20, f'{args.label_date} 标准源新增')
         ws.cell(end, 21, new['establish'].isoformat() if new['establish'] else None)
         ws.cell(end, 22, '发行动态（2026）')
         ws.cell(end, 23, new['source_row'])
         ws.cell(end, 24, '按标准源资产方归属')
         additions.append({'product': new['product'], 'date': str(new['date']), 'amount': str(new['amount'])})
 
+    # 底稿是逐周滚动更新的，上一轮的核对页要先清掉，否则会留下两页同名记录。
+    if '本次标准源更新核对' in wb.sheetnames:
+        del wb['本次标准源更新核对']
     audit = wb.create_sheet('本次标准源更新核对')
     audit.append(['类型', '项目', '日期/金额', '说明'])
     for item in additions:
@@ -161,7 +166,7 @@ def main() -> None:
     notes = wb['数据口径与来源']
     notes.append(['本次标准源', args.source.name])
     notes.append(['本次源SHA256', hashlib.sha256(args.source.read_bytes()).hexdigest()])
-    notes.append(['本次更新日期', '2026-11-04'])
+    notes.append(['本次更新日期', args.label_date])
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temp = args.output.with_suffix('.stage.xlsx')
