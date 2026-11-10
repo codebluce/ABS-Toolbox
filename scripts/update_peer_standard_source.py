@@ -62,15 +62,22 @@ def main() -> None:
     parser.add_argument('--current', type=Path, required=True)
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--supplement-json', type=Path, nargs='+', required=True)
+    parser.add_argument('--supplement-json', type=Path, nargs='*', default=None,
+                        help='华泰补录白名单；缺省时自动读取底稿同目录的 *.supplement.json 与 *.update.json')
     parser.add_argument('--label-date', default=date.today().isoformat(),
                         help='写入底稿的更新日期标签（默认当天）')
     args = parser.parse_args()
 
     source = source_records(args.source)
     current = parse_dynamics(args.current)
+    supplement_paths = args.supplement_json
+    if not supplement_paths:
+        # 补录项目必须逐周保留，靠人工传参迟早会漏；默认把同目录的白名单全读进来。
+        base = args.current.parent
+        supplement_paths = sorted(base.glob('*.supplement.json')) + sorted(base.glob('*.update.json'))
+        print(f'[supplement] 未显式指定，自动读取 {len(supplement_paths)} 份白名单')
     known_supplements = set()
-    for path in args.supplement_json:
+    for path in supplement_paths:
         data = json.loads(path.read_text(encoding='utf-8'))
         for item in data.get('entries', []) + data.get('additions', []):
             known_supplements.add(normalize_product_key(item.get('project') or item.get('product')))

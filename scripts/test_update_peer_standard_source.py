@@ -46,16 +46,18 @@ class UpdatePeerStandardSourceTest(unittest.TestCase):
         self.current = self.root / '底稿_20261030.xlsx'
         self.source = self.root / '标准源_1106.xlsx'
         self.output = self.root / '底稿_20261106.xlsx'
-        self.supplement = self.root / 'supplement.json'
+        self.supplement = self.root / '底稿.supplement.json'
         self.supplement.write_text(json.dumps({'entries': []}), encoding='utf-8')
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def run_main(self, label: str = '2026-11-06') -> None:
+    def run_main(self, label: str = '2026-11-06', pass_supplement: bool = True) -> None:
         argv = ['update_peer_standard_source.py', '--current', str(self.current),
                 '--source', str(self.source), '--output', str(self.output),
-                '--supplement-json', str(self.supplement), '--label-date', label]
+                '--label-date', label]
+        if pass_supplement:
+            argv += ['--supplement-json', str(self.supplement)]
         with mock.patch.object(sys, 'argv', argv):
             ups.main()
 
@@ -100,6 +102,23 @@ class UpdatePeerStandardSourceTest(unittest.TestCase):
         write_workbook(self.source, [record('项目乙资产支持专项计划', datetime(2026, 11, 5), 8)])
         with self.assertRaises(ValueError):
             self.run_main()
+
+    def test_auto_discovers_supplement_whitelist(self) -> None:
+        # 补录项目不在标准源里，靠同目录白名单自动识别，不能报错也不能被删掉。
+        self.supplement.write_text(json.dumps({'entries': [
+            {'project': '华泰补录项目资产支持专项计划', 'date': '2026-10-30', 'amount': '10'}]}),
+            encoding='utf-8')
+        write_workbook(self.current, [
+            record('项目甲资产支持专项计划', datetime(2026, 10, 30), 10),
+            record('华泰补录项目资产支持专项计划', datetime(2026, 10, 30), 10),
+        ])
+        write_workbook(self.source, [record('项目甲资产支持专项计划', datetime(2026, 10, 30), 10)])
+        self.run_main(pass_supplement=False)
+
+        result = json.loads(self.output.with_suffix('.update.json').read_text(encoding='utf-8'))
+        self.assertEqual(result['after_count'], 2)
+        self.assertEqual([item['product'] for item in result['retained_supplements']],
+                         ['华泰补录项目资产支持专项计划'])
 
 
 if __name__ == '__main__':
