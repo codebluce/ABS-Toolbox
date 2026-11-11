@@ -35,11 +35,41 @@
   function fmtPct(v) { return (v == null || isNaN(v)) ? '—' : (v * 100).toFixed(2) + '%'; }
   function fmtInt(v) { return v.toLocaleString('en-US'); }
   function dimLabel(k) { for (var i = 0; i < DIMS.length; i++) if (DIMS[i].key === k) return DIMS[i].label; return k; }
-  function distinctCounts(key) { var m = new Map(); for (var i = 0; i < DATA.length; i++) { var v = DATA[i][key]; if (v == null || v === '') continue; m.set(v, (m.get(v) || 0) + 1); } return m; }
+  // 联席承销商在台账里是“甲/乙/丙”的组合文本。筛选选项必须拆成单一机构，
+  // 否则只能选整段组合，无法精准查询某一家。表格展示仍保留原始组合。
+  var MULTI_FIELDS = { underwriter: true };
+  function splitMulti(v) {
+    if (v == null) return [];
+    var parts = String(v).split(/[\/、，,;；]/), out = [];
+    for (var i = 0; i < parts.length; i++) {
+      var t = parts[i].trim();
+      if (!t || t === '-' || t === '—' || t === '无') continue;
+      if (out.indexOf(t) < 0) out.push(t);
+    }
+    return out;
+  }
+  function tokensFor(key, value) {
+    if (MULTI_FIELDS[key]) return splitMulti(value);
+    return value == null || value === '' ? [] : [value];
+  }
+  function distinctCounts(key) {
+    var m = new Map();
+    for (var i = 0; i < DATA.length; i++) {
+      var toks = tokensFor(key, DATA[i][key]);
+      for (var j = 0; j < toks.length; j++) m.set(toks[j], (m.get(toks[j]) || 0) + 1);
+    }
+    return m;
+  }
 
   function filtered() {
     return DATA.filter(function (r) {
-      for (var k in st.selKw) { var s = st.selKw[k]; if (s.length && s.indexOf(r[k]) < 0) return false; }
+      for (var k in st.selKw) {
+        var s = st.selKw[k]; if (!s.length) continue;
+        if (MULTI_FIELDS[k]) {
+          var toks = tokensFor(k, r[k]);
+          if (!s.some(function (x) { return toks.indexOf(x) >= 0; })) return false;
+        } else if (s.indexOf(r[k]) < 0) return false;
+      }
       if (st.dateFrom) { if (!r.date || r.date < st.dateFrom) return false; }
       if (st.dateTo) { if (!r.date || r.date > st.dateTo) return false; }
       if (st.shareMin !== '') { if (r.share == null || r.share < +st.shareMin) return false; }
@@ -70,8 +100,7 @@
       if (!found && exactTarget === null && ['mgr', 'underwriter', 'custodian', 'inst'].indexOf(field) >= 0) {
         found = Object.keys(aliases).some(function (alias) {
           var target = aliases[alias];
-          return alias.indexOf(q) >= 0 && (v === target ||
-            (field === 'underwriter' && v.split('/').some(function (part) { return part.trim() === target; })));
+          return alias.indexOf(q) >= 0 && v === target;
         });
       }
       if (sel.indexOf(v) < 0 && found) arr.push([v, c]);
@@ -366,7 +395,16 @@
     st.dateFrom = spec.dateFrom || ''; st.dateTo = spec.dateTo || '';
     st.shareMin = (spec.shareMin != null && spec.shareMin !== '') ? String(spec.shareMin) : '';
     st.shareMax = '';
-    ['asset', 'layer', 'rating', 'mgr', 'underwriter', 'custodian', 'inst'].forEach(function (k) { if (f[k] && f[k].length) st.selKw[k] = f[k].slice(); });
+    ['asset', 'layer', 'rating', 'mgr', 'underwriter', 'custodian', 'inst'].forEach(function (k) {
+      if (!f[k] || !f[k].length) return;
+      var vals = f[k].slice();
+      if (MULTI_FIELDS[k]) {
+        var toks = [];
+        vals.forEach(function (v) { splitMulti(v).forEach(function (t) { if (toks.indexOf(t) < 0) toks.push(t); }); });
+        vals = toks;
+      }
+      st.selKw[k] = vals;
+    });
     if (spec.groupBy && DIMS.some(function (d) { return d.key === spec.groupBy; })) {
       st.view = 'group'; st.groupDim = spec.groupBy; st.sortKey = 'share'; st.sortDir = 'desc';
     } else if (spec.view) { st.view = spec.view; }

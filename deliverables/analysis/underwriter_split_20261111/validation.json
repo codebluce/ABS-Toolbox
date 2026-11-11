@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "institutionCount": 33,
+  "expected": {
+    "ningbo": 11,
+    "nanjing": 243,
+    "union": 243,
+    "ningboNames": [
+      "25东樾1秋樾（续发）"
+    ],
+    "unionNames": [
+      "25东樾1秋樾（续发）",
+      "东裕11号伯裕1期（可续发）",
+      "24东裕2号叔裕ABCP（续发）",
+      "24东裕2号季裕ABCP（续发）",
+      "东裕9号伯裕",
+      "东裕9号仲裕",
+      "东裕9号叔裕",
+      "东裕9号季裕",
+      "东裕9号春裕",
+      "26东裕9号一期",
+      "东裕4号伯裕（续发）"
+    ],
+    "distinct": 33
+  },
+  "checks": [
+    "single institution options",
+    "no combined option",
+    "single filter exact rows",
+    "multi-select union",
+    "detail projects match"
+  ]
+}
