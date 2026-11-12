@@ -27,6 +27,10 @@ CARD_GROUPS = {
     '京东金条白取混池': '京东现金贷',
 }
 SCOPE_ORDER = ['京东金条', '京东自主支付资产', '京东金条白取混池']
+ORIGINATOR_ALIASES = {
+    '深圳海豚小贷': '海豚小贷',
+    '美团三快小贷': '美团小贷',
+}
 CN_NUM = {'一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10}
 
 
@@ -45,6 +49,12 @@ def cn_number(value: str) -> str:
 
 def card_name(base_asset: str) -> str:
     return CARD_GROUPS.get(base_asset, base_asset)
+
+
+def normalize_originator(name: str) -> str:
+    """先走已确认的信托全称映射，再补本Demo发现的同类简称。"""
+    normalized = p.normalize_trust_originator(name)
+    return ORIGINATOR_ALIASES.get(normalized, normalized)
 
 
 def short_project_name(product: str) -> str:
@@ -106,15 +116,20 @@ def build_cards(records: list[dict]) -> list[dict]:
                 weekly_long.append({'week': week, 'date': week_dates[week], 'avg': long_avg})
         originator_totals: dict[str, Decimal] = {}
         for record in recs:
-            originator_totals[record['originator']] = originator_totals.get(record['originator'], ZERO) + record['amount']
+            originator = normalize_originator(record['originator'])
+            originator_totals[originator] = originator_totals.get(originator, ZERO) + record['amount']
         originators = [{'name': name_, 'amount': value}
                        for name_, value in sorted(originator_totals.items(), key=lambda item: -item[1])]
         current_month = latest_date.month
         previous_month = current_month - 1
         mom_rows = []
         for entry in originators:
-            cur = sum((r['amount'] for r in recs if r['originator'] == entry['name'] and p.month_key(r) == current_month), ZERO)
-            prev = sum((r['amount'] for r in recs if r['originator'] == entry['name'] and p.month_key(r) == previous_month), ZERO)
+            cur = sum((r['amount'] for r in recs
+                       if normalize_originator(r['originator']) == entry['name']
+                       and p.month_key(r) == current_month), ZERO)
+            prev = sum((r['amount'] for r in recs
+                        if normalize_originator(r['originator']) == entry['name']
+                        and p.month_key(r) == previous_month), ZERO)
             delta = cur - prev
             status = ('新增' if prev == ZERO and cur > ZERO else '增长' if delta > ZERO else '下降' if delta < ZERO else '持平')
             mom_rows.append({'name': entry['name'], 'prev': prev, 'cur': cur, 'delta': delta, 'status': status})
