@@ -21,6 +21,8 @@ async function checkDesktop(page) {
   assert.equal(await panel.locator('.peer-issuance-card').count(), EXPECTED.length);
   const text = await panel.innerText();
   assert.ok(!text.includes('度小满'), '度小满卡片应已删除');
+  assert.ok(!text.includes('中融小贷'), '中融小贷应并入海豚小贷');
+  assert.ok(text.includes('海豚小贷'), '海豚小贷应作为合并后的权益人展示');
   assert.ok(!text.includes('基础资产发行 Top'), '不应保留 Top N 标题');
   assert.ok(text.includes('主要资产发行明细'));
   assert.ok(text.includes('统计范围：京东金条、京东自主支付资产、京东金条白取混池'));
@@ -52,6 +54,7 @@ async function checkMobile(page) {
   assert.ok(first.includes('2年期'));
   assert.ok(first.includes('AAA年限'));
   assert.ok(!first.includes('Top'));
+  assert.ok(!(await page.locator('body').innerText()).includes('中融小贷'));
   const jd = await cards.nth(EXPECTED.indexOf('京东现金贷')).innerText();
   assert.ok(jd.includes('统计范围：京东金条、京东自主支付资产、京东金条白取混池'));
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

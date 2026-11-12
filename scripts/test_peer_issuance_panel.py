@@ -390,11 +390,14 @@ class TestAggregation(unittest.TestCase):
 
     def test_originator_alias_merges_into_one_row(self):
         rows = [make_record(base_asset="美团月付", originator="深圳海豚小贷", amount=D("10")),
+                make_record(base_asset="美团月付", originator="中融小贷", amount=D("7")),
                 make_record(base_asset="美团月付", originator="海豚小贷", amount=D("5"))]
         data, _ = build_dashboard(rows, [])
         card = data["cards"][0]
         self.assertEqual([(row["name"], row["amount"]) for row in card["originators"]],
-                         [("海豚小贷", D("15"))])
+                         [("海豚小贷", D("22"))])
+        # 底稿原始值不被改写
+        self.assertEqual(rows[1]["originator"], "中融小贷")
 
     def test_card_monthly_sum(self):
         card = self.data["cards"][0]
