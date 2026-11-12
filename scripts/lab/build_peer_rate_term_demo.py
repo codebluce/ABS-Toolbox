@@ -86,7 +86,7 @@ def build_cards(records: list[dict]) -> list[dict]:
     grouped: dict[str, list[dict]] = defaultdict(list)
     for record in records:
         grouped[card_name(record['base_asset'])].append(record)
-    ranked = sorted(grouped.items(), key=lambda item: -sum(r['amount'] for r in item[1]))[:6]
+    ranked = sorted(grouped.items(), key=lambda item: -sum(r['amount'] for r in item[1]))[:10]
     # 展示顺序：非京东资产在前，京东资产统一放最后；各组内部仍按规模降序。
     ranked.sort(key=lambda item: (item[0].startswith('京东'), -sum(r['amount'] for r in item[1])))
     latest_date = max(r['date'] for r in records if r['date'])
