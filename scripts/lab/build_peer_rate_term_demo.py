@@ -217,15 +217,16 @@ def legend(short: list[dict], long: list[dict]) -> str:
 
 def latest_item(label: str, color: str, record: dict | None) -> str:
     if not record:
-        return (f'<div class="peer-latest-item"><div class="peer-latest-head"><span class="peer-latest-badge" '
-                f'style="--c:{color}">{label}</span><span>暂无发行</span></div>'
-                '<div class="peer-latest-empty">该期限档暂无有效发行记录</div></div>')
-    return (f'<div class="peer-latest-item"><div class="peer-latest-head"><span class="peer-latest-badge" '
-            f'style="--c:{color}">{label}</span><span>{record["date"].isoformat()}</span></div>'
+        return (f'<div class="peer-latest-row"><div class="peer-latest-left"><div class="peer-latest-head">'
+                f'<span class="peer-latest-badge" style="--c:{color}">{label}</span><span>暂无发行</span></div>'
+                '<div class="peer-latest-project peer-latest-empty">该期限档暂无有效发行记录</div></div>'
+                '<div class="peer-latest-right"><div class="peer-latest-rate">—</div></div></div>')
+    return (f'<div class="peer-latest-row"><div class="peer-latest-left"><div class="peer-latest-head">'
+            f'<span class="peer-latest-badge" style="--c:{color}">{label}</span><span>{record["date"].isoformat()}</span></div>'
             f'<div class="peer-latest-project" title="{p.safe_text(record["product"])}">{p.safe_text(short_project_name(record["product"]))}</div>'
-            f'<div class="peer-latest-sub">{p.safe_text(record["base_asset"])}</div>'
-            f'<div class="peer-latest-rate">{p.rate_pct(record["aaa"])}</div>'
-            f'<div class="peer-latest-meta">AAA年限 {record["term"]:.2f}年 · 发行规模 {p.yi(record["amount"])} 亿</div></div>')
+            f'<div class="peer-latest-sub">{p.safe_text(record["base_asset"])}</div></div>'
+            f'<div class="peer-latest-right"><div class="peer-latest-rate">{p.rate_pct(record["aaa"])}</div>'
+            f'<div class="peer-latest-facts">AAA年限 {record["term"]:.2f}年 · 发行规模 {p.yi(record["amount"])} 亿</div></div></div>')
 
 
 def card_html(card: dict, latest_date: date) -> str:
@@ -235,7 +236,7 @@ def card_html(card: dict, latest_date: date) -> str:
             '周度加权平均；1.1年整无样本，按≤1.1年归1年期、>1.1年归2年期。')
     scope = '、'.join(card['scope'])
     scope_html = f'<p class="peer-scope">统计范围：{p.safe_text(scope)}</p>' if len(card['scope']) > 1 else ''
-    latest_html = (f'<div class="peer-latest-grid">{latest_item("1年期", SHORT_COLOR, card["latest_short"])}'
+    latest_html = (f'<div class="peer-latest-list">{latest_item("1年期", SHORT_COLOR, card["latest_short"])}'
                    f'{latest_item("2年期", LONG_COLOR, card["latest_long"])}</div>')
     return (f'<section class="peer-issuance-card"><div class="peer-issuance-card-head">'
             f'<h3>{p.safe_text(card["name"])}</h3><span class="peer-issuance-tag">{p.safe_text(card["asset_type"])}</span>'
@@ -253,8 +254,9 @@ def main() -> None:
     cards = build_cards(records)
     latest_date = max(r['date'] for r in records if r['date'])
     extra_css = '''
-body{margin:0}.demo-wrap{max-width:1420px;margin:auto;padding:24px}.demo-head{background:linear-gradient(135deg,#1a3a5c,#0d1b2e);color:#fff;padding:24px 28px;border-radius:10px 10px 0 0}.demo-head h1{margin:0;font-size:24px}.demo-head p{margin:7px 0 0;color:#dce7f2;font-size:13px;line-height:1.7}.demo-note{background:#fffbec;border:1px solid #ffe58f;border-left:4px solid #e0a800;padding:12px 16px;font-size:12px;color:#6b5a20;line-height:1.8;margin:0 0 16px}.peer-issuance-cards{margin-top:0}.peer-rate-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:11px;color:#52514e;margin:0 0 4px}.peer-rate-legend span{display:inline-flex;align-items:center;gap:6px}.peer-rate-legend i{width:9px;height:9px;border-radius:2px;display:inline-block}.peer-rate-legend b{font-variant-numeric:tabular-nums;color:#0d1b2e}.peer-rate-chart{height:auto}.peer-rate-note{font-size:10px;color:#8a8f98;line-height:1.6;margin:2px 0 0}.peer-scope{font-size:10px;color:#8a8f98;margin:2px 0 0}.peer-latest-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.peer-latest-item{border:1px solid #e8eaee;border-radius:7px;padding:10px 12px;background:#fbfcfd;min-width:0}.peer-latest-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10px;color:#8a8f98}.peer-latest-badge{display:inline-flex;align-items:center;border-left:3px solid var(--c);padding-left:6px;font-size:11px;font-weight:700;color:#0d1b2e}.peer-latest-project{font-size:13px;font-weight:700;color:#0d1b2e;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.peer-latest-sub{font-size:10px;color:#8a8f98;margin-top:2px}.peer-latest-rate{font-size:22px;font-weight:700;color:#0d1b2e;margin-top:4px;font-variant-numeric:tabular-nums}.peer-latest-meta{font-size:10px;color:#52514e;margin-top:2px;line-height:1.5}.peer-latest-empty{font-size:11px;color:#a0a6ae;margin-top:10px}.demo-foot{font-size:11px;color:#777;line-height:1.8;margin-top:16px}.demo-foot b{color:#333}
-@media(max-width:900px){.demo-wrap{padding:14px}.peer-issuance-cards{grid-template-columns:1fr}.peer-latest-grid{grid-template-columns:1fr}}
+body{margin:0}.demo-wrap{max-width:1420px;margin:auto;padding:24px}.demo-head{background:linear-gradient(135deg,#1a3a5c,#0d1b2e);color:#fff;padding:24px 28px;border-radius:10px 10px 0 0}.demo-head h1{margin:0;font-size:24px}.demo-head p{margin:7px 0 0;color:#dce7f2;font-size:13px;line-height:1.7}.demo-note{background:#fffbec;border:1px solid #ffe58f;border-left:4px solid #e0a800;padding:12px 16px;font-size:12px;color:#6b5a20;line-height:1.8;margin:0 0 16px}.peer-issuance-cards{margin-top:0}.peer-rate-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:11px;color:#52514e;margin:0 0 4px}.peer-rate-legend span{display:inline-flex;align-items:center;gap:6px}.peer-rate-legend i{width:9px;height:9px;border-radius:2px;display:inline-block}.peer-rate-legend b{font-variant-numeric:tabular-nums;color:#0d1b2e}.peer-rate-chart{height:auto}.peer-rate-note{font-size:10px;color:#8a8f98;line-height:1.6;margin:2px 0 0}.peer-scope{font-size:10px;color:#8a8f98;margin:2px 0 0}.peer-latest-list{border:1px solid #e8eaee;border-radius:7px;overflow:hidden;background:#fbfcfd}.peer-latest-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:10px 12px}.peer-latest-row+.peer-latest-row{border-top:1px solid #edf0f3}.peer-latest-left{min-width:0}.peer-latest-head{display:flex;align-items:center;gap:8px;font-size:10px;color:#8a8f98}.peer-latest-badge{display:inline-flex;align-items:center;border-left:3px solid var(--c);padding-left:6px;font-size:11px;font-weight:700;color:#0d1b2e}.peer-latest-project{font-size:13px;font-weight:700;color:#0d1b2e;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.peer-latest-sub{font-size:10px;color:#8a8f98;margin-top:2px}.peer-latest-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}.peer-latest-rate{font-size:22px;font-weight:700;color:#0d1b2e;font-variant-numeric:tabular-nums;line-height:1.1}.peer-latest-facts{font-size:10px;color:#52514e}.peer-latest-empty{font-size:11px;color:#a0a6ae;font-weight:400}.demo-foot{font-size:11px;color:#777;line-height:1.8;margin-top:16px}.demo-foot b{color:#333}
+@media(max-width:900px){.demo-wrap{padding:14px}.peer-issuance-cards{grid-template-columns:1fr}}
+@media(max-width:620px){.peer-latest-row{grid-template-columns:1fr;gap:4px}.peer-latest-right{align-items:flex-start}.peer-latest-facts{white-space:normal}}
 '''
     html = ('<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
