@@ -512,11 +512,35 @@ def build_peer(html: str) -> dict | None:
             elif "新增" in delta:
                 direction = 1
             rows.append([rm.group("label"), rm.group("amount"), float(rm.group("w")), delta, direction])
+        rates = [[m.group(1).strip(), m.group(2).strip()]
+                 for m in re.finditer(r'<i style="background:#[0-9a-fA-F]{6}"></i>([^<]*)<b>([^<]*)</b>', inner)]
+        latest = []
+        for lm in re.finditer(r'<div class="peer-latest-row">(.*?)</div></div></div>', inner, re.S):
+            block_l = lm.group(1)
+            badge = re.search(r'peer-latest-badge[^>]*>([^<]*)<', block_l)
+            day = re.search(r'peer-latest-badge[^>]*>[^<]*</span><span>([^<]*)</span>', block_l)
+            project = re.search(r'peer-latest-project[^>]*>([^<]*)<', block_l)
+            sub = re.search(r'peer-latest-sub[^>]*>([^<]*)<', block_l)
+            rate = re.search(r'peer-latest-rate[^>]*>([^<]*)<', block_l)
+            facts = re.search(r'peer-latest-facts[^>]*>([^<]*)', block_l)
+            if badge and rate:
+                latest.append({
+                    "label": badge.group(1).strip(),
+                    "date": day.group(1).strip() if day else "",
+                    "project": project.group(1).strip() if project else "",
+                    "sub": sub.group(1).strip() if sub else "",
+                    "rate": rate.group(1).strip(),
+                    "facts": facts.group(1).strip() if facts else "",
+                })
+        scope = re.search(r'<p class="peer-scope">统计范围：([^<]*)</p>', inner)
+        note = re.search(r'<p class="peer-rate-note">([^<]*)</p>', inner)
         if rows:
             top.append({
                 "name": head.group(1), "cat": head.group(2).strip(),
                 "amt": amt_terms[0], "terms": amt_terms[1] if len(amt_terms) > 1 else "",
-                "rows": rows,
+                "rows": rows, "rates": rates, "latest": latest,
+                "scope": scope.group(1).strip() if scope else "",
+                "note": note.group(1).strip() if note else "",
             })
 
     if not groups or not trust or not top:
@@ -529,7 +553,18 @@ def build_peer(html: str) -> dict | None:
     colors = build_peer_colors(block)
     if not colors:
         raise RuntimeError("同业发行图例配色解析为空,手机版会退回内置兜底色导致与电脑端不一致")
-    return {"groups": groups, "trust": trust, "top": top, "colors": colors}
+    total_m = re.search(r"同业发行概览（2026 累计 ([\d,.]+) 亿 / (\d+) 期）", block)
+    jd_m = re.search(r"其中京东系 (\d+) 期 / ([\d,.]+) 亿", block)
+    yoy_m = re.search(r"同比窗口 ([\d-]+) ~ ([\d-]+)", block)
+    return {
+        "groups": groups, "trust": trust, "top": top, "colors": colors,
+        "total": total_m.group(1) if total_m else "—",
+        "count": total_m.group(2) if total_m else "—",
+        "jdCount": jd_m.group(1) if jd_m else "—",
+        "jdAmt": jd_m.group(2) if jd_m else "—",
+        "yoyFrom": yoy_m.group(1) if yoy_m else "—",
+        "yoyTo": yoy_m.group(2) if yoy_m else "—",
+    }
 
 
 # ---------------------------------------------------------------- 机构统计

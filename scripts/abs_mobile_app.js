@@ -414,8 +414,7 @@
       '<div class="noscroll" style="margin-top:11px; padding:0 20px; display:flex; gap:7px; overflow-x:auto;">' +
         pill('发行概览', S.peerView === 'overview', 'pv:overview') +
         pill('信托渠道', S.peerView === 'trust', 'pv:trust') +
-        // Top N 取实际卡片数,电脑端 peer_issuance_panel.TOP_N 调整时手机端自动跟随
-        pill('资产 Top ' + PEER.top.length, S.peerView === 'top', 'pv:top') +
+        pill('资产明细', S.peerView === 'top', 'pv:top') +
       '</div></div><div style="padding:2px 20px 18px;">';
 
     if (S.peerView === 'overview') {
@@ -459,7 +458,7 @@
 
     if (S.peerView === 'top') {
       h += '<div style="margin-top:4px; display:flex; align-items:baseline; justify-content:space-between;">' +
-        '<div style="' + H2 + '">基础资产发行 Top ' + PEER.top.length + '</div><div style="' + SUB + '">点击展开渠道</div></div>' +
+        '<div style="' + H2 + '">主要资产发行明细</div><div style="' + SUB + '">点击展开渠道</div></div>' +
         '<div style="margin-top:9px; display:flex; flex-direction:column; gap:8px;">';
       PEER.top.forEach(function (c, i) {
         var open = !!S.peerOpen[i];
@@ -472,6 +471,32 @@
               '<div style="font-size:16px; font-weight:700; color:#0d1b2e; font-variant-numeric:tabular-nums; line-height:1;">' + c.amt + '</div>' +
               '<div style="margin-top:4px; ' + SUB + ' font-variant-numeric:tabular-nums;">' + c.terms + '</div></div>' +
             fold(open) + '</div>';
+        if (c.scope) {
+          h += '<div style="margin-top:6px; font-size:10.5px; color:#8a8f98; line-height:1.5;">统计范围：' + esc(c.scope) + '</div>';
+        }
+        if (c.rates && c.rates.length) {
+          h += '<div style="margin-top:9px; display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:#52514e;">';
+          c.rates.forEach(function (r, k) {
+            h += '<span style="display:inline-flex; align-items:center; gap:5px;"><i style="width:8px; height:8px; border-radius:2px; display:inline-block; background:' + (k === 0 ? '#2a78d6' : '#c98747') + ';"></i>' +
+              esc(r[0]) + ' <b style="color:#0d1b2e; font-variant-numeric:tabular-nums;">' + esc(r[1]) + '</b></span>';
+          });
+          h += '</div>';
+        }
+        if (c.note) {
+          h += '<div style="margin-top:4px; font-size:10px; color:#8a8f98; line-height:1.5;">' + esc(c.note) + '</div>';
+        }
+        if (c.latest && c.latest.length) {
+          h += '<div style="margin-top:9px; border:1px solid #e8eaee; border-radius:7px; overflow:hidden; background:#fbfcfd;">';
+          c.latest.forEach(function (l, k) {
+            h += '<div style="padding:8px 10px;' + (k ? 'border-top:1px solid #edf0f3;' : '') + '">' +
+              '<div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px;">' +
+                '<span style="font-size:10px; color:#8a8f98;"><b style="color:#0d1b2e; font-size:11px;">' + esc(l.label) + '</b> ' + esc(l.date) + '</span>' +
+                '<span style="font-size:17px; font-weight:700; color:#0d1b2e; font-variant-numeric:tabular-nums; line-height:1.1;">' + esc(l.rate) + '</span></div>' +
+              '<div style="margin-top:3px; font-size:12px; font-weight:600; color:#0d1b2e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + esc(l.project) + '</div>' +
+              '<div style="margin-top:2px; font-size:10px; color:#8a8f98; line-height:1.5;">' + (l.sub ? esc(l.sub) + ' · ' : '') + esc(l.facts) + '</div></div>';
+          });
+          h += '</div>';
+        }
         if (open) {
           h += '<div style="margin-top:11px; padding-top:10px; border-top:1px solid #f2f5f9;">';
           c.rows.forEach(function (r) {
@@ -491,9 +516,9 @@
     }
 
     h += caliberBox('pcaliber', S.peerCaliber, [
-      '剔除京东系 = 原始权益人或基础资产含「京东」（并集口径，覆盖走信托通道发行的京东资产）；统计范围为全市场互联网金融 ABS/ABN 发行。',
-      '同比 = 2025 年簿记时间 ≤ 2026 最新簿记日前一年的同期窗口；信托渠道仅统计名称含「信托」的原始权益人，按基础资产归并至六类资产集团，未命中规则的资产归入「其他」。',
-      '2026 累计发行 3,016 亿 / 364 期，已剔除京东系 66 期 / 675 亿；同比窗口 2025-01-01 ~ 2025-08-14。'
+      '京东系 = 原始权益人或基础资产含「京东」（并集口径，覆盖走信托通道发行的京东资产），已纳入全市场互联网金融 ABS/ABN 发行统计。',
+      '同比 = 2025 年簿记时间 ≤ 2026 最新簿记日前一年的同期窗口；信托渠道仅统计名称含「信托」的原始权益人，按基础资产归并至七类资产集团，未命中规则的资产归入「其他」。',
+      '2026 累计发行 ' + PEER.total + ' 亿 / ' + PEER.count + ' 期，其中京东系 ' + PEER.jdCount + ' 期 / ' + PEER.jdAmt + ' 亿；同比窗口 ' + PEER.yoyFrom + ' ~ ' + PEER.yoyTo + '。'
     ]);
     return h + '</div></div>';
   }

@@ -7,6 +7,7 @@ import hashlib
 import html
 import json
 import re
+from collections import defaultdict
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -22,9 +23,20 @@ HUNDRED = Decimal("100")
 
 # 资产类型固定展示顺序
 ASSET_TYPE_ORDER = ("消金分期类", "消金提现类", "小微toB", "小微toC")
-TOP_N = 12
 TRUST_TOP_N = 8
 BAR_BLUE = "#2a78d6"
+SHORT_TERM_MAX = Decimal("1.1")
+CARD_FAMILY_ORDER = ("网商贷", "蚂蚁系资产", "抖音系资产", "腾讯微众系资产",
+                     "美团系资产", "京东系资产")
+CARD_GROUPS = {
+    "京东金条": "京东现金贷",
+    "京东自主支付资产": "京东现金贷",
+    "京东金条白取混池": "京东现金贷",
+}
+ORIGINATOR_ALIASES = {
+    "深圳海豚小贷": "海豚小贷",
+    "美团三快小贷": "美团小贷",
+}
 ASSET_FAMILY_ORDER = ("京东系", "蚂蚁系", "网商系", "腾讯系", "微众系", "字节系", "美团系")
 UNKNOWN_ASSET_FAMILY = "未知资产"
 ASSET_FAMILY_COLORS = {
@@ -344,6 +356,32 @@ def normalize_trust_originator(name: str) -> str:
     return TRUST_ORIGINATOR_ALIASES.get(name, name)
 
 
+def normalize_originator(name: str) -> str:
+    """信托全称映射 + 已确认的同类简称；不改写底稿原始值。"""
+    normalized = normalize_trust_originator(name)
+    return ORIGINATOR_ALIASES.get(normalized, normalized)
+
+
+def card_name(base_asset: str) -> str:
+    return CARD_GROUPS.get(base_asset, base_asset)
+
+
+def card_family(name: str) -> str | None:
+    if name == "网商贷":
+        return "网商贷"
+    if name.startswith("蚂蚁"):
+        return "蚂蚁系资产"
+    if name.startswith("抖音"):
+        return "抖音系资产"
+    if name.startswith("腾讯") or name.startswith("微众"):
+        return "腾讯微众系资产"
+    if name.startswith("美团"):
+        return "美团系资产"
+    if name.startswith("京东"):
+        return "京东系资产"
+    return None
+
+
 def unregistered_trust_full_names(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """识别未登记简称的信托公司全称；只预警，不自动猜测或合并。"""
     result: dict[str, dict[str, Any]] = {}
@@ -418,6 +456,17 @@ def month_key(record: dict[str, Any]) -> int | None:
     return record["date"].month if record["date"] else None
 
 
+def latest_term_record(records: list[dict[str, Any]], bucket: str) -> dict[str, Any] | None:
+    """取某期限档最近一笔有效发行；bucket=short 为≤1.1年，long 为>1.1年。"""
+    def in_bucket(record: dict[str, Any]) -> bool:
+        term = record.get("term")
+        if term is None or record.get("aaa") is None or record.get("date") is None:
+            return False
+        return term <= SHORT_TERM_MAX if bucket == "short" else term > SHORT_TERM_MAX
+    candidates = [record for record in records if in_bucket(record)]
+    return max(candidates, key=lambda record: record["date"]) if candidates else None
+
+
 def build_dashboard(records_2026: list[dict[str, Any]], records_2025: list[dict[str, Any]]) -> tuple[dict[str, Any], list[dict]]:
     qc: list[dict] = []
     # 在规范名称前检查原始权益人，避免未登记全称被静默拆成独立渠道。
@@ -430,8 +479,8 @@ def build_dashboard(records_2026: list[dict[str, Any]], records_2025: list[dict[
               names={name: {'count': item['count'], 'amount': str(item['amount'])}
                      for name, item in unregistered_trust.items()})
     # 所有渠道、权益人、月份及同比计算共用同一统计名称；不改底稿原始值。
-    records_2026 = [{**r, 'originator': normalize_trust_originator(r['originator'])} for r in records_2026]
-    records_2025 = [{**r, 'originator': normalize_trust_originator(r['originator'])} for r in records_2025]
+    records_2026 = [{**r, 'originator': normalize_originator(r['originator'])} for r in records_2026]
+    records_2025 = [{**r, 'originator': normalize_originator(r['originator'])} for r in records_2025]
     dated_2026 = [r for r in records_2026 if r["date"]]
     if not dated_2026:
         raise PanelInputError("2026 数据缺少簿记时间，无法确定最新簿记日")
@@ -545,58 +594,89 @@ def build_dashboard(records_2026: list[dict[str, Any]], records_2025: list[dict[
             week_min_date[r["week"]] = r["date"]
     weeks_ordered = [w for w, _ in sorted(week_min_date.items(), key=lambda item: item[1])]
 
-    base_totals: dict[str, Decimal] = {}
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in market_2026:
-        base_totals[r["base_asset"]] = base_totals.get(r["base_asset"], ZERO) + r["amount"]
-    # 入围口径：严格按 2026 累计规模降序取 Top N；展示顺序：同集团相邻聚类
-    selected = sorted(base_totals.items(), key=lambda item: -item[1])[:TOP_N]
-    top_bases = cluster_by_family(selected)
+        grouped[card_name(r["base_asset"])].append(r)
 
     latest_month = latest_date.month
     previous_month = latest_month - 1
 
     cards = []
-    for base in top_bases:
-        card_records = [r for r in market_2026 if r["base_asset"] == base]
+    for name, card_records in grouped.items():
+        family = card_family(name)
+        if family is None:
+            continue
         monthly = {month: ZERO for month in range(1, 13)}
         for r in card_records:
             month = month_key(r)
             if month:
                 monthly[month] += r["amount"]
         weekly_rates = []
+        weekly_rates_short = []
+        weekly_rates_long = []
         for week in weeks_ordered:
-            avg = weighted_avg([(r["aaa"], r["amount"]) for r in card_records if r["week"] == week])
+            week_records = [r for r in card_records if r["week"] == week]
+            avg = weighted_avg([(r["aaa"], r["amount"]) for r in week_records])
             if avg is not None:
                 weekly_rates.append({"week": week, "date": week_min_date.get(week), "avg": avg})
+            short_avg = weighted_avg([(r["aaa"], r["amount"]) for r in week_records
+                                      if r["term"] is not None and r["term"] <= SHORT_TERM_MAX])
+            long_avg = weighted_avg([(r["aaa"], r["amount"]) for r in week_records
+                                     if r["term"] is not None and r["term"] > SHORT_TERM_MAX])
+            if short_avg is not None:
+                weekly_rates_short.append({"week": week, "date": week_min_date.get(week), "avg": short_avg})
+            if long_avg is not None:
+                weekly_rates_long.append({"week": week, "date": week_min_date.get(week), "avg": long_avg})
         originator_totals: dict[str, Decimal] = {}
         for r in card_records:
             originator_totals[r["originator"]] = originator_totals.get(r["originator"], ZERO) + r["amount"]
-        originators = [{"name": name, "amount": amount}
-                       for name, amount in sorted(originator_totals.items(), key=lambda item: -item[1])]
+        originators = [{"name": originator, "amount": amount}
+                       for originator, amount in sorted(originator_totals.items(), key=lambda item: -item[1])]
         mom_rows = []
         for entry in originators:
-            name = entry["name"]
+            originator = entry["name"]
             cur = sum((r["amount"] for r in card_records
-                       if r["originator"] == name and month_key(r) == latest_month), ZERO)
+                       if r["originator"] == originator and month_key(r) == latest_month), ZERO)
             prev = sum((r["amount"] for r in card_records
-                        if r["originator"] == name and month_key(r) == previous_month), ZERO)
+                        if r["originator"] == originator and month_key(r) == previous_month), ZERO)
             delta = cur - prev
             status = ("新增" if prev == ZERO and cur > ZERO else
                       "增长" if delta > ZERO else "下降" if delta < ZERO else "持平")
-            mom_rows.append({"name": name, "prev": prev, "cur": cur, "delta": delta, "status": status})
+            mom_rows.append({"name": originator, "prev": prev, "cur": cur, "delta": delta, "status": status})
         mom_rows.sort(key=lambda row: -(row["cur"] + row["prev"]))
-        if not originators or not weekly_rates:
-            issue(qc, "WARN", "CARD_DATA_INCOMPLETE", f"{base} 卡片数据不完整：权益人 {len(originators)} 条 / 周度利率 {len(weekly_rates)} 点")
+        term_counts = {
+            "short": sum(1 for r in card_records if r["term"] is not None and r["term"] <= SHORT_TERM_MAX),
+            "long": sum(1 for r in card_records if r["term"] is not None and r["term"] > SHORT_TERM_MAX),
+            "missing": sum(1 for r in card_records if r["term"] is None),
+        }
+        latest_short = latest_term_record(card_records, "short")
+        latest_long = latest_term_record(card_records, "long")
+        scope = [base for base in ("京东金条", "京东自主支付资产", "京东金条白取混池")
+                 if base in {r["base_asset"] for r in card_records}]
+        if not scope:
+            scope = sorted({r["base_asset"] for r in card_records})
+        if not originators or not (weekly_rates_short or weekly_rates_long):
+            issue(qc, "WARN", "CARD_DATA_INCOMPLETE",
+                  f"{name} 卡片数据不完整：权益人 {len(originators)} 条 / 周度利率 "
+                  f"1年期 {len(weekly_rates_short)} 点、2年期 {len(weekly_rates_long)} 点")
         cards.append({
-            "name": base,
+            "name": name,
+            "family": family,
             "asset_type": card_records[0]["asset_type"] if card_records else "",
             "count": len(card_records),
             "amount": sum((r["amount"] for r in card_records), ZERO),
             "monthly": monthly,
             "weekly_rates": weekly_rates,
+            "weekly_rates_short": weekly_rates_short,
+            "weekly_rates_long": weekly_rates_long,
+            "term_counts": term_counts,
+            "latest_short": latest_short,
+            "latest_long": latest_long,
+            "scope": scope,
             "originators": originators,
             "mom": {"current_month": latest_month, "previous_month": previous_month, "rows": mom_rows},
         })
+    cards.sort(key=lambda card: (CARD_FAMILY_ORDER.index(card["family"]), -card["amount"], card["name"]))
 
     # 卡片月度加总与卡片总量一致性（构造性校验）
     for card in cards:
@@ -664,6 +744,37 @@ def rate_pct(value: Decimal | None) -> str:
     return "—" if value is None else pct2(value * HUNDRED, signed=False)
 
 
+CN_NUM = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
+
+
+def cn_number(value: str) -> str:
+    if value.isdigit():
+        return value
+    if value == "十":
+        return "10"
+    if "十" in value:
+        left, right = value.split("十", 1)
+        tens = CN_NUM.get(left, 1) if left else 1
+        ones = CN_NUM.get(right, 0) if right else 0
+        return str(tens * 10 + ones)
+    return str(CN_NUM.get(value, value))
+
+
+def short_project_name(product: str) -> str:
+    """把产品全称压成卡片可读的项目简称；完整名称保留在悬浮提示中。"""
+    text = str(product or "")
+    text = re.sub(r"^.*?(?:有限责任公司|有限公司|股份有限公司)", "", text)
+    text = re.sub(r"\d{4}年度", "", text)
+    text = re.sub(r"第([一二三四五六七八九十\d]+)期", lambda match: f"{cn_number(match.group(1))}期", text)
+    text = re.sub(r"^(\d+期)(.+)$", r"\2\1", text)
+    text = re.sub(r"[（(][^）)]*[）)]", "", text)
+    for suffix in ("定向资产支持商业票据", "定向资产支持票据", "资产支持专项计划",
+                   "资产支持商业票据", "资产支持计划"):
+        text = text.replace(suffix, "")
+    text = text.replace("京东白条", "").replace("京东科技", "").strip()
+    return text[:22] or str(product or "—")
+
+
 def json_default(value: Any):
     if isinstance(value, (Decimal, date, datetime)):
         return str(value)
@@ -692,7 +803,7 @@ def safe_text(value: Any) -> str:
 
 
 PEER_ISSUANCE_EXTRA_CSS = """
-.peer-issuance-section{margin:18px 0 0;padding:18px 20px}.peer-issuance-section>p{margin-bottom:16px}.peer-issuance-cards{gap:22px;margin-top:18px}.peer-issuance-card{padding:20px}.peer-issuance-trust-row{display:grid;grid-template-columns:128px minmax(0,1fr) 152px;gap:12px;align-items:start;margin:14px 0}.peer-issuance-trust-name{font-size:13px;font-weight:600;color:#52514e;padding-top:2px}.peer-issuance-trust-detail{min-width:0}.peer-issuance-stack-track{height:16px;background:#edf0f2;border-radius:8px;overflow:hidden;display:flex}.peer-issuance-stack-segment{height:100%;min-width:0;display:block}.peer-issuance-trust-value{font-size:13px;text-align:right;font-variant-numeric:tabular-nums;color:#353535;padding-top:1px}.peer-issuance-trust-segment-labels{display:flex;flex-wrap:wrap;gap:5px 11px;margin-top:7px}.peer-issuance-trust-segment-label{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#5d5d5d;line-height:1.25;white-space:nowrap}.peer-issuance-trust-segment-label i{width:7px;height:7px;border-radius:2px;display:inline-block;flex:0 0 auto}.peer-issuance-legend{display:flex;flex-wrap:wrap;gap:8px 15px;margin:0 0 14px;font-size:12px;color:#52514e}.peer-issuance-legend-item{display:inline-flex;align-items:center;gap:5px}.peer-issuance-legend-item i{width:9px;height:9px;border-radius:2px;display:inline-block}.peer-issuance-empty{font-size:13px;color:#999;margin:8px 0}.peer-issuance-foot{margin-top:22px}.peer-issuance-foot p{margin:3px 0}@media(max-width:620px){.peer-issuance-section{padding:16px}.peer-issuance-trust-row{grid-template-columns:86px minmax(0,1fr);gap:8px}.peer-issuance-trust-value{grid-column:2;font-size:12px;text-align:left;padding-top:0}.peer-issuance-legend{gap:6px 10px}.peer-issuance-trust-segment-labels{gap:5px 8px}}
+.peer-issuance-section{margin:18px 0 0;padding:18px 20px}.peer-issuance-section>p{margin-bottom:16px}.peer-issuance-cards{gap:22px;margin-top:0}.peer-issuance-block-title{font-size:16px;color:#0d1b2e;margin:24px 0 10px}.peer-issuance-card{padding:20px}.peer-issuance-trust-row{display:grid;grid-template-columns:128px minmax(0,1fr) 152px;gap:12px;align-items:start;margin:14px 0}.peer-issuance-trust-name{font-size:13px;font-weight:600;color:#52514e;padding-top:2px}.peer-issuance-trust-detail{min-width:0}.peer-issuance-stack-track{height:16px;background:#edf0f2;border-radius:8px;overflow:hidden;display:flex}.peer-issuance-stack-segment{height:100%;min-width:0;display:block}.peer-issuance-trust-value{font-size:13px;text-align:right;font-variant-numeric:tabular-nums;color:#353535;padding-top:1px}.peer-issuance-trust-segment-labels{display:flex;flex-wrap:wrap;gap:5px 11px;margin-top:7px}.peer-issuance-trust-segment-label{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#5d5d5d;line-height:1.25;white-space:nowrap}.peer-issuance-trust-segment-label i{width:7px;height:7px;border-radius:2px;display:inline-block;flex:0 0 auto}.peer-issuance-legend{display:flex;flex-wrap:wrap;gap:8px 15px;margin:0 0 14px;font-size:12px;color:#52514e}.peer-issuance-legend-item{display:inline-flex;align-items:center;gap:5px}.peer-issuance-legend-item i{width:9px;height:9px;border-radius:2px;display:inline-block}.peer-issuance-empty{font-size:13px;color:#999;margin:8px 0}.peer-issuance-foot{margin-top:22px}.peer-issuance-foot p{margin:3px 0}.peer-rate-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:11px;color:#52514e;margin:0 0 4px}.peer-rate-legend span{display:inline-flex;align-items:center;gap:6px}.peer-rate-legend i{width:9px;height:9px;border-radius:2px;display:inline-block}.peer-rate-legend b{font-variant-numeric:tabular-nums;color:#0d1b2e}.peer-rate-chart{height:auto}.peer-rate-note{font-size:10px;color:#8a8f98;line-height:1.6;margin:2px 0 0}.peer-scope{font-size:10px;color:#8a8f98;margin:2px 0 0}.peer-latest-list{border:1px solid #e8eaee;border-radius:7px;overflow:hidden;background:#fbfcfd}.peer-latest-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:10px 12px}.peer-latest-row+.peer-latest-row{border-top:1px solid #edf0f3}.peer-latest-left{min-width:0}.peer-latest-head{display:flex;align-items:center;gap:8px;font-size:10px;color:#8a8f98}.peer-latest-badge{display:inline-flex;align-items:center;border-left:3px solid var(--c);padding-left:6px;font-size:11px;font-weight:700;color:#0d1b2e}.peer-latest-project{font-size:13px;font-weight:700;color:#0d1b2e;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.peer-latest-sub{font-size:10px;color:#8a8f98;margin-top:2px}.peer-latest-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}.peer-latest-rate{font-size:22px;font-weight:700;color:#0d1b2e;font-variant-numeric:tabular-nums;line-height:1.1}.peer-latest-facts{font-size:10px;color:#52514e}.peer-latest-empty{font-size:11px;color:#a0a6ae;font-weight:400}@media(max-width:620px){.peer-issuance-section{padding:16px}.peer-issuance-trust-row{grid-template-columns:86px minmax(0,1fr);gap:8px}.peer-issuance-trust-value{grid-column:2;font-size:12px;text-align:left;padding-top:0}.peer-issuance-legend{gap:6px 10px}.peer-issuance-trust-segment-labels{gap:5px 8px}.peer-latest-row{grid-template-columns:1fr;gap:4px}.peer-latest-right{align-items:flex-start}.peer-latest-facts{white-space:normal}}
 """
 
 
@@ -827,6 +938,70 @@ def rate_sparkline(points: list[dict], width: int = 560, height: int = 150) -> s
     return "".join(parts)
 
 
+def rate_sparkline_split(short: list[dict], long: list[dict], width: int = 560, height: int = 176) -> str:
+    """AAA 利率按 1年期/2年期拆分的周度折线图；某档某周无样本时断开。"""
+    all_points = short + long
+    if not all_points:
+        return '<div class="peer-issuance-spark-empty">暂无利率数据</div>'
+    date_by_week = {point["week"]: point.get("date") for point in all_points}
+    weeks = sorted(date_by_week, key=lambda week: date_by_week[week] or date.min)
+    values = [point["avg"] for point in all_points]
+    low, high = min(values), max(values)
+    pad = (high - low) * Decimal("0.15") if high > low else Decimal("0.001")
+    lo, hi = low - pad, high + pad
+    left, right, top, bottom = Decimal(46), Decimal(width - 10), Decimal(10), Decimal(height - 30)
+
+    def x_at(week: str) -> Decimal:
+        if len(weeks) == 1:
+            return (left + right) / 2
+        return left + (right - left) * Decimal(weeks.index(week)) / Decimal(len(weeks) - 1)
+
+    def y_at(value: Decimal) -> Decimal:
+        return bottom - (value - lo) / (hi - lo) * (bottom - top)
+
+    parts = [f'<svg class="peer-issuance-chart peer-rate-chart" viewBox="0 0 {width} {height}" role="img" aria-label="AAA利率走势：1年期与2年期">']
+    for index in range(5):
+        value = lo + (hi - lo) * Decimal(index) / Decimal(4)
+        y = y_at(value)
+        parts.append(f'<line x1="{float(left):.0f}" y1="{float(y):.1f}" x2="{float(right):.0f}" y2="{float(y):.1f}" stroke="#e8eaee"/>')
+        parts.append(f'<text x="{float(left) - 6:.0f}" y="{float(y) + 3:.1f}" font-size="9" fill="#999" text-anchor="end">{rate_pct(value)}</text>')
+    parts.append(f'<line x1="{float(left):.0f}" y1="{float(top):.0f}" x2="{float(left):.0f}" y2="{float(bottom):.0f}" stroke="#c9cdd4"/>')
+    parts.append(f'<line x1="{float(left):.0f}" y1="{float(bottom):.0f}" x2="{float(right):.0f}" y2="{float(bottom):.0f}" stroke="#c9cdd4"/>')
+    step = 2 if len(weeks) <= 12 else 3 if len(weeks) <= 24 else 4
+    label_indexes = set(range(0, len(weeks), step)) | {len(weeks) - 1}
+    if len(label_indexes) > 1:
+        previous = max(index for index in label_indexes if index != len(weeks) - 1)
+        if len(weeks) - 1 - previous < step:
+            label_indexes.discard(previous)
+    for index in sorted(label_indexes):
+        week = weeks[index]
+        day = date_by_week[week]
+        label = day.strftime("%m/%d") if day else week[:10]
+        anchor = "start" if index == 0 else "end" if index == len(weeks) - 1 else "middle"
+        parts.append(f'<text x="{float(x_at(week)):.1f}" y="{float(bottom) + 14:.0f}" font-size="9" fill="#999" text-anchor="{anchor}">{label}</text>')
+    for points, color, label in ((short, "#2a78d6", "1年期"), (long, "#c98747", "2年期")):
+        by_week = {point["week"]: point["avg"] for point in points}
+        segment, segments = [], []
+        for week in weeks:
+            if week in by_week:
+                segment.append((x_at(week), y_at(by_week[week])))
+            elif segment:
+                segments.append(segment)
+                segment = []
+        if segment:
+            segments.append(segment)
+        for segment in segments:
+            if len(segment) > 1:
+                polyline = " ".join(f"{float(x):.1f},{float(y):.1f}" for x, y in segment)
+                parts.append(f'<polyline points="{polyline}" fill="none" stroke="{color}" stroke-width="1.8"/>')
+        for week, value in by_week.items():
+            day = date_by_week[week]
+            title = f"{day.isoformat() if day else week} {label} {rate_pct(value)}"
+            parts.append(f'<circle cx="{float(x_at(week)):.1f}" cy="{float(y_at(value)):.1f}" r="2.4" fill="{color}"><title>{safe_text(title)}</title></circle>')
+    parts.append("</svg>")
+    return "".join(parts)
+
+
 def originator_rows(originators: list[dict], card_total: Decimal, mom: dict, latest_date: date) -> str:
     """权益人全年分布 + 当月环比 合并区块：横条为全年规模，右侧为环比变化。"""
     cur_m, prev_m = mom["current_month"], mom["previous_month"]
@@ -851,9 +1026,52 @@ def originator_rows(originators: list[dict], card_total: Decimal, mom: dict, lat
     return "".join(rows) + note
 
 
+def latest_item(label: str, color: str, record: dict | None) -> str:
+    if not record:
+        return (f'<div class="peer-latest-row"><div class="peer-latest-left"><div class="peer-latest-head">'
+                f'<span class="peer-latest-badge" style="--c:{color}">{label}</span><span>暂无发行</span></div>'
+                '<div class="peer-latest-project peer-latest-empty">该期限档暂无有效发行记录</div></div>'
+                '<div class="peer-latest-right"><div class="peer-latest-rate">—</div></div></div>')
+    return (f'<div class="peer-latest-row"><div class="peer-latest-left"><div class="peer-latest-head">'
+            f'<span class="peer-latest-badge" style="--c:{color}">{label}</span><span>{record["date"].isoformat()}</span></div>'
+            f'<div class="peer-latest-project" title="{safe_text(record["product"])}">{safe_text(short_project_name(record["product"]))}</div>'
+            f'<div class="peer-latest-sub">{safe_text(record["base_asset"])}</div></div>'
+            f'<div class="peer-latest-right"><div class="peer-latest-rate">{rate_pct(record["aaa"])}</div>'
+            f'<div class="peer-latest-facts">AAA年限 {record["term"]:.2f}年 · 发行规模 {yi(record["amount"])} 亿</div></div></div>')
+
+
+def rate_legend(short: list[dict], long: list[dict]) -> str:
+    """期限分档图例，同时给出该档最新一周的加权平均利率。"""
+    def last(points: list[dict]) -> dict | None:
+        return max(points, key=lambda item: item.get("date") or date.min) if points else None
+
+    short_latest, long_latest = last(short), last(long)
+    return (f'<div class="peer-rate-legend"><span><i style="background:#2a78d6"></i>1年期（≤1.1年）'
+            f'<b>{rate_pct(short_latest["avg"]) if short_latest else "—"}</b></span>'
+            f'<span><i style="background:#c98747"></i>2年期（>1.1年）'
+            f'<b>{rate_pct(long_latest["avg"]) if long_latest else "—"}</b></span></div>')
+
+
 def card_html(card: dict, latest_date: date) -> str:
     mom = card["mom"]
-    return f'''<section class="peer-issuance-card"><div class="peer-issuance-card-head"><h3>{card['name']}</h3><span class="peer-issuance-tag">{card['asset_type']}</span><span class="peer-issuance-card-amount">{yi(card['amount'])} 亿 · {card['count']} 期</span></div><h4>月度发行规模（亿元）</h4><div class="peer-issuance-months">{month_cells(card['monthly'])}</div><h4>AAA 发行利率走势（周度加权）</h4>{rate_sparkline(card['weekly_rates'])}<h4>原始权益人发行规模与月度变化</h4>{originator_rows(card['originators'], card['amount'], mom, latest_date)}</section>'''
+    counts = card["term_counts"]
+    missing = f' · 期限缺失 {counts["missing"]} 期' if counts["missing"] else ""
+    note = (f'1年期 {counts["short"]} 期 · 2年期 {counts["long"]} 期{missing}。'
+            '周度加权平均；1.1年整归1年期、>1.1年归2年期。')
+    scope = "、".join(card["scope"])
+    scope_html = f'<p class="peer-scope">统计范围：{safe_text(scope)}</p>' if len(card["scope"]) > 1 else ""
+    latest_html = (f'<div class="peer-latest-list">{latest_item("1年期", "#2a78d6", card["latest_short"])}'
+                   f'{latest_item("2年期", "#c98747", card["latest_long"])}</div>')
+    return (f'<section class="peer-issuance-card"><div class="peer-issuance-card-head">'
+            f'<h3>{safe_text(card["name"])}</h3><span class="peer-issuance-tag">{safe_text(card["asset_type"])}</span>'
+            f'<span class="peer-issuance-card-amount">{yi(card["amount"])} 亿 · {card["count"]} 期</span></div>'
+            f'{scope_html}<h4>月度发行规模（亿元）</h4><div class="peer-issuance-months">{month_cells(card["monthly"])}</div>'
+            f'<h4>AAA 发行利率走势（周度加权，按期限拆分）</h4>'
+            f'{rate_legend(card["weekly_rates_short"], card["weekly_rates_long"])}'
+            f'{rate_sparkline_split(card["weekly_rates_short"], card["weekly_rates_long"])}'
+            f'<p class="peer-rate-note">{note}</p>'
+            f'<h4>最近一笔发行</h4>{latest_html}'
+            f'<h4>原始权益人发行规模与月度变化</h4>{originator_rows(card["originators"], card["amount"], mom, latest_date)}</section>')
 
 
 def render_body(data: dict[str, Any]) -> str:
@@ -870,7 +1088,7 @@ def render_body(data: dict[str, Any]) -> str:
                        '。请确认简称并登记映射后再合并统计。</p>')
     if meta.get('coverage_note'):
         trust_rows += '<p class="peer-issuance-coverage-note">' + html.escape(meta['coverage_note']) + '</p>'
-    return f'''<main class="peer-issuance-root"><div class="peer-issuance-shell"><header class="peer-issuance-hero"><h1>同业发行面板</h1><p>互联网金融 ABS/ABN 全市场发行动态</p><div class="peer-issuance-date-grid"><span class="peer-issuance-date">2026 数据更新至 {meta['latest_date'].isoformat()}</span><span class="peer-issuance-date">同比窗口 2025-01-01 ~ {meta['yoy_cutoff'].isoformat()}</span><span class="peer-issuance-date">其中京东系 {meta['jd_included']['y2026']['count']} 期 / {yi(meta['jd_included']['y2026']['amount'])} 亿</span></div></header><section class="peer-issuance-section"><h2>同业发行概览（2026 累计 {yi(total["amount"])} 亿 / {total["count"]} 期）</h2><p>按具体基础资产归并至资产集团，展示累计发行规模、去年同期规模与变化；未命中归并规则的资产列为“未知资产”。同比基期为 2025 年簿记时间 ≤ {meta['yoy_cutoff'].isoformat()} 的同期窗口</p>{type_rows(kpis["by_family"], total["amount"])}</section><section class="peer-issuance-section"><h2>信托渠道分布</h2><p>仅统计原始权益人名称含“信托”的渠道；按 2026 年累计发行规模取前 {trust_channels["top_n"]} 家，其余合并为“其他”。横条长度表示渠道规模；条下明确展示各资产集团的规模及其在该渠道内占比。</p>{trust_rows}</section><section class="peer-issuance-section"><h2>基础资产发行 Top {TOP_N}</h2><p>按 2026 年累计发行规模排序；每张卡片含月度规模、AAA 利率周度走势、原始权益人分布及月度变化</p></section><div class="peer-issuance-cards">{cards}</div><section class="peer-issuance-section peer-issuance-foot"><h2>数据口径</h2><p>京东系 = 原始权益人或基础资产含“京东”（并集口径，覆盖走信托通道发行的京东资产），已纳入全市场互联网金融 ABS/ABN 发行统计。</p><p>同比 = 2025 年簿记时间 ≤ 2026 最新簿记日前一年的同期窗口；信托渠道仅统计名称含“信托”的原始权益人，按基础资产归并至七类资产集团，未命中规则的资产归入未知资产。</p><p>权益人月度变化中当月为进行中月份，统计至最新簿记日；周度利率走势仅含有有效 AAA 利率的周。</p></section></div></main>'''
+    return f'''<main class="peer-issuance-root"><div class="peer-issuance-shell"><header class="peer-issuance-hero"><h1>同业发行面板</h1><p>互联网金融 ABS/ABN 全市场发行动态</p><div class="peer-issuance-date-grid"><span class="peer-issuance-date">2026 数据更新至 {meta['latest_date'].isoformat()}</span><span class="peer-issuance-date">同比窗口 2025-01-01 ~ {meta['yoy_cutoff'].isoformat()}</span><span class="peer-issuance-date">其中京东系 {meta['jd_included']['y2026']['count']} 期 / {yi(meta['jd_included']['y2026']['amount'])} 亿</span></div></header><section class="peer-issuance-section"><h2>同业发行概览（2026 累计 {yi(total["amount"])} 亿 / {total["count"]} 期）</h2><p>按具体基础资产归并至资产集团，展示累计发行规模、去年同期规模与变化；未命中归并规则的资产列为“未知资产”。同比基期为 2025 年簿记时间 ≤ {meta['yoy_cutoff'].isoformat()} 的同期窗口</p>{type_rows(kpis["by_family"], total["amount"])}</section><section class="peer-issuance-section"><h2>信托渠道分布</h2><p>仅统计原始权益人名称含“信托”的渠道；按 2026 年累计发行规模取前 {trust_channels["top_n"]} 家，其余合并为“其他”。横条长度表示渠道规模；条下明确展示各资产集团的规模及其在该渠道内占比。</p>{trust_rows}</section><h2 class="peer-issuance-block-title">主要资产发行明细</h2><div class="peer-issuance-cards">{cards}</div><section class="peer-issuance-section peer-issuance-foot"><h2>数据口径</h2><p>京东系 = 原始权益人或基础资产含“京东”（并集口径，覆盖走信托通道发行的京东资产），已纳入全市场互联网金融 ABS/ABN 发行统计。</p><p>同比 = 2025 年簿记时间 ≤ 2026 最新簿记日前一年的同期窗口；信托渠道仅统计名称含“信托”的原始权益人，按基础资产归并至七类资产集团，未命中规则的资产归入未知资产。</p><p>权益人月度变化中当月为进行中月份，统计至最新簿记日；周度利率走势仅含有有效 AAA 利率的周。</p></section></div></main>'''
 
 
 def render_html(data: dict[str, Any]) -> str:

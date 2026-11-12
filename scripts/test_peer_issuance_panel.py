@@ -90,7 +90,7 @@ class TestParse(unittest.TestCase):
         self.assertNotIn('华能贵诚信托有限公司',rendered)
         self.assertEqual(rows[1]['originator'],'中国对外经济贸易信托有限公司')
         self.assertEqual(rows[3]['originator'],'华能贵诚信托有限公司')
-        card=next(c for c in data['cards'] if c['name']=='京东金条')
+        card=next(c for c in data['cards'] if c['name']=='京东现金贷')
         self.assertEqual(len(card['originators']),1)
         self.assertEqual(card['originators'][0]['amount'],D('15'))
 
@@ -333,7 +333,68 @@ class TestAggregation(unittest.TestCase):
     def test_top_cards_order(self):
         names = [card["name"] for card in self.data["cards"]]
         self.assertEqual(names[0], "网商贷")  # 140 亿 > 蚂蚁花呗 50 亿
-        self.assertIn("京东金条", names)
+        self.assertIn("京东现金贷", names)
+
+    def test_duxiaoman_cards_excluded(self):
+        rows = [make_record(base_asset="度小满有钱花", asset_type="消金提现类"),
+                make_record(base_asset="网商贷", asset_type="小微toB")]
+        data, _ = build_dashboard(rows, [])
+        names = [card["name"] for card in data["cards"]]
+        self.assertEqual(names, ["网商贷"])
+
+    def test_jd_cash_loan_merges_three_base_assets(self):
+        rows = [make_record(base_asset="京东金条", amount=D("10")),
+                make_record(base_asset="京东自主支付资产", amount=D("5")),
+                make_record(base_asset="京东金条白取混池", amount=D("3"))]
+        data, _ = build_dashboard(rows, [])
+        card = next(card for card in data["cards"] if card["name"] == "京东现金贷")
+        self.assertEqual(card["amount"], D("18"))
+        self.assertEqual(card["count"], 3)
+        self.assertEqual(card["scope"], ["京东金条", "京东自主支付资产", "京东金条白取混池"])
+
+    def test_term_split_boundary(self):
+        rows = [make_record(base_asset="网商贷", term=D("1"), amount=D("10")),
+                make_record(base_asset="网商贷", term=D("1.1"), amount=D("10")),
+                make_record(base_asset="网商贷", term=D("1.11"), amount=D("10")),
+                make_record(base_asset="网商贷", term=D("2"), amount=D("10")),
+                make_record(base_asset="网商贷", term=None, amount=D("10"))]
+        data, _ = build_dashboard(rows, [])
+        card = data["cards"][0]
+        self.assertEqual(card["term_counts"], {"short": 2, "long": 2, "missing": 1})
+        self.assertEqual(len(card["weekly_rates_short"]), 1)
+        self.assertEqual(len(card["weekly_rates_long"]), 1)
+
+    def test_latest_record_per_term(self):
+        rows = [make_record(base_asset="网商贷", term=D("1"), amount=D("10"),
+                            date=date(2026, 3, 5), week="2026.3.2-2026.3.8", product="早期1年期"),
+                make_record(base_asset="网商贷", term=D("1"), amount=D("12"),
+                            date=date(2026, 7, 5), week="2026.7.6-2026.7.12", product="最新1年期"),
+                make_record(base_asset="网商贷", term=D("2"), amount=D("8"),
+                            date=date(2026, 6, 5), week="2026.6.1-2026.6.7", product="最新2年期")]
+        data, _ = build_dashboard(rows, [])
+        card = data["cards"][0]
+        self.assertEqual(card["latest_short"]["product"], "最新1年期")
+        self.assertEqual(card["latest_long"]["product"], "最新2年期")
+        self.assertEqual(card["latest_short"]["amount"], D("12"))
+
+    def test_family_order_puts_jd_last(self):
+        rows = [make_record(base_asset="京东白条", amount=D("10")),
+                make_record(base_asset="美团月付", amount=D("20")),
+                make_record(base_asset="腾讯分付", amount=D("30")),
+                make_record(base_asset="抖音月付", amount=D("40")),
+                make_record(base_asset="蚂蚁花呗", amount=D("50")),
+                make_record(base_asset="网商贷", amount=D("60"))]
+        data, _ = build_dashboard(rows, [])
+        self.assertEqual([card["name"] for card in data["cards"]],
+                         ["网商贷", "蚂蚁花呗", "抖音月付", "腾讯分付", "美团月付", "京东白条"])
+
+    def test_originator_alias_merges_into_one_row(self):
+        rows = [make_record(base_asset="美团月付", originator="深圳海豚小贷", amount=D("10")),
+                make_record(base_asset="美团月付", originator="海豚小贷", amount=D("5"))]
+        data, _ = build_dashboard(rows, [])
+        card = data["cards"][0]
+        self.assertEqual([(row["name"], row["amount"]) for row in card["originators"]],
+                         [("海豚小贷", D("15"))])
 
     def test_card_monthly_sum(self):
         card = self.data["cards"][0]
@@ -460,6 +521,22 @@ class TestRender(unittest.TestCase):
         # 权益人区块已合并（不再有独立月度变化区块标题）
         self.assertIn("原始权益人发行规模与月度变化", html)
         self.assertNotIn("权益人月度变化（", html)
+
+    def test_cards_render_latest_and_split_rates(self):
+        rows = [make_record(base_asset="网商贷", term=D("1"), amount=D("10"),
+                            date=date(2026, 7, 5), week="2026.7.6-2026.7.12", product="惠臻6期"),
+                make_record(base_asset="网商贷", term=D("2"), amount=D("8"),
+                            date=date(2026, 6, 5), week="2026.6.1-2026.6.7", product="惠利2期")]
+        data, _ = build_dashboard(rows, [])
+        html = render_body(data)
+        self.assertIn("主要资产发行明细", html)
+        self.assertNotIn("基础资产发行 Top", html)
+        self.assertIn("peer-rate-legend", html)
+        self.assertIn("1年期（≤1.1年）", html)
+        self.assertIn("2年期（>1.1年）", html)
+        self.assertIn("最近一笔发行", html)
+        self.assertIn("惠臻6期", html)
+        self.assertIn("AAA年限 1.00年 · 发行规模 10 亿", html)
 
     def test_css_namespaced(self):
         from peer_issuance_panel import PEER_ISSUANCE_CSS
