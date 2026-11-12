@@ -286,20 +286,12 @@ def card_html(card: dict, latest_date: date) -> str:
             f'<h4>原始权益人发行规模与月度变化</h4>{p.originator_rows(card["originators"], card["amount"], card["mom"], latest_date)}</section>')
 
 
-def family_section(family: str, cards: list[dict], latest_date: date) -> str:
-    total = sum((card['amount'] for card in cards), ZERO)
-    single = ' single' if len(cards) == 1 else ''
-    return (f'<section class="peer-family-section"><div class="peer-family-head"><h2>{p.safe_text(family)}</h2>'
-            f'<span>{len(cards)}张卡片 · {p.yi(total)}亿</span></div>'
-            f'<div class="peer-issuance-cards{single}">' + ''.join(card_html(card, latest_date) for card in cards) + '</div></section>')
-
-
 def main() -> None:
     records = p.parse_dynamics(SOURCE)
-    cards = build_cards(records)
+    cards = [card for card in build_cards(records) if card['family'] != '其他']
     latest_date = max(r['date'] for r in records if r['date'])
     extra_css = '''
-body{margin:0}.demo-wrap{max-width:1420px;margin:auto;padding:24px}.demo-head{background:linear-gradient(135deg,#1a3a5c,#0d1b2e);color:#fff;padding:24px 28px;border-radius:10px 10px 0 0}.demo-head h1{margin:0;font-size:24px}.demo-head p{margin:7px 0 0;color:#dce7f2;font-size:13px;line-height:1.7}.peer-issuance-cards{margin-top:0}.peer-family-section{margin-top:18px}.peer-family-head{display:flex;align-items:baseline;gap:10px;margin:0 0 10px;padding:0 2px}.peer-family-head h2{font-size:16px;color:#0d1b2e;margin:0}.peer-family-head span{font-size:11px;color:#8a8f98}.peer-issuance-cards.single{grid-template-columns:1fr}.peer-rate-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:11px;color:#52514e;margin:0 0 4px}.peer-rate-legend span{display:inline-flex;align-items:center;gap:6px}.peer-rate-legend i{width:9px;height:9px;border-radius:2px;display:inline-block}.peer-rate-legend b{font-variant-numeric:tabular-nums;color:#0d1b2e}.peer-rate-chart{height:auto}.peer-rate-note{font-size:10px;color:#8a8f98;line-height:1.6;margin:2px 0 0}.peer-scope{font-size:10px;color:#8a8f98;margin:2px 0 0}.peer-latest-list{border:1px solid #e8eaee;border-radius:7px;overflow:hidden;background:#fbfcfd}.peer-latest-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:10px 12px}.peer-latest-row+.peer-latest-row{border-top:1px solid #edf0f3}.peer-latest-left{min-width:0}.peer-latest-head{display:flex;align-items:center;gap:8px;font-size:10px;color:#8a8f98}.peer-latest-badge{display:inline-flex;align-items:center;border-left:3px solid var(--c);padding-left:6px;font-size:11px;font-weight:700;color:#0d1b2e}.peer-latest-project{font-size:13px;font-weight:700;color:#0d1b2e;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.peer-latest-sub{font-size:10px;color:#8a8f98;margin-top:2px}.peer-latest-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}.peer-latest-rate{font-size:22px;font-weight:700;color:#0d1b2e;font-variant-numeric:tabular-nums;line-height:1.1}.peer-latest-facts{font-size:10px;color:#52514e}.peer-latest-empty{font-size:11px;color:#a0a6ae;font-weight:400}
+body{margin:0}.demo-wrap{max-width:1420px;margin:auto;padding:24px}.demo-head{background:linear-gradient(135deg,#1a3a5c,#0d1b2e);color:#fff;padding:24px 28px;border-radius:10px 10px 0 0}.demo-head h1{margin:0;font-size:24px}.demo-head p{margin:7px 0 0;color:#dce7f2;font-size:13px;line-height:1.7}.peer-issuance-cards{margin-top:0}.peer-rate-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:11px;color:#52514e;margin:0 0 4px}.peer-rate-legend span{display:inline-flex;align-items:center;gap:6px}.peer-rate-legend i{width:9px;height:9px;border-radius:2px;display:inline-block}.peer-rate-legend b{font-variant-numeric:tabular-nums;color:#0d1b2e}.peer-rate-chart{height:auto}.peer-rate-note{font-size:10px;color:#8a8f98;line-height:1.6;margin:2px 0 0}.peer-scope{font-size:10px;color:#8a8f98;margin:2px 0 0}.peer-latest-list{border:1px solid #e8eaee;border-radius:7px;overflow:hidden;background:#fbfcfd}.peer-latest-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:10px 12px}.peer-latest-row+.peer-latest-row{border-top:1px solid #edf0f3}.peer-latest-left{min-width:0}.peer-latest-head{display:flex;align-items:center;gap:8px;font-size:10px;color:#8a8f98}.peer-latest-badge{display:inline-flex;align-items:center;border-left:3px solid var(--c);padding-left:6px;font-size:11px;font-weight:700;color:#0d1b2e}.peer-latest-project{font-size:13px;font-weight:700;color:#0d1b2e;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.peer-latest-sub{font-size:10px;color:#8a8f98;margin-top:2px}.peer-latest-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}.peer-latest-rate{font-size:22px;font-weight:700;color:#0d1b2e;font-variant-numeric:tabular-nums;line-height:1.1}.peer-latest-facts{font-size:10px;color:#52514e}.peer-latest-empty{font-size:11px;color:#a0a6ae;font-weight:400}
 @media(max-width:900px){.demo-wrap{padding:14px}.peer-issuance-cards{grid-template-columns:1fr}}
 @media(max-width:620px){.peer-latest-row{grid-template-columns:1fr;gap:4px}.peer-latest-right{align-items:flex-start}.peer-latest-facts{white-space:normal}}
 '''
@@ -308,10 +300,9 @@ body{margin:0}.demo-wrap{max-width:1420px;margin:auto;padding:24px}.demo-head{ba
             '<title>同业发行 · AAA利率期限拆分Demo</title><style>' + p.PEER_ISSUANCE_COMPONENT_CSS + extra_css + '</style></head><body>'
             '<div class="peer-issuance-root"><div class="demo-wrap"><div class="demo-head">'
             '<h1>同业发行 · 发行主体卡片</h1>'
-            f'<p>数据截至 {latest_date.isoformat()} · 全部资产卡片</p></div>'
-            + ''.join(family_section(family, [card for card in cards if card['family'] == family], latest_date)
-                      for family in FAMILY_ORDER if any(card['family'] == family for card in cards))
-            + '</div></div></body></html>')
+            f'<p>数据截至 {latest_date.isoformat()}</p></div>'
+            '<div class="peer-issuance-cards">' + ''.join(card_html(card, latest_date) for card in cards) + '</div>'
+            '</div></div></body></html>')
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'index.html').write_text(html, encoding='utf-8')
     payload = {
