@@ -100,7 +100,7 @@ def main() -> None:
             row_by_key[normalize_product_key(product)] = row
 
     matched = set()
-    additions, modifications, retained, renames = [], [], [], []
+    additions, modifications, retained, renames, promoted = [], [], [], [], []
     for record in current:
         key = normalize_product_key(record['product'])
         target_key = rename.get(key, key)
@@ -126,6 +126,15 @@ def main() -> None:
                       float(new['aa_term']) if new['aa_term'] is not None else None, new['aa_share']]
             for col, value in enumerate(values, 1):
                 ws.cell(row, col, value)
+            # 补录项目后来进了标准源，来源标注要跟着改，否则底稿会一直写着“华泰补录”。
+            if str(ws.cell(row, 20).value or '').startswith('华泰补录'):
+                ws.cell(row, 19, args.source.name)
+                ws.cell(row, 20, f'{args.label_date} 标准源转正')
+                ws.cell(row, 21, new['establish'].isoformat() if new['establish'] else None)
+                ws.cell(row, 22, '发行动态（2026）')
+                ws.cell(row, 23, new['source_row'])
+                ws.cell(row, 24, '按标准源资产方归属')
+                promoted.append({'product': new['product'], 'row': row})
         elif key in known_supplements:
             retained.append({'product': record['product'], 'amount': str(record['amount']), 'reason': '华泰补录项目，标准源未包含'})
         else:
@@ -168,6 +177,8 @@ def main() -> None:
         audit.append(['保留', item['product'], item['amount'], item['reason']])
     for item in renames:
         audit.append(['改名', item['before'], '', f"改为 {item['after']}"])
+    for item in promoted:
+        audit.append(['转正', item['product'], '', '华泰补录项目已进入标准源，来源标注改为标准源'])
     audit.freeze_panes = 'A2'
     audit.auto_filter.ref = audit.dimensions
     notes = wb['数据口径与来源']
@@ -184,7 +195,7 @@ def main() -> None:
     result = {
         'before_count': len(current), 'after_count': len(current) + len(additions),
         'additions': additions, 'modifications': modifications,
-        'retained_supplements': retained, 'renames': renames,
+        'retained_supplements': retained, 'renames': renames, 'promoted': promoted,
         'source_sha256': hashlib.sha256(args.source.read_bytes()).hexdigest(),
     }
     args.output.with_suffix('.update.json').write_text(

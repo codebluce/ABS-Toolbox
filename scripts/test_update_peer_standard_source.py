@@ -120,6 +120,27 @@ class UpdatePeerStandardSourceTest(unittest.TestCase):
         self.assertEqual([item['product'] for item in result['retained_supplements']],
                          ['华泰补录项目资产支持专项计划'])
 
+    def test_supplement_promoted_when_source_catches_up(self) -> None:
+        # 补录项目后来进了标准源：日期以标准源为准，来源标注也要从“华泰补录”改成标准源。
+        backfilled = record('补录项目资产支持专项计划', datetime(2026, 10, 30), 10) + [
+            None, None, '华泰表.xlsx', '华泰补录：设立日倒推 4 个交易日', '2026-11-05',
+            '交易所-2026年', 1384, '度小满',
+        ]
+        write_workbook(self.current, [backfilled])
+        write_workbook(self.source, [record('补录项目资产支持专项计划', datetime(2026, 11, 13), 10)])
+        self.run_main()
+
+        result = json.loads(self.output.with_suffix('.update.json').read_text(encoding='utf-8'))
+        self.assertEqual([item['product'] for item in result['promoted']], ['补录项目资产支持专项计划'])
+        self.assertEqual(result['retained_supplements'], [])
+
+        wb = openpyxl.load_workbook(self.output, data_only=True)
+        ws = wb.worksheets[0]
+        self.assertEqual(ws.cell(2, 9).value, datetime(2026, 11, 13))
+        self.assertEqual(ws.cell(2, 20).value, '2026-11-06 标准源转正')
+        self.assertEqual(ws.cell(2, 19).value, self.source.name)
+        wb.close()
+
 
 if __name__ == '__main__':
     unittest.main()
