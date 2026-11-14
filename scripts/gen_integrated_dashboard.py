@@ -524,8 +524,11 @@ def main():
         'secondary_allocation_snapshot.json', 'snapshot_date')
     profile_date = dashboard_freshness.snapshot_date(
         '机构画像数据.meta.json', 'synced_at')
-    distribution_date = dashboard_freshness.snapshot_date(
+    # 消金资产是半年表：标注最新数据期间，导入时间只作为备注，避免“数据截至”虚报。
+    distribution_fetch = dashboard_freshness.snapshot_date(
         'asset_distribution_snapshot.json', 'retrievedAt')
+    distribution_date = (dashboard_freshness.latest_period('asset_distribution_snapshot.json')
+                         or distribution_fetch)
     risk_date = dashboard_freshness.snapshot_date(
         'risk_performance_snapshot.json', 'sources', 'dynamic', 'retrievedAt')
 
@@ -545,7 +548,8 @@ def main():
         elif module == 'progress' and sub == 'quick':
             freshness[(module, sub)] = (profile_date, 'JoySpace 机构画像快照')
         elif module == 'asset_overview' and sub == 'asset_distribution':
-            freshness[(module, sub)] = (distribution_date, '')
+            freshness[(module, sub)] = (
+                distribution_date, f'JoySpace 资产余额（{distribution_fetch} 读取，半年更新）')
         elif module == 'asset_overview' and sub == 'risk_performance':
             freshness[(module, sub)] = (risk_date, '')
         elif module == 'peer_issuance':

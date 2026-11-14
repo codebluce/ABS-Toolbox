@@ -71,8 +71,32 @@ def snapshot_date(dataset: dict) -> str | None:
     path = ROOT / dataset["target"]
     if not path.exists():
         return None
-    value = _dig(json.loads(path.read_text(encoding="utf-8")), dataset["date_field"])
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if dataset.get("as_of") == "latest_period":
+        # 半年更新的表（如消金资产）用最新数据期间，而不是导入时间，否则会虚报新鲜度。
+        return latest_period(payload)
+    value = _dig(payload, dataset["date_field"])
     return str(value)[:10] if value else None
+
+
+def latest_period(snapshot: dict) -> str | None:
+    """从消金资产快照的表头日期里取最新一期。"""
+    from datetime import datetime, timedelta
+
+    cells = {(c.get("rowFrom"), c.get("colFrom")): c for c in snapshot.get("cells", [])}
+    latest = None
+    for col in range(5, 23):
+        cell = cells.get((3, col))
+        if not cell:
+            continue
+        raw = cell.get("originalCellValue")
+        try:
+            day = (datetime(1899, 12, 30) + timedelta(days=int(raw))).date()
+        except (TypeError, ValueError):
+            continue
+        if latest is None or day > latest:
+            latest = day
+    return latest.isoformat() if latest else None
 
 
 def ledger_cutoff(path: Path | None = None) -> str | None:
@@ -124,7 +148,7 @@ def stale_datasets(cutoff: str, max_lag: int = 7) -> list[tuple[str, str | None,
             result.append((item["label"], None, None))
             continue
         lag = (base - date.fromisoformat(value)).days
-        if lag > max_lag:
+        if lag > item.get("cadence_days", max_lag):
             result.append((item["label"], value, lag))
     return result
 
@@ -146,7 +170,7 @@ def cmd_check(args) -> int:
         lag = (base - date.fromisoformat(value)).days
         shown = "领先台账" if lag < 0 else f"{lag} 天"
         rows.append((item["label"], value, shown, item["refresh"]))
-        if lag > args.max_lag:
+        if lag > item.get("cadence_days", args.max_lag):
             stale.append(item)
     print(f"台账最新簿记日：{cutoff}（阈值 {args.max_lag} 天）")
     print(f"{'面板':<10}{'快照日期':<14}{'落后':<8}取数方式")

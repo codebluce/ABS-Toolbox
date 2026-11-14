@@ -135,7 +135,6 @@ def snapshot_date(filename: str, *keys, default: str | None = None) -> str | Non
 def peer_issuance_cutoff(path) -> tuple[str | None, str]:
     """同业发行动态里最新一条簿记日，以及该记录所属周标签。"""
     import peer_issuance_panel
-
     records = peer_issuance_panel.parse_dynamics(Path(path))
     latest = None
     week = ''
@@ -145,6 +144,29 @@ def peer_issuance_cutoff(path) -> tuple[str | None, str]:
             latest = parsed
             week = record.get('week') or week
     return (latest.isoformat() if latest else None), week
+
+
+def latest_period(filename: str) -> str | None:
+    """半年更新的表（消金资产）取最新数据期间，而不是导入时间。"""
+    from datetime import datetime, timedelta
+
+    path = DATA / filename
+    if not path.is_file():
+        return None
+    snapshot = json.loads(path.read_text(encoding='utf-8'))
+    cells = {(c.get('rowFrom'), c.get('colFrom')): c for c in snapshot.get('cells', [])}
+    latest = None
+    for col in range(5, 23):
+        cell = cells.get((3, col))
+        if not cell:
+            continue
+        try:
+            day = (datetime(1899, 12, 30) + timedelta(days=int(cell.get('originalCellValue')))).date()
+        except (TypeError, ValueError):
+            continue
+        if latest is None or day > latest:
+            latest = day
+    return latest.isoformat() if latest else None
 
 
 def badge(date_text: str, source: str, note: str = '') -> str:

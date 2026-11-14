@@ -53,6 +53,8 @@
       "range": {"row_from": 3, "row_to": 21, "col_from": 2, "col_to": 23},
       "target": "data/asset_distribution_snapshot.json",
       "date_field": "retrievedAt",
+      "as_of": "latest_period",
+      "cadence_days": 200,
       "refresh": "range_data",
       "refresh_hint": "JoySpace 右上角“…”→导出为→Excel，再用 --xlsx 按登记区域还原（保留日期序列号）；也可直接给 rangeData JSON",
       "apply_command": "python scripts/joyspace_sources.py apply --dataset asset_distribution --xlsx <导出的xlsx> --date <YYYY-MM-DD>"
