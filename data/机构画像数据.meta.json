@@ -1,13 +1,13 @@
 {
   "source": "JoySpace 5QmWOOFQl19SdQUM1l3y",
-  "synced_at": "2026-10-24T18:18:42",
+  "synced_at": "2026-11-14T15:22:49",
   "record_count": 239,
   "source_files": [
-    "/Users/wupeizhi.nolan/Documents/LikeCodeNex/abs-toolbox/data/joyspace_profile_sync/吴沛智.json",
-    "/Users/wupeizhi.nolan/Documents/LikeCodeNex/abs-toolbox/data/joyspace_profile_sync/李亦非.json",
-    "/Users/wupeizhi.nolan/Documents/LikeCodeNex/abs-toolbox/data/joyspace_profile_sync/姜守园.json",
-    "/Users/wupeizhi.nolan/Documents/LikeCodeNex/abs-toolbox/data/joyspace_profile_sync/邓殷洁.json",
-    "/Users/wupeizhi.nolan/Documents/LikeCodeNex/abs-toolbox/data/joyspace_profile_sync/高雅.json"
+    "data/joyspace_profile_sync/20261114/吴沛智.json",
+    "data/joyspace_profile_sync/20261114/李亦非.json",
+    "data/joyspace_profile_sync/20261114/姜守园.json",
+    "data/joyspace_profile_sync/20261114/邓殷洁.json",
+    "data/joyspace_profile_sync/20261114/高雅.json"
   ],
   "builder": "scripts/sync_institution_profile.py"
 }
