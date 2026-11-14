@@ -13,7 +13,7 @@ import os
 import sys
 import argparse
 import tempfile
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -558,6 +558,22 @@ def main():
     if missing:
         raise ValueError('以下面板取不到数据截止日，不能发布：' + '、'.join(missing))
     print('[截止日] ' + '｜'.join(f'{m}/{s} {freshness[(m, s)][0]}' for m, s, _ in panels))
+
+    # 机构画像四类数据来自 JoySpace 导出，台账每周更新时最容易漏掉它们。
+    # 落后超过 7 天就在生成日志里点名，避免出现“台账很新、画像很旧”却没人发现。
+    joy_sources = [('次级速查', secondary_date), ('机构速查', profile_date),
+                   ('消金资产', distribution_date), ('风险表现', risk_date)]
+    stale = []
+    for label, value in joy_sources:
+        if not value:
+            continue
+        gap = (date.fromisoformat(ledger_cutoff) - date.fromisoformat(value)).days
+        if gap > 7:
+            stale.append((label, value, gap))
+    if stale:
+        print('[机构画像] JoySpace 数据落后台账超过 7 天，需重新导出后导入：')
+        for label, value, gap in stale:
+            print(f'  - {label}: {value}（落后 {gap} 天）')
 
     # 4. CSS 拼接 + 套 Tab 框架 + 写文件
     print('\n[4/4] 拼接 HTML...')

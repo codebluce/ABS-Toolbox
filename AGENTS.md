@@ -16,3 +16,18 @@
 
 只有 2026-06-01 及以后、且发行场所不是非标的项目，缺明细时才需要补录。
 口径判断统一走 `scripts/list_missing_bookkeeping.py`，不要手工重新定义。
+
+# 机构画像数据随台账同步（2026-11-14 用户确认）
+
+每次更新发行台账时，默认一并刷新机构画像面板的四类数据，不再等用户单独提出：
+
+1. **机构速查**：`data/joyspace_profile_sync/*.json` → `sync_institution_profile.py`
+2. **次级速查**：JoySpace 月份 TSV → `scripts/lab/secondary_allocation_quick.py --import-dir`
+3. **消金资产**：`data/asset_distribution_snapshot.json`
+4. **风险表现**：`data/risk_performance_snapshot.json`
+
+四类数据都来自 JoySpace 导出，仓库内没有抓取接口，只能导入导出文件。因此台账更新时按以下顺序处理：
+
+- 先在本机查找比现有快照更新的导出文件（默认目录 `data/joyspace_profile_sync/`、次级分配的月份 TSV 目录），有则直接导入并重建快照。
+- 没有新导出时，不得假装已更新：生成日志会打印“机构画像 JoySpace 数据落后台账超过 7 天”的清单，汇报时须明确写出哪几类数据停在哪天、需要导出哪张表。
+- 台账、明细照常更新发布；机构画像数据缺失不阻断台账发布，但必须在交付说明里点名，不能静默略过。
