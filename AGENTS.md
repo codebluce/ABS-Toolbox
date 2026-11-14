@@ -31,3 +31,12 @@
 - 先在本机查找比现有快照更新的导出文件（默认目录 `data/joyspace_profile_sync/`、次级分配的月份 TSV 目录），有则直接导入并重建快照。
 - 没有新导出时，不得假装已更新：生成日志会打印“机构画像 JoySpace 数据落后台账超过 7 天”的清单，汇报时须明确写出哪几类数据停在哪天、需要导出哪张表。
 - 台账、明细照常更新发布；机构画像数据缺失不阻断台账发布，但必须在交付说明里点名，不能静默略过。
+
+## JoySpace 取数方式（2026-11-14 教训）
+
+JoySpace 的 Sheets 表格**可以直接用 JoySpace 专用读取工具取数，不要用浏览器去点页面**。
+
+- 已有链接直接读取；指定工作表在链接后加 `?sheetId=<sheetId>`，先用工作表清单接口拿到每个页签的 sheetId。
+- 单次读取上限 25 行，整表读取用读取工具（返回 Markdown 表格）而不是逐格接口；逐格接口返回的 JSON 每个单元格十几行，几百格就会把上下文撑爆。
+- 浏览器只用于 JoySpace 工具确实不支持的场景；画布式渲染读不到单元格，不代表 JoySpace 没有数据。
+- 次级速查的月份 TSV 落在 `deliverables/dashboards/03_source/joyspace/<日期>/allocation/`，导入用 `scripts/lab/secondary_allocation_quick.py --update-month <N月> --month-tsv <文件>`。
