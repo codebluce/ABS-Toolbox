@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "note": "JoySpace 数据源登记表。所有从 JoySpace 取数的面板都必须在这里登记页面、页签和取数方式，脚本按此校验新鲜度并给出取数指令。新增或改版页签时先改这里，不要在代码里写死。",
+  "datasets": [
+    {
+      "key": "institution_profile",
+      "label": "机构速查",
+      "page_url": "https://joyspace.jd.com/sheets/5QmWOOFQl19SdQUM1l3y",
+      "page_id": "5QmWOOFQl19SdQUM1l3y",
+      "sheets": [
+        {"name": "吴沛智", "sheet_id": 8},
+        {"name": "李亦非", "sheet_id": 3},
+        {"name": "姜守园", "sheet_id": 7},
+        {"name": "邓殷洁", "sheet_id": 6},
+        {"name": "高雅", "sheet_id": 10}
+      ],
+      "target": "data/机构画像数据.meta.json",
+      "date_field": "synced_at",
+      "refresh": "export_xlsx",
+      "refresh_hint": "JoySpace 右上角“…”→导出为→Excel，下载后用 scripts/import_institution_profile_xlsx.py 转换，再跑 sync_institution_profile.py",
+      "apply_command": "python scripts/import_institution_profile_xlsx.py --xlsx <下载的xlsx> --out-dir data/joyspace_profile_sync/<YYYYMMDD> && python scripts/sync_institution_profile.py --input-dir data/joyspace_profile_sync/<YYYYMMDD>"
+    },
+    {
+      "key": "secondary_allocation",
+      "label": "次级速查",
+      "page_url": "https://joyspace.jd.com/sheets/89PMGlBmUHUueYQ6Cl7L",
+      "page_id": "89PMGlBmUHUueYQ6Cl7L",
+      "sheets": [
+        {"name": "1月", "sheet_id": 1},
+        {"name": "2月", "sheet_id": 3},
+        {"name": "3月", "sheet_id": 5},
+        {"name": "4月", "sheet_id": 7},
+        {"name": "5月", "sheet_id": 13},
+        {"name": "6月", "sheet_id": 15},
+        {"name": "7月", "sheet_id": 17},
+        {"name": "8月", "sheet_id": 19},
+        {"name": "9月", "sheet_id": 21},
+        {"name": "10月", "sheet_id": 23},
+        {"name": "11月", "sheet_id": 25}
+      ],
+      "target": "data/secondary_allocation_snapshot.json",
+      "date_field": "snapshot_date",
+      "refresh": "read_sheet_markdown",
+      "refresh_hint": "用 JoySpace 读取工具读 ?sheetId=<当月>，把 Markdown 表格转成 TSV 后按月份导入",
+      "apply_command": "python scripts/lab/secondary_allocation_quick.py --update-month <N月> --month-tsv <TSV路径> --snapshot-date <YYYY-MM-DD>"
+    },
+    {
+      "key": "asset_distribution",
+      "label": "消金资产",
+      "page_url": "https://joyspace.jd.com/sheets/6DsPlXNgFeEBf7G2ghLx",
+      "page_id": "6DsPlXNgFeEBf7G2ghLx",
+      "sheets": [{"name": "资产余额", "sheet_id": 2}],
+      "range": {"row_from": 3, "row_to": 21, "col_from": 2, "col_to": 23},
+      "target": "data/asset_distribution_snapshot.json",
+      "date_field": "retrievedAt",
+      "refresh": "range_data",
+      "refresh_hint": "JoySpace 右上角“…”→导出为→Excel，再用 --xlsx 按登记区域还原（保留日期序列号）；也可直接给 rangeData JSON",
+      "apply_command": "python scripts/joyspace_sources.py apply --dataset asset_distribution --xlsx <导出的xlsx> --date <YYYY-MM-DD>"
+    },
+    {
+      "key": "risk_performance",
+      "label": "风险表现",
+      "page_url": "https://joyspace.jd.com/sheets/6DsPlXNgFeEBf7G2ghLx",
+      "page_id": "6DsPlXNgFeEBf7G2ghLx",
+      "sheets": [
+        {"name": "动态池数据（可对外披露）", "sheet_id": 3},
+        {"name": "静态池逾期率&不良率", "sheet_id": 6}
+      ],
+      "target": "data/risk_performance_snapshot.json",
+      "date_field": "sources.dynamic.retrievedAt",
+      "refresh": "range_data",
+      "refresh_hint": "两个页签分别取 rangeData 后重建 pages.dynamic / pages.static 的 HTML（含样式），目前需人工重建，脚本会拒绝自动写回",
+      "apply_command": "python scripts/joyspace_sources.py apply --dataset risk_performance --input <rangeData.json> --date <YYYY-MM-DD>（暂不支持，仅登记）"
+    }
+  ]
+}

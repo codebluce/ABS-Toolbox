@@ -559,21 +559,17 @@ def main():
         raise ValueError('以下面板取不到数据截止日，不能发布：' + '、'.join(missing))
     print('[截止日] ' + '｜'.join(f'{m}/{s} {freshness[(m, s)][0]}' for m, s, _ in panels))
 
-    # 机构画像四类数据来自 JoySpace 导出，台账每周更新时最容易漏掉它们。
-    # 落后超过 7 天就在生成日志里点名，避免出现“台账很新、画像很旧”却没人发现。
-    joy_sources = [('次级速查', secondary_date), ('机构速查', profile_date),
-                   ('消金资产', distribution_date), ('风险表现', risk_date)]
-    stale = []
-    for label, value in joy_sources:
-        if not value:
-            continue
-        gap = (date.fromisoformat(ledger_cutoff) - date.fromisoformat(value)).days
-        if gap > 7:
-            stale.append((label, value, gap))
+    # JoySpace 四类数据（机构速查、次级速查、消金资产、风险表现）的页面、页签和取数方式
+    # 统一登记在 data/joyspace_sources.json，这里只做新鲜度点名，避免各处写死。
+    import joyspace_sources
+    stale = joyspace_sources.stale_datasets(ledger_cutoff)
     if stale:
-        print('[机构画像] JoySpace 数据落后台账超过 7 天，需重新导出后导入：')
+        print('[JoySpace] 以下数据落后台账超过 7 天，需按登记表刷新：')
         for label, value, gap in stale:
-            print(f'  - {label}: {value}（落后 {gap} 天）')
+            shown = value if value else '缺失'
+            tail = f'（落后 {gap} 天）' if gap is not None else ''
+            print(f'  - {label}: {shown}{tail}')
+        print('  取数指令：python scripts/joyspace_sources.py check')
 
     # 4. CSS 拼接 + 套 Tab 框架 + 写文件
     print('\n[4/4] 拼接 HTML...')

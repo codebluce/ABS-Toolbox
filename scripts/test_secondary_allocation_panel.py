@@ -67,17 +67,18 @@ class SecondaryAllocationIntegrationTest(unittest.TestCase):
         rows = allocation.load_snapshot()['records']
         original_names = {r['investor'] for r in rows}
         grouped_names = {aliases.get(r['investor'], r['investor']) for r in rows}
-        self.assertEqual((len(rows), len(original_names), len(grouped_names)), (1186, 74, 54))
-        self.assertEqual(sum(r['amount_wan'] for r in rows), 1779645)
+        # 以下数字锁定当前快照（2026-11-14 导入 11 月数据后），每次刷新月份需同步更新。
+        self.assertEqual((len(rows), len(original_names), len(grouped_names)), (1213, 74, 54))
+        self.assertEqual(sum(r['amount_wan'] for r in rows), 1818645)
         previous = [r for r in rows if r['month'] not in ('10月', '11月')]
         october = [r for r in rows if r['month'] == '10月']
         november = [r for r in rows if r['month'] == '11月']
         self.assertEqual((len(previous), sum(r['amount_wan'] for r in previous)), (989, 1492845))
         self.assertEqual((len(october), sum(r['amount_wan'] for r in october)), (116, 176300))
-        self.assertEqual((len(november), sum(r['amount_wan'] for r in november)), (81, 110500))
-        self.assertEqual(len({r['project'] for r in november}), 18)
-        self.assertEqual(sum(r['level'] == '次级' for r in november), 43)
-        self.assertEqual(sum(r['level'] == '夹层' for r in november), 38)
+        self.assertEqual((len(november), sum(r['amount_wan'] for r in november)), (108, 149500))
+        self.assertEqual(len({r['project'] for r in november}), 23)
+        self.assertEqual(sum(r['level'] == '次级' for r in november), 58)
+        self.assertEqual(sum(r['level'] == '夹层' for r in november), 50)
         self.assertEqual(len({r['project'] for r in october}), 21)
         self.assertEqual(sum(r['level'] == '次级' for r in october), 59)
         self.assertEqual(sum(r['level'] == '夹层' for r in october), 57)

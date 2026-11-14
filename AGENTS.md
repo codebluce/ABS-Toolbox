@@ -40,3 +40,14 @@ JoySpace 的 Sheets 表格**可以直接用 JoySpace 专用读取工具取数，
 - 单次读取上限 25 行，整表读取用读取工具（返回 Markdown 表格）而不是逐格接口；逐格接口返回的 JSON 每个单元格十几行，几百格就会把上下文撑爆。
 - 浏览器只用于 JoySpace 工具确实不支持的场景；画布式渲染读不到单元格，不代表 JoySpace 没有数据。
 - 次级速查的月份 TSV 落在 `deliverables/dashboards/03_source/joyspace/<日期>/allocation/`，导入用 `scripts/lab/secondary_allocation_quick.py --update-month <N月> --month-tsv <文件>`。
+
+## JoySpace 数据源登记表（2026-11-14 固化）
+
+四个面板的页面、页签编号、取数方式和写回文件统一登记在 `data/joyspace_sources.json`，
+代码里不再另存一份。换表、加页签、页签编号变化时先改登记表。
+
+- 每次更新台账后先跑 `python scripts/joyspace_sources.py check`，按输出刷新落后的面板；
+  `--strict` 时有落后返回非零。
+- 看板生成时会自动调用同一套检查，落后超过 7 天在日志里点名。
+- 详细步骤见 `docs/joyspace数据源与刷新流程.md`。
+- 风险表现需要重建 HTML，`apply` 会拒绝自动写回，必须人工重建后再发布。
