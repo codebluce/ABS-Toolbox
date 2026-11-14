@@ -144,7 +144,8 @@ def cmd_check(args) -> int:
             stale.append(item)
             continue
         lag = (base - date.fromisoformat(value)).days
-        rows.append((item["label"], value, f"{lag} 天", item["refresh"]))
+        shown = "领先台账" if lag < 0 else f"{lag} 天"
+        rows.append((item["label"], value, shown, item["refresh"]))
         if lag > args.max_lag:
             stale.append(item)
     print(f"台账最新簿记日：{cutoff}（阈值 {args.max_lag} 天）")
