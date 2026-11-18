@@ -158,19 +158,22 @@ class StatsRoleAliasesTest(unittest.TestCase):
         self.assertNotIn('南银理财',role.index)
         self.assertEqual(role.loc['中信证券','投行认购规模-管理人'],1.0)
 
-    def test_proprietary_desk_counts_as_ib_money(self):
-        """“自营”视为明确投行标识；去掉后缀后按机构归并，无角色时进跨期列。"""
+    def test_proprietary_desk_is_excluded_entirely(self):
+        """含“自营”的认购整条排除：即使无角色、或恰好在该项目有角色，都不计入。"""
         from gen_institution_stats import compute_ib_role_split
         projects=pd.DataFrame([
             {'项目名称':'a','计划管理人':'国泰海通','联席承销商':'中信证券','规模':10},
         ])
         df=pd.DataFrame([
-            {'项目名称':'a','认购机构':'国开证券自营','认购份额':1.0},
-            {'项目名称':'a','认购机构':'中信证券自营','认购份额':0.2},
+            {'项目名称':'a','认购机构':'国开证券自营','认购份额':1.0},   # 无角色
+            {'项目名称':'a','认购机构':'中信证券自营','认购份额':0.2},   # 有销售角色
+            {'项目名称':'a','认购机构':'国泰海通自营','认购份额':0.3},   # 有管理人角色
+            {'项目名称':'a','认购机构':'中信证券投行','认购份额':0.5},   # 正常投行
         ])
         role=compute_ib_role_split(df,projects).set_index('机构名称')
-        self.assertEqual(role.loc['国开证券','投行认购规模-跨期'],1.0)
-        self.assertEqual(role.loc['中信证券','投行认购规模-销售机构'],0.2)
+        self.assertNotIn('国开证券',role.index)
+        self.assertNotIn('国泰海通',role.index)
+        self.assertEqual(role.loc['中信证券','投行认购规模-销售机构'],0.5)
 
     def test_client_demand_is_excluded_even_with_role(self):
         """“客需”为客户需求资金，即使机构是该项目管理人也认定为投行资金。"""
