@@ -140,6 +140,31 @@ class StatsRoleAliasesTest(unittest.TestCase):
         self.assertEqual(result.loc['中信证券','投行认购规模-销售机构'],2.0)
         self.assertEqual(result.loc['中信证券','投行认购规模'],3.5)
 
+    def test_sales_market_tables_reconcile_with_manager_sales_column(self):
+        """两张销售表的投行认购之和 = 管理人表「销售机构」列（逐家一致）。"""
+        from gen_institution_stats import compute_ib_role_split, compute_sales_markets, sales_role_scale
+        projects=pd.DataFrame([
+            {'项目名称':'a','计划管理人':'中信证券','联席承销商':'国信证券','规模':10},
+            {'项目名称':'b','计划管理人':'中信建投','联席承销商':'中信证券','规模':20},
+            {'项目名称':'c','计划管理人':'招商证券','联席承销商':'华泰证券','规模':30},
+        ])
+        df=pd.DataFrame([
+            {'项目名称':'a','发行场所':'上交所','认购机构':'中信证券投行','认购份额':1.5},  # 管理人角色
+            {'项目名称':'b','发行场所':'银行间','认购机构':'中信证券投行','认购份额':2.0},  # 销售角色
+            {'项目名称':'c','发行场所':'上交所','认购机构':'中信证券投行','认购份额':0.4},  # 第三方
+            {'项目名称':'a','发行场所':'上交所','认购机构':'国信证券投行','认购份额':0.3},  # 销售角色
+        ])
+        role=compute_ib_role_split(df,projects)
+        mgr=compute_manager_table(projects,role,60).set_index('计划管理人')
+        markets={item['market']: item['sales'].set_index('机构名称') for item in compute_sales_markets(df,projects)}
+        for name in mgr.index:
+            total=sum(float(markets[m]['投行认购规模'].get(name,0)) for m in ['交易所','银行间'])
+            self.assertAlmostEqual(total,float(mgr.loc[name,'投行认购规模-销售机构']),places=2)
+        # 交易所只算销售角色：中信证券在交易所是管理人/第三方，不进交易所表
+        self.assertNotIn('中信证券',markets['交易所'].index)
+        self.assertEqual(float(markets['银行间'].loc['中信证券','投行认购规模']),2.0)
+        self.assertEqual(float(markets['交易所'].loc['国信证券','投行认购规模']),0.3)
+
     def test_sales_aliases_are_deduplicated_within_project(self):
         projects=pd.DataFrame([{'项目名称':'p1','联席承销商':'建投/中信建投','规模':10},
                                {'项目名称':'p2','联席承销商':'建投','规模':5}])

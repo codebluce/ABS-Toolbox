@@ -606,7 +606,7 @@ def compute_ib_subscription(df):
     return ib_scale
 
 
-def compute_ib_role_split(df, projects):
+def compute_ib_role_split(df, projects, only_projects=None):
     """投行认购规模按角色拆分：管理人角色 / 销售机构角色（含交易所与银行间）。
 
     以每条投行中标记录为单位，按该机构在对应项目中的角色归属：
@@ -614,11 +614,15 @@ def compute_ib_role_split(df, projects):
       - 该项目联席承销商（交易所、银行间均计入）→ 销售机构角色；
       - 两者都不是（第三方投行认购）→ 不计入，避免把别家项目的中标算到自己头上。
     同一项目同时具备两种角色时优先计入管理人角色，避免合计重复计算。
+
+    only_projects: 只统计这些项目（用于按发行市场拆分销售表）。
     """
     empty = pd.DataFrame(columns=['机构名称', '投行认购规模-管理人', '投行认购规模-销售机构'])
     if df is None or df.empty or projects is None or projects.empty:
         return empty
     ib = df[df['认购机构'].astype(str).str.contains('投行', na=False)].copy()
+    if only_projects is not None:
+        ib = ib[ib['项目名称'].isin(only_projects)]
     if ib.empty:
         return empty
     ib['机构简称'] = ib['认购机构'].astype(str).str.strip().str.replace('投行.*', '', regex=True).str.strip()
@@ -628,17 +632,18 @@ def compute_ib_role_split(df, projects):
     ib['销售名称'] = ib['机构简称'].apply(
         lambda name: sales_display_name(normalize_stats_role(normalize_entity(name), 'sales')))
 
-    manager_by_project = {
-        row['项目名称']: normalize_stats_role(normalize_entity(row['计划管理人']), 'manager')
-        for _, row in projects.iterrows()
-    }
-    sales_by_project = {
-        row['项目名称']: {
+    manager_by_project = {}
+    sales_by_project = {}
+    for _, row in projects.iterrows():
+        project = row['项目名称']
+        manager = row.get('计划管理人')
+        if manager is not None and not pd.isna(manager):
+            manager_by_project[project] = normalize_stats_role(normalize_entity(str(manager)), 'manager')
+        underwriters = row.get('联席承销商')
+        sales_by_project[project] = set() if underwriters is None or pd.isna(underwriters) else {
             sales_display_name(normalize_stats_role(normalize_entity(name.strip()), 'sales'))
-            for name in str(row['联席承销商']).split('/') if name.strip()
+            for name in str(underwriters).split('/') if name.strip()
         }
-        for _, row in projects.iterrows()
-    }
 
     manager_amount = defaultdict(float)
     sales_amount = defaultdict(float)
@@ -657,6 +662,13 @@ def compute_ib_role_split(df, projects):
          '投行认购规模-销售机构': sales_amount.get(name, 0.0)}
         for name in names
     ])
+
+
+def sales_role_scale(ib_role):
+    """从角色拆分结果取「销售机构角色」金额，供销售机构表使用。"""
+    if ib_role is None or ib_role.empty:
+        return pd.Series(dtype=float, name='投行认购规模')
+    return ib_role.set_index('机构名称')['投行认购规模-销售机构'].astype(float)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -698,8 +710,12 @@ def sales_display_name(name):
     return SALES_DISPLAY_ALIASES.get(name, name)
 
 
-def compute_sales_table(projects, ib_scale, total_scale, *, include_banks=False):
-    """表二：销售机构统计表（联席承销商=销售，券商only）"""
+def compute_sales_table(projects, ib_sales, total_scale, *, include_banks=False):
+    """表二：销售机构统计表（联席承销商=销售，券商only）。
+
+    ib_sales: 销售机构角色的投行中标额（sales_role_scale 的输出），
+        只含该机构作为联席承销商的项目，与管理人表「销售机构」列同口径。
+    """
     rows = []
     for _, row in projects.iterrows():
         institutions = [
@@ -724,13 +740,13 @@ def compute_sales_table(projects, ib_scale, total_scale, *, include_banks=False)
         销售项目数=('项目名称', 'count'),
         参与项目规模=('项目规模', 'sum')
     ).reset_index()
-    ib = role_ib_scale(ib_scale, 'sales')
+    ib = role_ib_scale(ib_sales, 'sales')
     ib.index = [sales_display_name(x) for x in ib.index]
     ib = ib.groupby(level=0).sum()
     ib_df = ib.reset_index()
     ib_df.columns = ['机构名称', '投行认购规模']
     sales = sales.merge(ib_df, on='机构名称', how='left')
-    sales['投行认购规模'] = sales['投行认购规模'].fillna(0)
+    sales['投行认购规模'] = sales['投行认购规模'].fillna(0).round(2)
     sales['规模占比'] = (sales['参与项目规模'] / total_scale * 100).round(2)
     sales = sales.sort_values('参与项目规模', ascending=False).reset_index(drop=True)
     return sales
@@ -746,7 +762,8 @@ def compute_sales_markets(df, projects):
         subset = merged[merged['发行场所'].isin(markets)]
         total = float(subset['规模'].sum())
         rows = df[df['项目名称'].isin(subset['项目名称'])]
-        sales = compute_sales_table(subset, compute_ib_subscription(rows), total,
+        role = compute_ib_role_split(rows, subset)
+        sales = compute_sales_table(subset, sales_role_scale(role), total,
                                     include_banks=market == '银行间')
         result.append({'market': market, 'sales': sales, 'total': total, 'count': len(subset)})
     return result
@@ -954,6 +971,7 @@ def render_body(data, section_key=None):
   <span>托管行分行名归并为总行名（XX银行），同名合并</span>
   <span>管理/参与/托管规模=项目去重后J列发行规模；投行认购规模=U列投行记录的V列中标份额</span>
   <span>管理人表投行认购按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额；销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额；合计=两者之和，第三方投行认购不计入</span>
+  <span>销售机构表的投行认购规模只统计该机构作为联席承销商的项目中标份额，与管理人表「销售机构」列同口径；对同时出现在管理人表的机构，两张销售表之和等于该列（销售表另含只在销售角色出现的机构）</span>
   <span>规模占比 = 机构规模 / 全部项目总规模</span>
 </div>
 
@@ -1029,7 +1047,7 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename, sales_market
     <div class="inst-stats-grid">
 {blocks}
     </div>
-    <div class="inst-stats-market-note">销售机构规模占比按各自市场总项目规模计算；联席项目分别计入各机构。交易所仅含上交所、深交所；银行间包含银行及券商，中保登、非标不列入两张销售表。投行认购规模按对应市场的中标份额统计。管理人表的投行认购按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额，销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额，合计=两者之和；第三方投行认购不计入。</div>
+    <div class="inst-stats-market-note">销售机构规模占比按各自市场总项目规模计算；联席项目分别计入各机构。交易所仅含上交所、深交所；银行间包含银行及券商，中保登、非标不列入两张销售表。投行认购规模只统计该机构作为联席承销商的项目中标份额，与管理人表「销售机构」列同口径：对同时出现在管理人表的机构，交易所表 + 银行间表 = 该列；销售表另含只在销售角色出现、不在管理人表的机构，故两表合计大于该列合计。管理人表的投行认购按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额，销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额，合计=两者之和；第三方投行认购不计入。</div>
   </div>
 </div>'''
 
@@ -1084,7 +1102,7 @@ def compute_data(xlsx_path, detail_paths=None, preprocessed_path=None):
     ib_role = compute_ib_role_split(df, projects)
 
     mgr = compute_manager_table(projects, ib_role, total_scale)
-    sales = compute_sales_table(projects, ib_scale, total_scale)
+    sales = compute_sales_table(projects, sales_role_scale(ib_role), total_scale)
     custody = compute_custodian_table(projects, total_scale)
 
     book_dates = df.drop_duplicates(subset='项目名称')['簿记时间']
@@ -1102,8 +1120,10 @@ def compute_data(xlsx_path, detail_paths=None, preprocessed_path=None):
     print(f'管理人: {len(mgr)}家 | 销售机构: {len(sales)}家 | 托管行: {len(custody)}家')
 
     # QC precheck（不写文件）
+    sales_markets = compute_sales_markets(df, projects)
     qc_passed = run_qc(df, projects, mgr, sales, custody, total_scale,
-                       out_path=None, meta=meta, precheck_only=True)
+                       out_path=None, meta=meta, precheck_only=True,
+                       sales_markets=sales_markets)
     if not qc_passed:
         raise RuntimeError(f'[QC] 机构统计预检未通过，请检查数据或逻辑')
 
@@ -1112,7 +1132,7 @@ def compute_data(xlsx_path, detail_paths=None, preprocessed_path=None):
         'projects': projects,
         'mgr': mgr,
         'sales': sales,
-        'sales_markets': compute_sales_markets(df, projects),
+        'sales_markets': sales_markets,
         'custody': custody,
         'meta': meta,
         'total_scale': total_scale,
@@ -1128,7 +1148,7 @@ def compute_data(xlsx_path, detail_paths=None, preprocessed_path=None):
 # ═══════════════════════════════════════════════════════════════
 
 def run_qc(df, projects, mgr, sales, custody, total_scale,
-           out_path, meta, precheck_only=False):
+           out_path, meta, precheck_only=False, sales_markets=None):
     """
     自检维度：
       【1】数据与台账一致性 — 记录数、总额、实体覆盖
@@ -1237,6 +1257,24 @@ def run_qc(df, projects, mgr, sales, custody, total_scale,
             ok(f'{tbl_name}表按规模降序排列')
         else:
             fail(f'{tbl_name}表排序异常')
+
+    # 2-6 投行认购口径一致性：管理人表「销售机构」列 = 交易所 + 银行间销售表之和
+    if sales_markets:
+        market_ib = {}
+        for item in sales_markets:
+            for _, row in item['sales'].iterrows():
+                market_ib[row['机构名称']] = market_ib.get(row['机构名称'], 0.0) + float(row['投行认购规模'])
+        gaps = []
+        for _, row in mgr.iterrows():
+            name = row['计划管理人']
+            expected = round(float(row['投行认购规模-销售机构']), 2)
+            actual = round(market_ib.get(name, 0.0), 2)
+            if abs(expected - actual) > 0.011:
+                gaps.append(f'{name} 管理人表 {expected:.2f} vs 两张销售表 {actual:.2f}')
+        if gaps:
+            fail('投行认购销售角色与两张销售表不一致：' + '；'.join(gaps))
+        else:
+            ok('投行认购销售角色 = 交易所 + 银行间销售表（逐家一致）')
 
     # ── 【3】视觉生成一致性 ──────────────────────────────────
     print('\n【3】视觉生成一致性')
@@ -1471,4 +1509,5 @@ if __name__ == '__main__':
     print(f'\nDone: {out_path}')
     run_qc(data['df'], data['projects'], data['mgr'], data['sales'],
            data['custody'], data['total_scale'],
-           out_path, data['meta'], precheck_only=False)
+           out_path, data['meta'], precheck_only=False,
+           sales_markets=data.get('sales_markets'))

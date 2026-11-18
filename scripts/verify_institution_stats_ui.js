@@ -39,6 +39,22 @@ async function checkDesktop(page) {
     const cells = await salesBlocks.nth(i).locator('tbody tr').first().locator('td').count();
     assert.equal(cells, 5);
   }
+
+  // 口径一致：交易所 + 银行间两张销售表的投行认购 = 管理人表「销售机构」列
+  const marketIb = {};
+  for (const i of [0, 1]) {
+    const rows = await salesBlocks.nth(i).locator('tbody tr').evaluateAll(trs => trs.map(tr => {
+      const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
+      return [cells[0], Number(cells[4])];
+    }));
+    rows.forEach(([name, value]) => { marketIb[name] = (marketIb[name] || 0) + value; });
+  }
+  parsed.forEach(r => {
+    const actual = Math.round((marketIb[r.name] || 0) * 100) / 100;
+    assert.ok(Math.abs(actual - r.sales) < 0.011,
+      `${r.name} 销售表合计 ${actual} ≠ 管理人表销售机构列 ${r.sales}`);
+  });
+  assert.equal(Math.round((marketIb['中信证券'] || 0) * 100) / 100, 2.09);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert.ok(overflow <= 1, '电脑端横向溢出: ' + overflow);
   return {rows: parsed.length, sample: byName['中信证券'], overflow};
