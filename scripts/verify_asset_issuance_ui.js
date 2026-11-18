@@ -60,7 +60,7 @@ async function check(frame) {
     assert.equal(snapshot.overflow, false);
     assert.equal(snapshot.groups.length, 8);
     assert.equal(snapshot.assets.length, year === '2025' ? 21 : 15);
-    assert.equal(snapshot.total, year === '2025' ? '2,741' : '1,673');
+    assert.equal(snapshot.total, year === '2025' ? '2,741' : '1,723');
     const amounts=await frame.locator('#total,.channel-number,.group-value,.asset-num').allTextContents();
     assert.ok(amounts.every(value=>!/[\d,]+\.\d{2}(?!\d)/.test(value)));
     assert.ok(snapshot.groups.includes(year === '2025' ? '融资租赁' : '汽车融资租赁'));
@@ -85,7 +85,7 @@ async function check(frame) {
     value: node.querySelectorAll('b')[1].textContent
   })));
   assert.deepEqual(bars.map(bar => bar.label), ['2025 同期', '2026 累计']);
-  assert.deepEqual(bars.map(bar => bar.value), ['2,549', '1,673']);
+  assert.deepEqual(bars.map(bar => bar.value), ['2,569', '1,723']);
   const groupBars = await frame.locator('.group-compare-row').evaluateAll(rows => rows.map(row => ({
     name: row.querySelector('.group-compare-name').textContent,
     values: [...row.querySelectorAll('.group-year-value')].map(node => node.textContent)

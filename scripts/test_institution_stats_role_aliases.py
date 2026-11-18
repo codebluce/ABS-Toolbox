@@ -90,14 +90,55 @@ class StatsRoleAliasesTest(unittest.TestCase):
             {'项目名称':str(i),'计划管理人':n,'规模':10}
             for i,n in enumerate(['国证资管','国投证券','天风证券','天风资管','华泰证券','华泰资管'])])
         original=projects.copy(deep=True)
-        ib=pd.Series([1,2,3,4,5,6],index=['国证资管','国投证券','天风证券','天风资管','华泰证券','华泰资管'])
-        result=compute_manager_table(projects,ib,60).set_index('计划管理人')
+        ib_role=pd.DataFrame([
+            {'机构名称':'国投证券','投行认购规模-管理人':3,'投行认购规模-销售机构':0},
+            {'机构名称':'天风资管','投行认购规模-管理人':7,'投行认购规模-销售机构':0},
+            {'机构名称':'华泰资管','投行认购规模-管理人':11,'投行认购规模-销售机构':0},
+        ])
+        result=compute_manager_table(projects,ib_role,60).set_index('计划管理人')
         self.assertEqual(set(result.index),{'国投证券','天风资管','华泰资管'})
         self.assertEqual(result.loc['国投证券','管理项目数'],2)
         self.assertEqual(result.loc['天风资管','投行认购规模'],7)
         self.assertEqual(result.loc['华泰资管','投行认购规模'],11)
         self.assertEqual(result['管理规模'].sum(),60)
         pd.testing.assert_frame_equal(projects,original)
+
+    def test_ib_role_split_separates_manager_sales_and_third_party(self):
+        from gen_institution_stats import compute_ib_role_split
+        projects=pd.DataFrame([
+            {'项目名称':'a','计划管理人':'中信证券','联席承销商':'国信证券','规模':10},
+            {'项目名称':'b','计划管理人':'中信建投','联席承销商':'中信证券/光大证券','规模':20},
+            {'项目名称':'c','计划管理人':'招商证券','联席承销商':'华泰证券','规模':30},
+        ])
+        df=pd.DataFrame([
+            {'项目名称':'a','认购机构':'中信证券投行','认购份额':1.5},   # 管理人角色
+            {'项目名称':'b','认购机构':'中信证券投行','认购份额':2.0},   # 销售机构角色
+            {'项目名称':'c','认购机构':'中信证券投行','认购份额':0.4},   # 第三方，不计入
+            {'项目名称':'b','认购机构':'光大证券投行','认购份额':0.6},   # 销售机构角色
+            {'项目名称':'a','认购机构':'国信证券投行','认购份额':0.3},   # 销售机构角色
+        ])
+        role=compute_ib_role_split(df,projects).set_index('机构名称')
+        self.assertEqual(role.loc['中信证券','投行认购规模-管理人'],1.5)
+        self.assertEqual(role.loc['中信证券','投行认购规模-销售机构'],2.0)
+        self.assertEqual(role.loc['光大证券','投行认购规模-销售机构'],0.6)
+        self.assertEqual(role.loc['国信证券','投行认购规模-销售机构'],0.3)
+        self.assertNotIn('招商证券',role.index)
+
+    def test_manager_table_total_equals_manager_plus_sales(self):
+        projects=pd.DataFrame([
+            {'项目名称':'a','计划管理人':'中信证券','联席承销商':'国信证券','规模':10},
+            {'项目名称':'b','计划管理人':'中信建投','联席承销商':'中信证券','规模':20},
+        ])
+        df=pd.DataFrame([
+            {'项目名称':'a','认购机构':'中信证券投行','认购份额':1.5},
+            {'项目名称':'b','认购机构':'中信证券投行','认购份额':2.0},
+        ])
+        from gen_institution_stats import compute_ib_role_split
+        role=compute_ib_role_split(df,projects)
+        result=compute_manager_table(projects,role,30).set_index('计划管理人')
+        self.assertEqual(result.loc['中信证券','投行认购规模-管理人'],1.5)
+        self.assertEqual(result.loc['中信证券','投行认购规模-销售机构'],2.0)
+        self.assertEqual(result.loc['中信证券','投行认购规模'],3.5)
 
     def test_sales_aliases_are_deduplicated_within_project(self):
         projects=pd.DataFrame([{'项目名称':'p1','联席承销商':'建投/中信建投','规模':10},

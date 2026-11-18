@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "checks": [
+    "desktop mobile risk tab",
+    "same document",
+    "two pool modes",
+    "shared asset filtering",
+    "independent periods",
+    "dynamic rates only cards",
+    "static horizontal 3 metrics",
+    "change values and blanks",
+    "excluded disclosure records",
+    "column tooltips",
+    "no overflow"
+  ],
+  "errors": []
+}

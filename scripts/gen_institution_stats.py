@@ -140,6 +140,11 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 .stat-table.cols-4 thead th.col-cnt  { width:23%; }
 .stat-table.cols-4 thead th.col-num  { width:24%; }
 .stat-table.cols-4 thead th.col-pct  { width:23%; }
+/* 7列表(管理人，投行认购按角色拆3列): 机构名称22% + 项目数12% + 4个数值列各13.5% + 占比12% = 100% */
+.stat-table.cols-7 thead th.col-name { width:22%; }
+.stat-table.cols-7 thead th.col-cnt  { width:12%; }
+.stat-table.cols-7 thead th.col-num  { width:13.5%; }
+.stat-table.cols-7 thead th.col-pct  { width:12%; }
 .stat-table tbody tr:nth-child(even) { background:#f7f9fc; }
 .stat-table tbody tr:hover { background:#eef3fa; }
 .stat-table tbody tr:not(:last-child) td { border-bottom:1px solid #eaeef4; }
@@ -185,6 +190,10 @@ INST_STATS_EMBED_CSS = """
 .inst-stats-embed .inst-stats-table-wrap .stat-table.cols-4 thead th.col-cnt,
 .inst-stats-embed .inst-stats-table-wrap .stat-table.cols-4 thead th.col-num,
 .inst-stats-embed .inst-stats-table-wrap .stat-table.cols-4 thead th.col-pct { width:25%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-7 thead th.col-name { width:24%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-7 thead th.col-cnt  { width:11%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-7 thead th.col-num  { width:13%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-7 thead th.col-pct  { width:13%; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table thead { background:#f8f9fa !important; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table thead th { position:sticky; top:0; z-index:1;
   background:#f8f9fa !important; color:#495057; padding:9px 8px;
@@ -597,11 +606,64 @@ def compute_ib_subscription(df):
     return ib_scale
 
 
+def compute_ib_role_split(df, projects):
+    """投行认购规模按角色拆分：管理人角色 / 销售机构角色（含交易所与银行间）。
+
+    以每条投行中标记录为单位，按该机构在对应项目中的角色归属：
+      - 该项目计划管理人 → 管理人角色；
+      - 该项目联席承销商（交易所、银行间均计入）→ 销售机构角色；
+      - 两者都不是（第三方投行认购）→ 不计入，避免把别家项目的中标算到自己头上。
+    同一项目同时具备两种角色时优先计入管理人角色，避免合计重复计算。
+    """
+    empty = pd.DataFrame(columns=['机构名称', '投行认购规模-管理人', '投行认购规模-销售机构'])
+    if df is None or df.empty or projects is None or projects.empty:
+        return empty
+    ib = df[df['认购机构'].astype(str).str.contains('投行', na=False)].copy()
+    if ib.empty:
+        return empty
+    ib['机构简称'] = ib['认购机构'].astype(str).str.strip().str.replace('投行.*', '', regex=True).str.strip()
+    ib['认购份额_数值'] = pd.to_numeric(ib['认购份额'], errors='coerce').fillna(0)
+    ib['管理人名称'] = ib['机构简称'].apply(
+        lambda name: normalize_stats_role(normalize_entity(name), 'manager'))
+    ib['销售名称'] = ib['机构简称'].apply(
+        lambda name: sales_display_name(normalize_stats_role(normalize_entity(name), 'sales')))
+
+    manager_by_project = {
+        row['项目名称']: normalize_stats_role(normalize_entity(row['计划管理人']), 'manager')
+        for _, row in projects.iterrows()
+    }
+    sales_by_project = {
+        row['项目名称']: {
+            sales_display_name(normalize_stats_role(normalize_entity(name.strip()), 'sales'))
+            for name in str(row['联席承销商']).split('/') if name.strip()
+        }
+        for _, row in projects.iterrows()
+    }
+
+    manager_amount = defaultdict(float)
+    sales_amount = defaultdict(float)
+    for _, row in ib.iterrows():
+        project = row['项目名称']
+        amount = float(row['认购份额_数值'])
+        if manager_by_project.get(project) == row['管理人名称']:
+            manager_amount[row['管理人名称']] += amount
+        elif row['销售名称'] in sales_by_project.get(project, set()):
+            sales_amount[row['销售名称']] += amount
+
+    names = sorted(set(manager_amount) | set(sales_amount))
+    return pd.DataFrame([
+        {'机构名称': name,
+         '投行认购规模-管理人': manager_amount.get(name, 0.0),
+         '投行认购规模-销售机构': sales_amount.get(name, 0.0)}
+        for name in names
+    ])
+
+
 # ═══════════════════════════════════════════════════════════════
 # §5  三张表计算
 # ═══════════════════════════════════════════════════════════════
 
-def compute_manager_table(projects, ib_scale, total_scale):
+def compute_manager_table(projects, ib_role, total_scale):
     """表一：管理人统计表（券商only）"""
     projects = projects.copy()
     projects['计划管理人'] = projects['计划管理人'].apply(lambda name: normalize_stats_role(name, 'manager'))
@@ -610,10 +672,13 @@ def compute_manager_table(projects, ib_scale, total_scale):
         管理规模=('规模', 'sum')
     ).reset_index()
     mgr = mgr[mgr['计划管理人'].apply(is_brokerage)].copy()
-    ib_df = role_ib_scale(ib_scale, 'manager').reset_index()
-    ib_df.columns = ['计划管理人', '投行认购规模']
-    mgr = mgr.merge(ib_df, on='计划管理人', how='left')
-    mgr['投行认购规模'] = mgr['投行认购规模'].fillna(0)
+    role = ib_role.rename(columns={'机构名称': '计划管理人'})
+    mgr = mgr.merge(role, on='计划管理人', how='left')
+    for col in ('投行认购规模-管理人', '投行认购规模-销售机构'):
+        # 先按展示精度取整，保证三列在页面上能对上（1.27 + 2.09 = 3.36）
+        mgr[col] = mgr[col].fillna(0).round(2)
+    # 合计 = 管理人角色 + 销售机构角色（第三方投行认购不计入）
+    mgr['投行认购规模'] = mgr['投行认购规模-管理人'] + mgr['投行认购规模-销售机构']
     mgr['规模占比'] = (mgr['管理规模'] / total_scale * 100).round(2)
     mgr = mgr.sort_values('管理规模', ascending=False).reset_index(drop=True)
     return mgr
@@ -702,16 +767,26 @@ def compute_custodian_table(projects, total_scale):
 # §6  HTML 生成
 # ═══════════════════════════════════════════════════════════════
 
-def build_stat_table(columns, rows_html, thead_bg):
+def build_stat_table(columns, rows_html, thead_bg, group=None):
     """通用统计表格：columns=[(key, label, align_class), ...]
-    v2.5.1: 加 cols-N class 用于按列数分配均匀列宽(N=4/5)"""
-    th_items = []
-    for key, label, cls in columns:
-        th_items.append(f'<th class="{cls}">{label}</th>')
-    thead = f'<thead style="background:{thead_bg}"><tr>{"".join(th_items)}</tr></thead>'
+
+    v2.5.1: 加 cols-N class 用于按列数分配均匀列宽(N=4/5/7)
+    group=(label, span): 最后 span 列共用一行分组表头（两行表头），
+        用于“投行认购规模”下再分管理人/销售机构/合计。
+    """
     n_cols = len(columns)
-    cols_class = f' cols-{n_cols}' if n_cols in (4, 5) else ''
-    return f'<table class="stat-table{cols_class}">{thead}<tbody>{rows_html}</tbody></table>'
+    cols_class = f' cols-{n_cols}' if n_cols in (4, 5, 7) else ''
+    if group:
+        group_label, span = group
+        lead = n_cols - span
+        top = ''.join(f'<th class="{cls}" rowspan="2">{label}</th>' for _, label, cls in columns[:lead])
+        top += f'<th class="col-group" colspan="{span}">{group_label}</th>'
+        bottom = ''.join(f'<th class="{cls}">{label}</th>' for _, label, cls in columns[lead:])
+        thead = f'<thead style="background:{thead_bg}"><tr>{top}</tr><tr>{bottom}</tr></thead>'
+    else:
+        th_items = ''.join(f'<th class="{cls}">{label}</th>' for _, label, cls in columns)
+        thead = f'<thead style="background:{thead_bg}"><tr>{th_items}</tr></thead>'
+    return f'<table class="stat-table{cols_class}" data-cols="{n_cols}">{thead}<tbody>{rows_html}</tbody></table>'
 
 
 def build_manager_rows(mgr):
@@ -723,6 +798,8 @@ def build_manager_rows(mgr):
             f'<td class="cnt">{int(r["管理项目数"])}</td>'
             f'<td class="num">{r["管理规模"]:.2f}</td>'
             f'<td class="pct">{r["规模占比"]:.2f}%</td>'
+            f'<td class="num">{r["投行认购规模-管理人"]:.2f}</td>'
+            f'<td class="num">{r["投行认购规模-销售机构"]:.2f}</td>'
             f'<td class="num">{r["投行认购规模"]:.2f}</td>'
             f'</tr>'
         )
@@ -778,9 +855,12 @@ def _build_section_by_key(key, mgr, sales, custody):
             ('cnt', '管理项目数', 'col-cnt'),
             ('num', '管理规模(亿)', 'col-num'),
             ('pct', '规模占比', 'col-pct'),
-            ('num', '投行认购规模(亿)', 'col-num'),
+            ('num', '管理人', 'col-num'),
+            ('num', '销售机构', 'col-num'),
+            ('num', '合计', 'col-num'),
         ]
-        table = build_stat_table(cols, build_manager_rows(mgr), c['thead'])
+        table = build_stat_table(cols, build_manager_rows(mgr), c['thead'],
+                                 group=('投行认购规模(亿)', 3))
         return build_section(
             '表一：管理人统计表',
             f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 按已确认管理人口径归并',
@@ -873,6 +953,7 @@ def render_body(data, section_key=None):
   <span>联席承销商即销售机构；多联席承销项目按参与机构重复归属</span>
   <span>托管行分行名归并为总行名（XX银行），同名合并</span>
   <span>管理/参与/托管规模=项目去重后J列发行规模；投行认购规模=U列投行记录的V列中标份额</span>
+  <span>管理人表投行认购按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额；销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额；合计=两者之和，第三方投行认购不计入</span>
   <span>规模占比 = 机构规模 / 全部项目总规模</span>
 </div>
 
@@ -948,7 +1029,7 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename, sales_market
     <div class="inst-stats-grid">
 {blocks}
     </div>
-    <div class="inst-stats-market-note">销售机构规模占比按各自市场总项目规模计算；联席项目分别计入各机构。交易所仅含上交所、深交所；银行间包含银行及券商，中保登、非标不列入两张销售表。投行认购规模按对应市场的中标份额统计。</div>
+    <div class="inst-stats-market-note">销售机构规模占比按各自市场总项目规模计算；联席项目分别计入各机构。交易所仅含上交所、深交所；银行间包含银行及券商，中保登、非标不列入两张销售表。投行认购规模按对应市场的中标份额统计。管理人表的投行认购按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额，销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额，合计=两者之和；第三方投行认购不计入。</div>
   </div>
 </div>'''
 
@@ -1000,8 +1081,9 @@ def compute_data(xlsx_path, detail_paths=None, preprocessed_path=None):
     total_scale = projects['规模'].sum()
     project_count = len(projects)
     ib_scale = compute_ib_subscription(df)
+    ib_role = compute_ib_role_split(df, projects)
 
-    mgr = compute_manager_table(projects, ib_scale, total_scale)
+    mgr = compute_manager_table(projects, ib_role, total_scale)
     sales = compute_sales_table(projects, ib_scale, total_scale)
     custody = compute_custodian_table(projects, total_scale)
 
@@ -1035,6 +1117,7 @@ def compute_data(xlsx_path, detail_paths=None, preprocessed_path=None):
         'meta': meta,
         'total_scale': total_scale,
         'ib_scale': ib_scale,
+        'ib_role': ib_role,
         'xlsx_basename': os.path.basename(xlsx_path),
         'xlsx_path': xlsx_path,
     }
@@ -1179,7 +1262,7 @@ def run_qc(df, projects, mgr, sales, custody, total_scale,
 
     # 4-2 规模值非负
     for tbl_name, tbl, cols in [
-        ('管理人', mgr, ['管理规模', '投行认购规模']),
+        ('管理人', mgr, ['管理规模', '投行认购规模-管理人', '投行认购规模-销售机构', '投行认购规模']),
         ('销售机构', sales, ['参与项目规模', '投行认购规模']),
         ('托管行', custody, ['托管规模']),
     ]:
@@ -1189,6 +1272,13 @@ def run_qc(df, projects, mgr, sales, custody, total_scale,
                 ok(f'{tbl_name}表{col}均为非负值')
             else:
                 fail(f'{tbl_name}表{col}有{neg_count}条负值')
+
+    # 4-2b 管理人表投行认购：合计 = 管理人角色 + 销售机构角色
+    role_gap = (mgr['投行认购规模'] - mgr['投行认购规模-管理人'] - mgr['投行认购规模-销售机构']).abs().max()
+    if role_gap < 0.005:
+        ok('管理人表投行认购合计 = 管理人角色 + 销售机构角色')
+    else:
+        fail(f'管理人表投行认购合计与角色拆分不一致：最大差额 {role_gap:.4f} 亿')
 
     # 4-3 文件质量检查（最终QC）
     if not precheck_only:

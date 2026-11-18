@@ -143,7 +143,7 @@
     return '<svg width="9" height="6" viewBox="0 0 9 6" fill="none" stroke="#6b7a95" stroke-width="1.7" stroke-linecap="round" style="transform:' +
       (open ? 'rotate(180deg)' : 'none') + ';"><path d="M1 1.4 4.5 4.8 8 1.4"></path></svg>';
   }
-  function barRow(label, amount, w, subLeft, subRight, subRightColor, color) {
+  function barRow(label, amount, w, subLeft, subRight, subRightColor, color, subExtra) {
     return '<div style="margin-bottom:14px;">' +
       '<div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px;">' +
         '<span style="font-size:13px; font-weight:600; color:#0d1b2e; white-space:nowrap;">' + label + '</span>' +
@@ -156,6 +156,7 @@
         '<span style="' + SUB + ' font-variant-numeric:tabular-nums;">' + subLeft + '</span>' +
         '<span style="font-size:11px; font-weight:600; color:' + subRightColor + '; font-variant-numeric:tabular-nums;">' + esc(subRight) + '</span>' +
       '</div>' +
+      (subExtra ? '<div style="margin-top:3px; font-size:10.5px; color:#8a96a8; font-variant-numeric:tabular-nums;">' + subExtra + '</div>' : '') +
     '</div>';
   }
 
@@ -563,25 +564,29 @@
       '<div style="' + SUB + '">' + esc(sec.meta) + ' · 按规模排序</div></div>' +
       '<div style="margin-top:9px; ' + CARD + ' padding:13px 14px 4px;">';
 
-    var head = sec.head || [];
-    var hasIb = head.length >= 5;
+    var nCols = sec.cols || (sec.head || []).length;
+    // 管理人表 7 列:投行认购拆成 管理人 / 销售机构 / 合计;销售表 5 列仍为单列
+    var hasIbRole = nCols >= 7;
+    var hasIb = nCols >= 5;
     sec.rows.forEach(function (r, i) {
       // 次要指标行:左=项目数,右=投行认购规模(托管行表没有该列时留空)
       var left = esc(r[1]) + ' 个项目';
-      var right = hasIb ? ('投行认购 ' + esc(r[4]) + ' 亿') : '';
+      var right = hasIbRole ? ('投行认购 ' + esc(r[6]) + ' 亿') : (hasIb ? ('投行认购 ' + esc(r[4]) + ' 亿') : '');
+      var extra = hasIbRole ? ('管理人 ' + esc(r[4]) + ' 亿 · 销售机构 ' + esc(r[5]) + ' 亿') : '';
       h += barRow(
         '<span style="display:inline-flex; align-items:center; gap:7px;">' +
           '<span style="' + SUB + ' font-variant-numeric:tabular-nums; min-width:16px;">' + (i + 1) + '</span>' +
           esc(r[0]) + '</span>',
         r[2] + ' 亿 · ' + r[3],
         sec.w[i] + '%',
-        left, right, '#6b7a95', sec.color
+        left, right, '#6b7a95', sec.color, extra
       );
     });
     h += '</div>';
 
     h += caliberBox('statcaliber', S.statCaliber, [
       '管理人统计:按计划管理人归集,仅统计券商(排除银行/信托等非券商主体)。',
+      '管理人表投行认购按角色拆分:管理人角色=该机构作为计划管理人的项目中标份额;销售机构角色=该机构作为联席承销商(含交易所、银行间)的项目中标份额;合计=两者之和,第三方投行认购不计入。',
       '销售机构统计:按联席承销商拆分归集,同一项目的多家承销商各计一次,故销售项目数之和大于项目总数。',
       '托管行统计:分行已归并至总行。',
       '规模占比 = 该机构规模 / 全部项目总规模;横条长度按本表内最大规模等比缩放。'

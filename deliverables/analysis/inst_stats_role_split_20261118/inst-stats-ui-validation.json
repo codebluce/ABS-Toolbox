@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "desktopResult": {
+    "rows": 13,
+    "sample": {
+      "name": "中信证券",
+      "mgr": 1.27,
+      "sales": 2.09,
+      "total": 3.36,
+      "cols": 7
+    },
+    "overflow": 0
+  },
+  "mobileResult": {
+    "overflow": 0
+  },
+  "checks": [
+    "管理人表 7 列",
+    "投行认购分组表头",
+    "合计=管理人+销售",
+    "销售表仍 5 列",
+    "手机端角色拆分",
+    "无横向溢出"
+  ],
+  "errors": []
+}

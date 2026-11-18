@@ -577,8 +577,9 @@ INST_STATS_BLOCK_RE = re.compile(
     r'(?:<span class="inst-stats-summary">(?P<summary>[^<]*)</span>)?',
 )
 INST_STATS_TABLE_RE = re.compile(
-    r'<table class="stat-table[^"]*"><thead style="background:(?P<color>#[0-9a-fA-F]{6})">'
-    r'<tr>(?P<head>.*?)</tr></thead><tbody>(?P<rows>.*?)</tbody>',
+    r'<table class="stat-table[^"]*"(?P<attrs>[^>]*)>'
+    r'<thead style="background:(?P<color>#[0-9a-fA-F]{6})">(?P<head>.*?)</thead>'
+    r'<tbody>(?P<rows>.*?)</tbody>',
     re.S,
 )
 TAG_RE = re.compile(r"<[^>]+>")
@@ -615,11 +616,14 @@ def build_inst_stats(html: str) -> dict | None:
     for t, tb in zip(titles, tables):
         if t.group("summary") and not summary:
             summary = t.group("summary").strip()
-        head = _cells(tb.group("head"), "th")
+        head_rows = re.findall(r"<tr>(.*?)</tr>", tb.group("head"), re.S)
+        head = _cells(head_rows[0], "th") if head_rows else []
+        cols_m = re.search(r'data-cols="(\d+)"', tb.group("attrs") or "")
+        n_cols = int(cols_m.group(1)) if cols_m else len(head)
         rows = []
         for tr in re.findall(r"<tr>(.*?)</tr>", tb.group("rows"), re.S):
             cells = _cells(tr, "td")
-            if len(cells) != len(head):
+            if len(cells) != n_cols:
                 continue
             rows.append(cells)
         if not rows:
@@ -633,6 +637,7 @@ def build_inst_stats(html: str) -> dict | None:
             "meta": t.group("meta").strip(),
             "color": tb.group("color"),
             "head": head,
+            "cols": n_cols,
             "rows": rows,
             "w": [round(v / top * 100, 2) for v in scales],
         })
