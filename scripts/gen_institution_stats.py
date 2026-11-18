@@ -641,11 +641,11 @@ def compute_ib_role_split(df, projects, only_projects=None):
 
     归属：管理人角色 → 管理人列；销售机构角色 → 销售机构列；
         两者都有时优先管理人列，避免同一笔重复计算；
-        有明确投行标识但无角色 → 跨期列（计入合计，但不进前两列）。
+        标注“投行”但既非该项目管理人也非联席承销商的，暂不计入（跨期口径待定）。
 
     only_projects: 只统计这些项目（用于按发行市场拆分销售表）。
     """
-    columns = ['机构名称', '投行认购规模-管理人', '投行认购规模-销售机构', '投行认购规模-跨期']
+    columns = ['机构名称', '投行认购规模-管理人', '投行认购规模-销售机构']
     empty = pd.DataFrame(columns=columns)
     if df is None or df.empty or projects is None or projects.empty:
         return empty
@@ -684,7 +684,6 @@ def compute_ib_role_split(df, projects, only_projects=None):
 
     manager_amount = defaultdict(float)
     sales_amount = defaultdict(float)
-    cross_amount = defaultdict(float)
     for _, row in records.iterrows():
         project = row['项目名称']
         amount = float(row['认购份额_数值'])
@@ -694,16 +693,13 @@ def compute_ib_role_split(df, projects, only_projects=None):
             manager_amount[row['管理人名称']] += amount
         elif is_sales:
             sales_amount[row['销售名称']] += amount
-        elif row['标注投行']:
-            # 有明确投行标识、但既非该项目管理人也非联席承销商：计入合计，单列“跨期”
-            cross_amount[row['销售名称']] += amount
+        # 标注“投行”但无管理人/销售机构角色的，暂不计入（跨期口径待定）
 
-    names = sorted(set(manager_amount) | set(sales_amount) | set(cross_amount))
+    names = sorted(set(manager_amount) | set(sales_amount))
     return pd.DataFrame([
         {'机构名称': name,
          '投行认购规模-管理人': manager_amount.get(name, 0.0),
-         '投行认购规模-销售机构': sales_amount.get(name, 0.0),
-         '投行认购规模-跨期': cross_amount.get(name, 0.0)}
+         '投行认购规模-销售机构': sales_amount.get(name, 0.0)}
         for name in names
     ])
 
@@ -713,13 +709,6 @@ def sales_role_scale(ib_role):
     if ib_role is None or ib_role.empty:
         return pd.Series(dtype=float, name='投行认购规模')
     return ib_role.set_index('机构名称')['投行认购规模-销售机构'].astype(float)
-
-
-def cross_scale(ib_role):
-    """从角色拆分结果取「跨期」金额（明确投行标识但无角色）。"""
-    if ib_role is None or ib_role.empty:
-        return pd.Series(dtype=float, name='投行认购规模')
-    return ib_role.set_index('机构名称')['投行认购规模-跨期'].astype(float)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -737,14 +726,13 @@ def compute_manager_table(projects, ib_role, total_scale):
     mgr = mgr[mgr['计划管理人'].apply(is_brokerage)].copy()
     role = ib_role.rename(columns={'机构名称': '计划管理人'})
     mgr = mgr.merge(role, on='计划管理人', how='left')
-    for col in ('投行认购规模-管理人', '投行认购规模-销售机构', '投行认购规模-跨期'):
+    for col in ('投行认购规模-管理人', '投行认购规模-销售机构'):
         if col not in mgr.columns:
             mgr[col] = 0.0
         # 先按展示精度取整，保证合计与分项在页面上能对上
         mgr[col] = mgr[col].fillna(0).round(2)
-    # 合计 = 管理人角色 + 销售机构角色 + 跨期（明确投行标识但无角色）
-    mgr['投行认购规模'] = (mgr['投行认购规模-管理人'] + mgr['投行认购规模-销售机构']
-                          + mgr['投行认购规模-跨期'])
+    # 合计 = 管理人角色 + 销售机构角色
+    mgr['投行认购规模'] = mgr['投行认购规模-管理人'] + mgr['投行认购规模-销售机构']
     mgr['规模占比'] = (mgr['管理规模'] / total_scale * 100).round(2)
     mgr = mgr.sort_values('管理规模', ascending=False).reset_index(drop=True)
     return mgr
@@ -823,7 +811,7 @@ def compute_sales_markets(df, projects):
         sales = compute_sales_table(subset, sales_role_scale(role), total,
                                     include_banks=market == '银行间')
         result.append({'market': market, 'sales': sales, 'total': total, 'count': len(subset),
-                       'role': sales_role_scale(role), 'cross': cross_scale(role)})
+                       'role': sales_role_scale(role)})
     return result
 
 
@@ -875,7 +863,6 @@ def build_manager_rows(mgr):
             f'<td class="pct">{r["规模占比"]:.2f}%</td>'
             f'<td class="num">{r["投行认购规模-管理人"]:.2f}</td>'
             f'<td class="num">{r["投行认购规模-销售机构"]:.2f}</td>'
-            f'<td class="num">{r["投行认购规模-跨期"]:.2f}</td>'
             f'<td class="num">{r["投行认购规模"]:.2f}</td>'
             f'</tr>'
         )
@@ -933,11 +920,10 @@ def _build_section_by_key(key, mgr, sales, custody):
             ('pct', '规模占比', 'col-pct'),
             ('num', '管理人', 'col-ib'),
             ('num', '销售机构', 'col-ib'),
-            ('num', '跨期', 'col-ib'),
             ('num', '合计', 'col-ib'),
         ]
         table = build_stat_table(cols, build_manager_rows(mgr), c['thead'],
-                                 group=('投行认购规模(亿)', 4))
+                                 group=('投行认购规模(亿)', 3))
         return build_section(
             '表一：管理人统计表',
             f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 按已确认管理人口径归并',
@@ -1031,7 +1017,7 @@ def render_body(data, section_key=None):
   <span>托管行分行名归并为总行名（XX银行），同名合并</span>
   <span>管理/参与/托管规模=项目去重后J列发行规模；投行认购规模=U列投行记录的V列中标份额</span>
   <span>投行认购认定：认购机构含「自营」或「客需」的整条不计入；其余标注「投行」的不论角色均计入；未标注「投行」的，只有该机构是该项目计划管理人或联席承销商才计入</span>
-  <span>管理人表按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额；销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额；跨期=标注「投行」但无上述角色的认购；合计=三列之和</span>
+  <span>管理人表按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额；销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额；合计=两列之和。标注「投行」但无上述角色的认购暂不计入</span>
   <span>销售机构表的投行认购只统计销售机构角色，与管理人表「销售机构」列同口径；对同时出现在管理人表的机构，两张销售表之和等于该列（销售表另含只在销售角色出现的机构，含银行）</span>
   <span>规模占比 = 机构规模 / 全部项目总规模</span>
 </div>
@@ -1108,7 +1094,7 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename, sales_market
     <div class="inst-stats-grid">
 {blocks}
     </div>
-    <div class="inst-stats-market-note">销售机构规模占比按各自市场总项目规模计算；联席项目分别计入各机构。交易所仅含上交所、深交所；银行间包含银行及券商，中保登、非标不列入两张销售表。投行认购规模的认定：认购机构含「自营」或「客需」的整条不计入；其余标注「投行」的不论角色均计入；未标注「投行」的，只有该机构是该项目计划管理人（计入管理人列）或联席承销商（计入销售机构列）才计入。管理人表按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额，销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额，跨期=标注「投行」但既非该项目管理人也非联席承销商的认购，合计=三列之和。销售机构表的投行认购只统计销售机构角色，与管理人表「销售机构」列同口径：对同时出现在管理人表的机构，交易所表 + 银行间表 = 该列；销售表另含只在销售角色出现、不在管理人表的机构（含银行），故两表合计大于该列合计。</div>
+    <div class="inst-stats-market-note">销售机构规模占比按各自市场总项目规模计算；联席项目分别计入各机构。交易所仅含上交所、深交所；银行间包含银行及券商，中保登、非标不列入两张销售表。投行认购规模的认定：认购机构含「自营」或「客需」的整条不计入；其余标注「投行」的不论角色均计入；未标注「投行」的，只有该机构是该项目计划管理人（计入管理人列）或联席承销商（计入销售机构列）才计入。管理人表按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额，销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额，标注「投行」但既非该项目管理人也非联席承销商的认购暂不计入，合计=管理人 + 销售机构两列之和。销售机构表的投行认购只统计销售机构角色，与管理人表「销售机构」列同口径：对同时出现在管理人表的机构，交易所表 + 银行间表 = 该列；销售表另含只在销售角色出现、不在管理人表的机构（含银行），故两表合计大于该列合计。</div>
   </div>
 </div>'''
 
@@ -1372,11 +1358,10 @@ def run_qc(df, projects, mgr, sales, custody, total_scale,
             else:
                 fail(f'{tbl_name}表{col}有{neg_count}条负值')
 
-    # 4-2b 管理人表投行认购：合计 = 管理人角色 + 销售机构角色 + 跨期（明确投行标识但无角色）
-    role_gap = (mgr['投行认购规模'] - mgr['投行认购规模-管理人'] - mgr['投行认购规模-销售机构']
-                - mgr['投行认购规模-跨期']).abs().max()
+    # 4-2b 管理人表投行认购：合计 = 管理人角色 + 销售机构角色
+    role_gap = (mgr['投行认购规模'] - mgr['投行认购规模-管理人'] - mgr['投行认购规模-销售机构']).abs().max()
     if role_gap < 0.005:
-        ok('管理人表投行认购合计 = 管理人角色 + 销售机构角色 + 跨期')
+        ok('管理人表投行认购合计 = 管理人角色 + 销售机构角色')
     else:
         fail(f'管理人表投行认购合计与角色拆分不一致：最大差额 {role_gap:.4f} 亿')
 

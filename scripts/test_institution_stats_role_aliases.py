@@ -120,7 +120,8 @@ class StatsRoleAliasesTest(unittest.TestCase):
         role=compute_ib_role_split(df,projects).set_index('机构名称')
         self.assertEqual(role.loc['中信证券','投行认购规模-管理人'],1.5)
         self.assertEqual(role.loc['中信证券','投行认购规模-销售机构'],2.0)
-        self.assertEqual(role.loc['中信证券','投行认购规模-跨期'],0.4)
+        # 标注“投行”但无角色的记录暂不计入（跨期口径待定）
+        self.assertNotIn('投行认购规模-跨期', role.columns)
         self.assertEqual(role.loc['光大证券','投行认购规模-销售机构'],0.6)
         self.assertEqual(role.loc['国信证券','投行认购规模-销售机构'],0.3)
         self.assertNotIn('招商证券',role.index)
@@ -141,7 +142,6 @@ class StatsRoleAliasesTest(unittest.TestCase):
         role=compute_ib_role_split(df,projects).set_index('机构名称')
         self.assertEqual(role.loc['财通资管','投行认购规模-管理人'],1.2)
         self.assertEqual(role.loc['财通资管','投行认购规模-销售机构'],0.8)
-        self.assertEqual(role.loc['财通资管','投行认购规模-跨期'],0.0)
         self.assertAlmostEqual(role.loc['财通资管'].sum(),2.0)
 
     def test_unlabeled_subscription_without_role_is_excluded(self):

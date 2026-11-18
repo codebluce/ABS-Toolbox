@@ -16,25 +16,25 @@ async function checkDesktop(page) {
   const headText = await manager.locator('thead').innerText();
   assert.ok(headText.includes('投行认购规模(亿)'), '缺少投行认购分组表头');
   assert.ok(headText.includes('管理人') && headText.includes('销售机构'));
-  assert.ok(headText.includes('跨期') && headText.includes('合计'));
+  assert.ok(headText.includes('合计'));
+  assert.ok(!headText.includes('跨期'), '跨期列应已删除');
   const rows = manager.locator('tbody tr');
   assert.equal(await rows.count(), 13);
   const parsed = await manager.locator('tbody tr').evaluateAll(trs => trs.map(tr => {
     const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
     return {name: cells[0], mgr: Number(cells[4]), sales: Number(cells[5]),
-            cross: Number(cells[6]), total: Number(cells[7]), cols: cells.length};
+            total: Number(cells[6]), cols: cells.length};
   }));
   parsed.forEach(r => {
-    assert.equal(r.cols, 8, r.name + ' 列数不是 8');
-    // 合计 = 管理人 + 销售机构 + 跨期
-    assert.ok(Math.abs(r.mgr + r.sales + r.cross - r.total) < 0.005,
-      r.name + ' 合计≠管理人+销售机构+跨期');
+    assert.equal(r.cols, 7, r.name + ' 列数不是 7');
+    // 合计 = 管理人 + 销售机构
+    assert.ok(Math.abs(r.mgr + r.sales - r.total) < 0.005,
+      r.name + ' 合计≠管理人+销售机构');
   });
   const byName = Object.fromEntries(parsed.map(r => [r.name, r]));
   assert.equal(byName['中信证券'].mgr, 1.38);
   assert.equal(byName['中信证券'].sales, 2.17);
-  assert.equal(byName['中信证券'].cross, 0.11);
-  assert.equal(byName['中信证券'].total, 3.66);
+  assert.equal(byName['中信证券'].total, 3.55);
   assert.equal(byName['国信证券'].sales, 2.65);
   // 未标注“投行”但确为管理人/销售机构的认购，按角色计入
   assert.equal(byName['财通资管'].mgr, 1.20);
@@ -76,8 +76,8 @@ async function checkMobile(page) {
   await page.locator('[data-act="sub:inst_stats"]').click();
   await page.waitForTimeout(300);
   const text = await page.locator('body').innerText();
-  assert.ok(text.includes('投行认购 3.66 亿'), '手机端合计缺失');
-  assert.ok(text.includes('管理人 1.38 亿 · 销售机构 2.17 亿 · 跨期 0.11 亿'), '手机端角色拆分缺失');
+  assert.ok(text.includes('投行认购 3.55 亿'), '手机端合计缺失');
+  assert.ok(text.includes('管理人 1.38 亿 · 销售机构 2.17 亿'), '手机端角色拆分缺失');
   assert.ok(text.includes('管理人 1.20 亿 · 销售机构 0.00 亿'), '财通资管角色拆分缺失');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert.ok(overflow <= 1, '手机端横向溢出: ' + overflow);

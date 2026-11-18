@@ -565,16 +565,14 @@
       '<div style="margin-top:9px; ' + CARD + ' padding:13px 14px 4px;">';
 
     var nCols = sec.cols || (sec.head || []).length;
-    // 管理人表 8 列:投行认购拆成 管理人 / 销售机构 / 跨期 / 合计;销售表 5 列仍为单列
-    var hasIbRole = nCols >= 8;
+    // 管理人表 7 列:投行认购拆成 管理人 / 销售机构 / 合计;销售表 5 列仍为单列
+    var hasIbRole = nCols >= 7;
     var hasIb = nCols >= 5;
     sec.rows.forEach(function (r, i) {
       // 次要指标行:左=项目数,右=投行认购规模(托管行表没有该列时留空)
       var left = esc(r[1]) + ' 个项目';
-      var right = hasIbRole ? ('投行认购 ' + esc(r[7]) + ' 亿') : (hasIb ? ('投行认购 ' + esc(r[4]) + ' 亿') : '');
-      var extra = hasIbRole
-        ? ('管理人 ' + esc(r[4]) + ' 亿 · 销售机构 ' + esc(r[5]) + ' 亿 · 跨期 ' + esc(r[6]) + ' 亿')
-        : '';
+      var right = hasIbRole ? ('投行认购 ' + esc(r[6]) + ' 亿') : (hasIb ? ('投行认购 ' + esc(r[4]) + ' 亿') : '');
+      var extra = hasIbRole ? ('管理人 ' + esc(r[4]) + ' 亿 · 销售机构 ' + esc(r[5]) + ' 亿') : '';
       h += barRow(
         '<span style="display:inline-flex; align-items:center; gap:7px;">' +
           '<span style="' + SUB + ' font-variant-numeric:tabular-nums; min-width:16px;">' + (i + 1) + '</span>' +
@@ -589,7 +587,7 @@
     h += caliberBox('statcaliber', S.statCaliber, [
       '管理人统计:按计划管理人归集,仅统计券商(排除银行/信托等非券商主体)。',
       '投行认购认定:认购机构含「自营」或「客需」的整条不计入;其余标注「投行」的不论角色均计入;未标注的,只有该机构是该项目计划管理人或联席承销商才计入。',
-      '管理人表按角色拆分:管理人角色=该机构作为计划管理人的项目中标份额;销售机构角色=该机构作为联席承销商(含交易所、银行间)的项目中标份额;跨期=有明确投行标识但无上述角色的认购;合计=三列之和。',
+      '管理人表按角色拆分:管理人角色=该机构作为计划管理人的项目中标份额;销售机构角色=该机构作为联席承销商(含交易所、银行间)的项目中标份额;合计=两列之和。标注「投行」但无上述角色的认购暂不计入。',
       '销售机构统计:按联席承销商拆分归集,同一项目的多家承销商各计一次,故销售项目数之和大于项目总数。',
       '托管行统计:分行已归并至总行。',
       '规模占比 = 该机构规模 / 全部项目总规模;横条长度按本表内最大规模等比缩放。'
