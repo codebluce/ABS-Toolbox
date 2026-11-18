@@ -4,10 +4,11 @@
     "rows": 13,
     "sample": {
       "name": "中信证券",
-      "mgr": 1.38,
-      "sales": 2.27,
-      "total": 3.76,
-      "cols": 7
+      "mgr": 2.28,
+      "sales": 3.42,
+      "cross": 10.69,
+      "total": 16.39,
+      "cols": 8
     },
     "overflow": 0
   },

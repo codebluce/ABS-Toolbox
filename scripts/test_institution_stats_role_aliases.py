@@ -120,7 +120,7 @@ class StatsRoleAliasesTest(unittest.TestCase):
         role=compute_ib_role_split(df,projects).set_index('机构名称')
         self.assertEqual(role.loc['中信证券','投行认购规模-管理人'],1.5)
         self.assertEqual(role.loc['中信证券','投行认购规模-销售机构'],2.0)
-        self.assertEqual(role.loc['中信证券','投行认购规模-其他'],0.4)
+        self.assertEqual(role.loc['中信证券','投行认购规模-跨期'],0.4)
         self.assertEqual(role.loc['光大证券','投行认购规模-销售机构'],0.6)
         self.assertEqual(role.loc['国信证券','投行认购规模-销售机构'],0.3)
         self.assertNotIn('招商证券',role.index)
@@ -141,7 +141,7 @@ class StatsRoleAliasesTest(unittest.TestCase):
         role=compute_ib_role_split(df,projects).set_index('机构名称')
         self.assertEqual(role.loc['财通资管','投行认购规模-管理人'],1.2)
         self.assertEqual(role.loc['财通资管','投行认购规模-销售机构'],0.8)
-        self.assertEqual(role.loc['财通资管','投行认购规模-其他'],0.0)
+        self.assertEqual(role.loc['财通资管','投行认购规模-跨期'],0.0)
         self.assertAlmostEqual(role.loc['财通资管'].sum(),2.0)
 
     def test_unlabeled_subscription_without_role_is_excluded(self):
@@ -157,6 +157,47 @@ class StatsRoleAliasesTest(unittest.TestCase):
         role=compute_ib_role_split(df,projects).set_index('机构名称')
         self.assertNotIn('南银理财',role.index)
         self.assertEqual(role.loc['中信证券','投行认购规模-管理人'],1.0)
+
+    def test_proprietary_desk_counts_as_ib_money(self):
+        """“自营”视为明确投行标识；去掉后缀后按机构归并，无角色时进跨期列。"""
+        from gen_institution_stats import compute_ib_role_split
+        projects=pd.DataFrame([
+            {'项目名称':'a','计划管理人':'国泰海通','联席承销商':'中信证券','规模':10},
+        ])
+        df=pd.DataFrame([
+            {'项目名称':'a','认购机构':'国开证券自营','认购份额':1.0},
+            {'项目名称':'a','认购机构':'中信证券自营','认购份额':0.2},
+        ])
+        role=compute_ib_role_split(df,projects).set_index('机构名称')
+        self.assertEqual(role.loc['国开证券','投行认购规模-跨期'],1.0)
+        self.assertEqual(role.loc['中信证券','投行认购规模-销售机构'],0.2)
+
+    def test_client_demand_is_excluded_even_with_role(self):
+        """“客需”为客户需求资金，即使机构是该项目管理人也认定为投行资金。"""
+        from gen_institution_stats import compute_ib_role_split
+        projects=pd.DataFrame([
+            {'项目名称':'a','计划管理人':'国泰海通','联席承销商':'中信证券','规模':10},
+        ])
+        df=pd.DataFrame([
+            {'项目名称':'a','认购机构':'国泰海通客需','认购份额':0.28},
+        ])
+        role=compute_ib_role_split(df,projects)
+        self.assertTrue(role.empty)
+
+    def test_hangyin_merges_into_hangzhou_bank(self):
+        from gen_institution_stats import compute_sales_markets
+        projects=pd.DataFrame([
+            {'项目名称':'a','联席承销商':'杭银','规模':10},
+            {'项目名称':'b','联席承销商':'杭州银行','规模':20},
+        ])
+        df=pd.DataFrame([
+            {'项目名称':'a','发行场所':'银行间','认购机构':'-','认购份额':0},
+            {'项目名称':'b','发行场所':'银行间','认购机构':'-','认购份额':0},
+        ])
+        sales=compute_sales_markets(df,projects)[1]['sales'].set_index('机构名称')
+        self.assertEqual(list(sales.index),['杭州银行'])
+        self.assertEqual(sales.loc['杭州银行','销售项目数'],2)
+        self.assertEqual(sales.loc['杭州银行','参与项目规模'],30)
 
     def test_manager_table_total_equals_manager_plus_sales(self):
         projects=pd.DataFrame([

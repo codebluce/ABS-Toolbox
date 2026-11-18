@@ -145,6 +145,18 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 .stat-table.cols-7 thead th.col-cnt  { width:12%; }
 .stat-table.cols-7 thead th.col-num  { width:13.5%; }
 .stat-table.cols-7 thead th.col-pct  { width:12%; }
+/* 8列表(管理人，投行认购按角色拆4列): 机构名称18% + 项目数12% + 管理规模14% + 占比11% + 4个投行列各11.25% = 100% */
+.stat-table.cols-8 thead th.col-name { width:18%; }
+.stat-table.cols-8 thead th.col-cnt  { width:12%; }
+.stat-table.cols-8 thead th.col-num  { width:14%; }
+.stat-table.cols-8 thead th.col-pct  { width:11%; }
+.stat-table.cols-8 thead th.col-ib   { width:11.25%; }
+/* 6列表(销售机构，投行认购 + 跨期): 机构名称22% + 项目数13% + 规模18% + 占比15% + 2个投行列各16% = 100% */
+.stat-table.cols-6 thead th.col-name { width:22%; }
+.stat-table.cols-6 thead th.col-cnt  { width:13%; }
+.stat-table.cols-6 thead th.col-num  { width:18%; }
+.stat-table.cols-6 thead th.col-pct  { width:15%; }
+.stat-table.cols-6 thead th.col-ib   { width:16%; }
 .stat-table tbody tr:nth-child(even) { background:#f7f9fc; }
 .stat-table tbody tr:hover { background:#eef3fa; }
 .stat-table tbody tr:not(:last-child) td { border-bottom:1px solid #eaeef4; }
@@ -194,6 +206,16 @@ INST_STATS_EMBED_CSS = """
 .inst-stats-embed .inst-stats-table-wrap .stat-table.cols-7 thead th.col-cnt  { width:11%; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table.cols-7 thead th.col-num  { width:13%; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table.cols-7 thead th.col-pct  { width:13%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-8 thead th.col-name { width:18%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-8 thead th.col-cnt  { width:12%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-8 thead th.col-num  { width:14%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-8 thead th.col-pct  { width:11%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-8 thead th.col-ib   { width:11.25%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-6 thead th.col-name { width:22%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-6 thead th.col-cnt  { width:13%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-6 thead th.col-num  { width:18%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-6 thead th.col-pct  { width:15%; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table.cols-6 thead th.col-ib   { width:16%; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table thead { background:#f8f9fa !important; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table thead th { position:sticky; top:0; z-index:1;
   background:#f8f9fa !important; color:#495057; padding:9px 8px;
@@ -202,7 +224,8 @@ INST_STATS_EMBED_CSS = """
 .inst-stats-embed .inst-stats-table-wrap .stat-table thead th:first-child,
 .inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-cnt,
 .inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-num,
-.inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-pct { text-align:center; padding-left:8px; }
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-pct,
+.inst-stats-embed .inst-stats-table-wrap .stat-table thead th.col-ib { text-align:center; padding-left:8px; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table tbody tr:nth-child(even) { background:#fafbfc; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table tbody tr:hover { background:#f8f9fa; }
 .inst-stats-embed .inst-stats-table-wrap .stat-table tbody td { padding:7px 8px; color:#1d1d1f;
@@ -609,19 +632,21 @@ def compute_ib_subscription(df):
 def compute_ib_role_split(df, projects, only_projects=None):
     """投行认购规模按角色认定并拆分（用户 2026-11-18 确认的认定逻辑）。
 
-    认定规则（两条并列，命中任一即认定为投行资金）：
-      1. 认购机构标注“投行”→ 明确投行资金，不论是否该项目管理人/销售机构；
-      2. 未标注“投行”，但该机构是该项目计划管理人（管理人投行认购），
+    认定规则（命中任一即认定为投行资金）：
+      1. 认购机构标注“投行”或“自营”→ 明确投行资金（券商投行条线/自营盘），
+         不论是否该项目管理人/销售机构；
+      2. 未标注上述字样，但该机构是该项目计划管理人（管理人投行认购），
          或是该项目联席承销商（销售机构投行认购，交易所与银行间都算）；
-      3. 未标注“投行”且无上述角色 → 不认定为投行资金。
+      3. 标注“客需”→ 客户需求资金，不认定为投行资金；
+      4. 无标注且无角色 → 不认定为投行资金。
 
     归属：管理人角色 → 管理人列；销售机构角色 → 销售机构列；
         两者都有时优先管理人列，避免同一笔重复计算；
-        仅标注“投行”但无角色 → 其他列（计入合计，但不进前两列）。
+        有明确投行标识但无角色 → 跨期列（计入合计，但不进前两列）。
 
     only_projects: 只统计这些项目（用于按发行市场拆分销售表）。
     """
-    columns = ['机构名称', '投行认购规模-管理人', '投行认购规模-销售机构', '投行认购规模-其他']
+    columns = ['机构名称', '投行认购规模-管理人', '投行认购规模-销售机构', '投行认购规模-跨期']
     empty = pd.DataFrame(columns=columns)
     if df is None or df.empty or projects is None or projects.empty:
         return empty
@@ -632,10 +657,13 @@ def compute_ib_role_split(df, projects, only_projects=None):
         return empty
     records['机构原文'] = records['认购机构'].astype(str).str.strip()
     records = records[records['机构原文'].ne('') & records['机构原文'].str.lower().ne('nan')]
+    # “客需”= 客户需求资金，不属于投行资金（用户 2026-11-18 确认）
+    records = records[~records['机构原文'].str.contains('客需', na=False)]
     if records.empty:
         return empty
-    records['标注投行'] = records['机构原文'].str.contains('投行', na=False)
-    records['机构简称'] = records['机构原文'].str.replace('投行.*', '', regex=True).str.strip()
+    # “投行”与“自营”都是明确投行标识；去掉后缀后按机构归并（如 国开证券自营 → 国开证券）
+    records['标注投行'] = records['机构原文'].str.contains('投行|自营', na=False)
+    records['机构简称'] = records['机构原文'].str.replace(r'(投行|自营).*$', '', regex=True).str.strip()
     records['认购份额_数值'] = pd.to_numeric(records['认购份额'], errors='coerce').fillna(0)
     records['管理人名称'] = records['机构简称'].apply(
         lambda name: normalize_stats_role(normalize_entity(name), 'manager'))
@@ -657,7 +685,7 @@ def compute_ib_role_split(df, projects, only_projects=None):
 
     manager_amount = defaultdict(float)
     sales_amount = defaultdict(float)
-    other_amount = defaultdict(float)
+    cross_amount = defaultdict(float)
     for _, row in records.iterrows():
         project = row['项目名称']
         amount = float(row['认购份额_数值'])
@@ -668,15 +696,15 @@ def compute_ib_role_split(df, projects, only_projects=None):
         elif is_sales:
             sales_amount[row['销售名称']] += amount
         elif row['标注投行']:
-            # 明确标注投行、但既非该项目管理人也非联席承销商：计入合计，单列“其他”
-            other_amount[row['销售名称']] += amount
+            # 有明确投行标识、但既非该项目管理人也非联席承销商：计入合计，单列“跨期”
+            cross_amount[row['销售名称']] += amount
 
-    names = sorted(set(manager_amount) | set(sales_amount) | set(other_amount))
+    names = sorted(set(manager_amount) | set(sales_amount) | set(cross_amount))
     return pd.DataFrame([
         {'机构名称': name,
          '投行认购规模-管理人': manager_amount.get(name, 0.0),
          '投行认购规模-销售机构': sales_amount.get(name, 0.0),
-         '投行认购规模-其他': other_amount.get(name, 0.0)}
+         '投行认购规模-跨期': cross_amount.get(name, 0.0)}
         for name in names
     ])
 
@@ -686,6 +714,13 @@ def sales_role_scale(ib_role):
     if ib_role is None or ib_role.empty:
         return pd.Series(dtype=float, name='投行认购规模')
     return ib_role.set_index('机构名称')['投行认购规模-销售机构'].astype(float)
+
+
+def cross_scale(ib_role):
+    """从角色拆分结果取「跨期」金额（明确投行标识但无角色）。"""
+    if ib_role is None or ib_role.empty:
+        return pd.Series(dtype=float, name='投行认购规模')
+    return ib_role.set_index('机构名称')['投行认购规模-跨期'].astype(float)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -703,14 +738,14 @@ def compute_manager_table(projects, ib_role, total_scale):
     mgr = mgr[mgr['计划管理人'].apply(is_brokerage)].copy()
     role = ib_role.rename(columns={'机构名称': '计划管理人'})
     mgr = mgr.merge(role, on='计划管理人', how='left')
-    for col in ('投行认购规模-管理人', '投行认购规模-销售机构', '投行认购规模-其他'):
+    for col in ('投行认购规模-管理人', '投行认购规模-销售机构', '投行认购规模-跨期'):
         if col not in mgr.columns:
             mgr[col] = 0.0
         # 先按展示精度取整，保证合计与分项在页面上能对上
         mgr[col] = mgr[col].fillna(0).round(2)
-    # 合计 = 管理人角色 + 销售机构角色 + 明确标注投行但无角色的第三方认购
+    # 合计 = 管理人角色 + 销售机构角色 + 跨期（明确投行标识但无角色）
     mgr['投行认购规模'] = (mgr['投行认购规模-管理人'] + mgr['投行认购规模-销售机构']
-                          + mgr['投行认购规模-其他'])
+                          + mgr['投行认购规模-跨期'])
     mgr['规模占比'] = (mgr['管理规模'] / total_scale * 100).round(2)
     mgr = mgr.sort_values('管理规模', ascending=False).reset_index(drop=True)
     return mgr
@@ -724,6 +759,7 @@ SALES_DISPLAY_ALIASES = {
     '中泰（自营）': '中泰证券',
     '国金证券资管': '国金资管',
     '财通投行': '财通证券',
+    '杭银': '杭州银行',
 }
 
 
@@ -731,11 +767,12 @@ def sales_display_name(name):
     return SALES_DISPLAY_ALIASES.get(name, name)
 
 
-def compute_sales_table(projects, ib_sales, total_scale, *, include_banks=False):
+def compute_sales_table(projects, ib_sales, total_scale, *, cross=None, include_banks=False):
     """表二：销售机构统计表（联席承销商=销售，券商only）。
 
     ib_sales: 销售机构角色的投行中标额（sales_role_scale 的输出），
         只含该机构作为联席承销商的项目，与管理人表「销售机构」列同口径。
+    cross: 跨期金额（明确投行标识但无角色），单列展示，不计入投行认购规模。
     """
     rows = []
     for _, row in projects.iterrows():
@@ -768,6 +805,13 @@ def compute_sales_table(projects, ib_sales, total_scale, *, include_banks=False)
     ib_df.columns = ['机构名称', '投行认购规模']
     sales = sales.merge(ib_df, on='机构名称', how='left')
     sales['投行认购规模'] = sales['投行认购规模'].fillna(0).round(2)
+    if cross is not None and len(cross):
+        cross_df = cross.rename('跨期').reset_index()
+        cross_df.columns = ['机构名称', '跨期']
+        sales = sales.merge(cross_df, on='机构名称', how='left')
+    if '跨期' not in sales.columns:
+        sales['跨期'] = 0.0
+    sales['跨期'] = sales['跨期'].fillna(0).round(2)
     sales['规模占比'] = (sales['参与项目规模'] / total_scale * 100).round(2)
     sales = sales.sort_values('参与项目规模', ascending=False).reset_index(drop=True)
     return sales
@@ -784,9 +828,12 @@ def compute_sales_markets(df, projects):
         total = float(subset['规模'].sum())
         rows = df[df['项目名称'].isin(subset['项目名称'])]
         role = compute_ib_role_split(rows, subset)
+        # 投行认购只统计销售机构角色；跨期（明确投行标识但无角色）单列展示
         sales = compute_sales_table(subset, sales_role_scale(role), total,
+                                    cross=cross_scale(role),
                                     include_banks=market == '银行间')
-        result.append({'market': market, 'sales': sales, 'total': total, 'count': len(subset)})
+        result.append({'market': market, 'sales': sales, 'total': total, 'count': len(subset),
+                       'role': sales_role_scale(role), 'cross': cross_scale(role)})
     return result
 
 
@@ -813,7 +860,7 @@ def build_stat_table(columns, rows_html, thead_bg, group=None):
         用于“投行认购规模”下再分管理人/销售机构/合计。
     """
     n_cols = len(columns)
-    cols_class = f' cols-{n_cols}' if n_cols in (4, 5, 7) else ''
+    cols_class = f' cols-{n_cols}' if n_cols in (4, 5, 6, 7, 8) else ''
     if group:
         group_label, span = group
         lead = n_cols - span
@@ -838,6 +885,7 @@ def build_manager_rows(mgr):
             f'<td class="pct">{r["规模占比"]:.2f}%</td>'
             f'<td class="num">{r["投行认购规模-管理人"]:.2f}</td>'
             f'<td class="num">{r["投行认购规模-销售机构"]:.2f}</td>'
+            f'<td class="num">{r["投行认购规模-跨期"]:.2f}</td>'
             f'<td class="num">{r["投行认购规模"]:.2f}</td>'
             f'</tr>'
         )
@@ -854,6 +902,7 @@ def build_sales_rows(sales):
             f'<td class="num">{r["参与项目规模"]:.2f}</td>'
             f'<td class="pct">{r["规模占比"]:.2f}%</td>'
             f'<td class="num">{r["投行认购规模"]:.2f}</td>'
+            f'<td class="num">{r["跨期"]:.2f}</td>'
             f'</tr>'
         )
     return rows
@@ -893,12 +942,13 @@ def _build_section_by_key(key, mgr, sales, custody):
             ('cnt', '管理项目数', 'col-cnt'),
             ('num', '管理规模(亿)', 'col-num'),
             ('pct', '规模占比', 'col-pct'),
-            ('num', '管理人', 'col-num'),
-            ('num', '销售机构', 'col-num'),
-            ('num', '合计', 'col-num'),
+            ('num', '管理人', 'col-ib'),
+            ('num', '销售机构', 'col-ib'),
+            ('num', '跨期', 'col-ib'),
+            ('num', '合计', 'col-ib'),
         ]
         table = build_stat_table(cols, build_manager_rows(mgr), c['thead'],
-                                 group=('投行认购规模(亿)', 3))
+                                 group=('投行认购规模(亿)', 4))
         return build_section(
             '表一：管理人统计表',
             f'{len(mgr)}家券商 · 剔除信托/银行/保险 · 按已确认管理人口径归并',
@@ -911,9 +961,11 @@ def _build_section_by_key(key, mgr, sales, custody):
             ('cnt', '销售项目数', 'col-cnt'),
             ('num', '参与项目规模(亿)', 'col-num'),
             ('pct', '规模占比', 'col-pct'),
-            ('num', '投行认购规模(亿)', 'col-num'),
+            ('num', '投行认购', 'col-ib'),
+            ('num', '跨期', 'col-ib'),
         ]
-        table = build_stat_table(cols, build_sales_rows(sales), c['thead'])
+        table = build_stat_table(cols, build_sales_rows(sales), c['thead'],
+                                 group=('投行认购规模(亿)', 2))
         return build_section(
             '表二：销售机构统计表',
             f'{len(sales)}家券商 · 联席承销商=销售机构 · 按已确认销售口径归并',
@@ -991,8 +1043,8 @@ def render_body(data, section_key=None):
   <span>联席承销商即销售机构；多联席承销项目按参与机构重复归属</span>
   <span>托管行分行名归并为总行名（XX银行），同名合并</span>
   <span>管理/参与/托管规模=项目去重后J列发行规模；投行认购规模=U列投行记录的V列中标份额</span>
-  <span>投行认购认定：认购机构标注「投行」的不论角色均计入；未标注「投行」的，只有该机构是该项目计划管理人或联席承销商才计入，否则不计</span>
-  <span>管理人表按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额；销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额；合计另含明确标注「投行」但无角色的第三方认购</span>
+  <span>投行认购认定：认购机构标注「投行」或「自营」的不论角色均计入；未标注的，只有该机构是该项目计划管理人或联席承销商才计入；标注「客需」的不计入</span>
+  <span>管理人表按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额；销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额；跨期=有明确投行标识但无上述角色的认购；合计=三列之和</span>
   <span>销售机构表的投行认购只统计销售机构角色，与管理人表「销售机构」列同口径；对同时出现在管理人表的机构，两张销售表之和等于该列（销售表另含只在销售角色出现的机构，含银行）</span>
   <span>规模占比 = 机构规模 / 全部项目总规模</span>
 </div>
@@ -1069,7 +1121,7 @@ def _render_embedded_body(mgr, sales, custody, meta, xlsx_basename, sales_market
     <div class="inst-stats-grid">
 {blocks}
     </div>
-    <div class="inst-stats-market-note">销售机构规模占比按各自市场总项目规模计算；联席项目分别计入各机构。交易所仅含上交所、深交所；银行间包含银行及券商，中保登、非标不列入两张销售表。投行认购规模的认定：认购机构标注「投行」的，不论角色均计入；未标注「投行」的，只有该机构是该项目计划管理人（计入管理人列）或联席承销商（计入销售机构列）才计入，否则不计。管理人表按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额，销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额，合计另含明确标注「投行」但既非该项目管理人也非联席承销商的第三方认购。销售机构表的投行认购只统计销售机构角色，与管理人表「销售机构」列同口径：对同时出现在管理人表的机构，交易所表 + 银行间表 = 该列；销售表另含只在销售角色出现、不在管理人表的机构（含银行），故两表合计大于该列合计。</div>
+    <div class="inst-stats-market-note">销售机构规模占比按各自市场总项目规模计算；联席项目分别计入各机构。交易所仅含上交所、深交所；银行间包含银行及券商，中保登、非标不列入两张销售表。投行认购规模的认定：认购机构标注「投行」或「自营」的，不论角色均计入；未标注的，只有该机构是该项目计划管理人（计入管理人列）或联席承销商（计入销售机构列）才计入；标注「客需」的为客户需求资金，不计入。管理人表按角色拆分：管理人角色=该机构作为计划管理人的项目中标份额，销售机构角色=该机构作为联席承销商（含交易所、银行间）的项目中标份额，跨期=有明确投行标识但既非该项目管理人也非联席承销商的认购，合计=三列之和。销售机构表的投行认购只统计销售机构角色，与管理人表「销售机构」列同口径：对同时出现在管理人表的机构，交易所表 + 银行间表 = 该列；销售表另含只在销售角色出现、不在管理人表的机构（含银行），故两表合计大于该列合计。</div>
   </div>
 </div>'''
 
@@ -1280,23 +1332,23 @@ def run_qc(df, projects, mgr, sales, custody, total_scale,
         else:
             fail(f'{tbl_name}表排序异常')
 
-    # 2-6 投行认购口径一致性：管理人表「销售机构」列 = 交易所 + 银行间销售表之和
+    # 2-6 投行认购口径一致性：管理人表「销售机构」列 = 交易所 + 银行间销售机构角色之和
     if sales_markets:
-        market_ib = {}
+        market_role = {}
         for item in sales_markets:
-            for _, row in item['sales'].iterrows():
-                market_ib[row['机构名称']] = market_ib.get(row['机构名称'], 0.0) + float(row['投行认购规模'])
+            for name, amount in item.get('role', pd.Series(dtype=float)).items():
+                market_role[name] = market_role.get(name, 0.0) + float(amount)
         gaps = []
         for _, row in mgr.iterrows():
             name = row['计划管理人']
             expected = round(float(row['投行认购规模-销售机构']), 2)
-            actual = round(market_ib.get(name, 0.0), 2)
+            actual = round(market_role.get(name, 0.0), 2)
             if abs(expected - actual) > 0.011:
-                gaps.append(f'{name} 管理人表 {expected:.2f} vs 两张销售表 {actual:.2f}')
+                gaps.append(f'{name} 管理人表 {expected:.2f} vs 两市场销售角色 {actual:.2f}')
         if gaps:
-            fail('投行认购销售角色与两张销售表不一致：' + '；'.join(gaps))
+            fail('投行认购销售机构角色与两市场拆分不一致：' + '；'.join(gaps))
         else:
-            ok('投行认购销售角色 = 交易所 + 银行间销售表（逐家一致）')
+            ok('投行认购销售机构角色 = 交易所 + 银行间（逐家一致）')
 
     # ── 【3】视觉生成一致性 ──────────────────────────────────
     print('\n【3】视觉生成一致性')
@@ -1333,11 +1385,11 @@ def run_qc(df, projects, mgr, sales, custody, total_scale,
             else:
                 fail(f'{tbl_name}表{col}有{neg_count}条负值')
 
-    # 4-2b 管理人表投行认购：合计 = 管理人角色 + 销售机构角色 + 其他（明确标注投行但无角色）
+    # 4-2b 管理人表投行认购：合计 = 管理人角色 + 销售机构角色 + 跨期（明确投行标识但无角色）
     role_gap = (mgr['投行认购规模'] - mgr['投行认购规模-管理人'] - mgr['投行认购规模-销售机构']
-                - mgr['投行认购规模-其他']).abs().max()
+                - mgr['投行认购规模-跨期']).abs().max()
     if role_gap < 0.005:
-        ok('管理人表投行认购合计 = 管理人角色 + 销售机构角色 + 其他')
+        ok('管理人表投行认购合计 = 管理人角色 + 销售机构角色 + 跨期')
     else:
         fail(f'管理人表投行认购合计与角色拆分不一致：最大差额 {role_gap:.4f} 亿')
 
