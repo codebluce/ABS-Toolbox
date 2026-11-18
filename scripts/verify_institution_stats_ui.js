@@ -24,13 +24,19 @@ async function checkDesktop(page) {
   }));
   parsed.forEach(r => {
     assert.equal(r.cols, 7, r.name + ' 列数不是 7');
-    assert.ok(Math.abs(r.mgr + r.sales - r.total) < 0.005, r.name + ' 合计≠管理人+销售');
+    // 合计 = 管理人 + 销售机构 + 第三方投行认购（可能为 0），故合计不小于前两列之和
+    assert.ok(r.total + 0.005 >= r.mgr + r.sales, r.name + ' 合计小于管理人+销售');
+    assert.ok(r.total - (r.mgr + r.sales) <= 0.35, r.name + ' 第三方投行认购异常偏大');
   });
   const byName = Object.fromEntries(parsed.map(r => [r.name, r]));
-  assert.equal(byName['中信证券'].mgr, 1.27);
-  assert.equal(byName['中信证券'].sales, 2.09);
-  assert.equal(byName['中信证券'].total, 3.36);
+  assert.equal(byName['中信证券'].mgr, 1.38);
+  assert.equal(byName['中信证券'].sales, 2.27);
+  assert.equal(byName['中信证券'].total, 3.76);
   assert.equal(byName['国信证券'].sales, 2.65);
+  // 未标注“投行”但确为管理人/销售机构的认购，按角色计入
+  assert.equal(byName['财通资管'].mgr, 1.20);
+  assert.equal(byName['华泰资管'].mgr, 0.50);
+  assert.equal(byName['申万宏源资管'].mgr, 0.19);
 
   // 销售表仍是 5 列，未被改动
   const salesBlocks = page.locator('.inst-stats-block--sales');
@@ -54,7 +60,7 @@ async function checkDesktop(page) {
     assert.ok(Math.abs(actual - r.sales) < 0.011,
       `${r.name} 销售表合计 ${actual} ≠ 管理人表销售机构列 ${r.sales}`);
   });
-  assert.equal(Math.round((marketIb['中信证券'] || 0) * 100) / 100, 2.09);
+  assert.equal(Math.round((marketIb['中信证券'] || 0) * 100) / 100, 2.27);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert.ok(overflow <= 1, '电脑端横向溢出: ' + overflow);
   return {rows: parsed.length, sample: byName['中信证券'], overflow};
@@ -65,9 +71,10 @@ async function checkMobile(page) {
   await page.locator('[data-act="sub:inst_stats"]').click();
   await page.waitForTimeout(300);
   const text = await page.locator('body').innerText();
-  assert.ok(text.includes('投行认购 3.36 亿'), '手机端合计缺失');
-  assert.ok(text.includes('管理人 1.27 亿 · 销售机构 2.09 亿'), '手机端角色拆分缺失');
+  assert.ok(text.includes('投行认购 3.76 亿'), '手机端合计缺失');
+  assert.ok(text.includes('管理人 1.38 亿 · 销售机构 2.27 亿'), '手机端角色拆分缺失');
   assert.ok(text.includes('管理人 0.03 亿 · 销售机构 2.65 亿'), '国信证券角色拆分缺失');
+  assert.ok(text.includes('管理人 1.20 亿 · 销售机构 0.00 亿'), '财通资管角色拆分缺失');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert.ok(overflow <= 1, '手机端横向溢出: ' + overflow);
   return {overflow};

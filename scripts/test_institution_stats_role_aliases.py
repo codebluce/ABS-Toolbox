@@ -103,7 +103,7 @@ class StatsRoleAliasesTest(unittest.TestCase):
         self.assertEqual(result['管理规模'].sum(),60)
         pd.testing.assert_frame_equal(projects,original)
 
-    def test_ib_role_split_separates_manager_sales_and_third_party(self):
+    def test_ib_role_split_separates_manager_sales_and_other(self):
         from gen_institution_stats import compute_ib_role_split
         projects=pd.DataFrame([
             {'项目名称':'a','计划管理人':'中信证券','联席承销商':'国信证券','规模':10},
@@ -113,16 +113,50 @@ class StatsRoleAliasesTest(unittest.TestCase):
         df=pd.DataFrame([
             {'项目名称':'a','认购机构':'中信证券投行','认购份额':1.5},   # 管理人角色
             {'项目名称':'b','认购机构':'中信证券投行','认购份额':2.0},   # 销售机构角色
-            {'项目名称':'c','认购机构':'中信证券投行','认购份额':0.4},   # 第三方，不计入
+            {'项目名称':'c','认购机构':'中信证券投行','认购份额':0.4},   # 标注投行但无角色 → 其他
             {'项目名称':'b','认购机构':'光大证券投行','认购份额':0.6},   # 销售机构角色
             {'项目名称':'a','认购机构':'国信证券投行','认购份额':0.3},   # 销售机构角色
         ])
         role=compute_ib_role_split(df,projects).set_index('机构名称')
         self.assertEqual(role.loc['中信证券','投行认购规模-管理人'],1.5)
         self.assertEqual(role.loc['中信证券','投行认购规模-销售机构'],2.0)
+        self.assertEqual(role.loc['中信证券','投行认购规模-其他'],0.4)
         self.assertEqual(role.loc['光大证券','投行认购规模-销售机构'],0.6)
         self.assertEqual(role.loc['国信证券','投行认购规模-销售机构'],0.3)
         self.assertNotIn('招商证券',role.index)
+
+    def test_unlabeled_subscription_recognized_by_role(self):
+        """未标注“投行”，但确为管理人/销售机构的认购，按角色认定为投行资金。"""
+        from gen_institution_stats import compute_ib_role_split
+        projects=pd.DataFrame([
+            {'项目名称':'a','计划管理人':'财通资管','联席承销商':'中信证券','规模':10},
+            {'项目名称':'b','计划管理人':'中信建投','联席承销商':'财通资管','规模':20},
+            {'项目名称':'c','计划管理人':'招商证券','联席承销商':'华泰证券','规模':30},
+        ])
+        df=pd.DataFrame([
+            {'项目名称':'a','认购机构':'财通资管','认购份额':1.2},   # 管理人角色，未标注投行
+            {'项目名称':'b','认购机构':'财通资管','认购份额':0.8},   # 销售机构角色，未标注投行
+            {'项目名称':'c','认购机构':'财通资管','认购份额':5.0},   # 无角色且未标注 → 不计入
+        ])
+        role=compute_ib_role_split(df,projects).set_index('机构名称')
+        self.assertEqual(role.loc['财通资管','投行认购规模-管理人'],1.2)
+        self.assertEqual(role.loc['财通资管','投行认购规模-销售机构'],0.8)
+        self.assertEqual(role.loc['财通资管','投行认购规模-其他'],0.0)
+        self.assertAlmostEqual(role.loc['财通资管'].sum(),2.0)
+
+    def test_unlabeled_subscription_without_role_is_excluded(self):
+        """既未标注“投行”、又无管理人/销售角色 → 不认定为投行资金。"""
+        from gen_institution_stats import compute_ib_role_split
+        projects=pd.DataFrame([
+            {'项目名称':'a','计划管理人':'中信证券','联席承销商':'国信证券','规模':10},
+        ])
+        df=pd.DataFrame([
+            {'项目名称':'a','认购机构':'南银理财','认购份额':20.0},
+            {'项目名称':'a','认购机构':'中信证券','认购份额':1.0},
+        ])
+        role=compute_ib_role_split(df,projects).set_index('机构名称')
+        self.assertNotIn('南银理财',role.index)
+        self.assertEqual(role.loc['中信证券','投行认购规模-管理人'],1.0)
 
     def test_manager_table_total_equals_manager_plus_sales(self):
         projects=pd.DataFrame([
